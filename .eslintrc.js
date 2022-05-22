@@ -1,11 +1,13 @@
 module.exports = {
-    parser: '@typescript-eslint/parser',
-    plugins: ['@typescript-eslint'],
+    parser: "@typescript-eslint/parser",
+    plugins: ["@typescript-eslint", "notice"],
     parserOptions: {
-      project: './tsconfig.json',
       ecmaVersion: 9,
-      sourceType: 'module',
+      sourceType: "module",
     },
+    extends: [
+      "plugin:react-hooks/recommended"
+    ],
 
     /**
      * ESLint rules
@@ -16,18 +18,20 @@ module.exports = {
      *   "rule-name", [severity, { opts }]
      * Severity: 2 == error, 1 == warning, 0 == off.
      */
-    "rules": {
-        '@typescript-eslint/no-unused-vars': [2, {args: 'none'}],
+    rules: {
+        "@typescript-eslint/no-unused-vars": [2, {args: "none"}],
+        "@typescript-eslint/consistent-type-imports": [2, {disallowTypeAnnotations: false}],
         /**
          * Enforced rules
          */
         // syntax preferences
+        "object-curly-spacing": ["error", "always"],
         "quotes": [2, "single", {
             "avoidEscape": true,
             "allowTemplateLiterals": true
         }],
-        "semi": 2,
         "no-extra-semi": 2,
+        "@typescript-eslint/semi": [2],
         "comma-style": [2, "last"],
         "wrap-iife": [2, "inside"],
         "spaced-comment": [2, "always", {
@@ -41,7 +45,6 @@ module.exports = {
         "brace-style": [2, "1tbs", {"allowSingleLine": true}],
         "curly": [2, "multi-or-nest", "consistent"],
         "new-parens": 2,
-        "func-call-spacing": 2,
         "arrow-parens": [2, "as-needed"],
         "prefer-const": 2,
         "quote-props": [2, "consistent"],
@@ -67,6 +70,7 @@ module.exports = {
         "radix": 2,
         "valid-typeof": 2,
         "no-implicit-globals": [2],
+        "no-unused-expressions": [2, { "allowShortCircuit": true, "allowTernary": true, "allowTaggedTemplates": true}],
 
         // es2015 features
         "require-yield": 2,
@@ -96,6 +100,8 @@ module.exports = {
             "after": true,
             "before": true
         }],
+        "@typescript-eslint/func-call-spacing": 2,
+        "@typescript-eslint/type-annotation-spacing": 2,
 
         // file whitespace
         "no-multiple-empty-lines": [2, {"max": 2}],
@@ -105,6 +111,12 @@ module.exports = {
         "indent": [2, 2, { "SwitchCase": 1, "CallExpression": {"arguments": 2}, "MemberExpression": 2 }],
         "key-spacing": [2, {
             "beforeColon": false
-        }]
+        }],
+
+        // copyright
+        "notice/notice": [2, {
+            "mustMatch": "Copyright",
+            "templateFile": require("path").join(__dirname, "utils", "copyright.js"),
+        }],
     }
 };

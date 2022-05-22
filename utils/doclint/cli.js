@@ -15,82 +15,241 @@
  * limitations under the License.
  */
 
-const playwright = require('../../index.js').chromium;
+//@ts-check
+
+const playwright = require('playwright-core');
+const fs = require('fs');
 const path = require('path');
-const Source = require('./Source');
+const { parseApi } = require('./api_parser');
+const missingDocs = require('./missingDocs');
+const md = require('../markdown');
+
+/** @typedef {import('./documentation').Type} Type */
+/** @typedef {import('../markdown').MarkdownNode} MarkdownNode */
 
 const PROJECT_DIR = path.join(__dirname, '..', '..');
-const VERSION = require(path.join(PROJECT_DIR, 'package.json')).version;
 
-const RED_COLOR = '\x1b[31m';
-const YELLOW_COLOR = '\x1b[33m';
-const RESET_COLOR = '\x1b[0m';
+const dirtyFiles = new Set();
 
-run();
+run().catch(e => {
+  console.error(e);
+  process.exit(1);
+});;
+
+function getAllMarkdownFiles(dirPath, filePaths = []) {
+  for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+    if (entry.isFile() && entry.name.toLowerCase().endsWith('.md'))
+      filePaths.push(path.join(dirPath, entry.name));
+    else if (entry.isDirectory())
+      getAllMarkdownFiles(path.join(dirPath, entry.name), filePaths);
+  }
+  return filePaths;
+}
 
 async function run() {
-  const startTime = Date.now();
-
-  /** @type {!Array<!Message>} */
-  const messages = [];
-  let changedFiles = false;
-
-  // Documentation checks.
+  // Patch README.md
+  const versions = await getBrowserVersions();
   {
-    const readme = await Source.readFile(path.join(PROJECT_DIR, 'README.md'));
-    const api = await Source.readFile(path.join(PROJECT_DIR, 'docs', 'api.md'));
-    const troubleshooting = await Source.readFile(path.join(PROJECT_DIR, 'docs', 'troubleshooting.md'));
-    const mdSources = [readme, api, troubleshooting];
+    const params = new Map();
+    const { chromium, firefox, webkit } = versions;
+    params.set('chromium-version', chromium);
+    params.set('firefox-version', firefox);
+    params.set('webkit-version', webkit);
+    params.set('chromium-version-badge', `[![Chromium version](https://img.shields.io/badge/chromium-${chromium}-blue.svg?logo=google-chrome)](https://www.chromium.org/Home)`);
+    params.set('firefox-version-badge', `[![Firefox version](https://img.shields.io/badge/firefox-${firefox}-blue.svg?logo=mozilla-firefox)](https://www.mozilla.org/en-US/firefox/new/)`);
+    params.set('webkit-version-badge', `[![WebKit version](https://img.shields.io/badge/webkit-${webkit}-blue.svg?logo=safari)](https://webkit.org/)`);
 
-    const preprocessor = require('./preprocessor');
-    messages.push(...await preprocessor.runCommands(mdSources, VERSION));
-    messages.push(...await preprocessor.ensureReleasedAPILinks([readme], VERSION));
-
-    const browser = await playwright.launch();
-    const page = await browser.defaultContext().newPage();
-    const checkPublicAPI = require('./check_public_api');
-    const jsSources = await Source.readdir(path.join(PROJECT_DIR, 'src'));
-    const externalDependencies = Object.keys(require('../../src/web.webpack.config').externals);
-    messages.push(...await checkPublicAPI(page, mdSources, jsSources, externalDependencies));
-    await browser.close();
-
-    for (const source of mdSources) {
-      if (!source.hasUpdatedText())
-        continue;
-      await source.save();
-      changedFiles = true;
-    }
-    
-    await readme.saveAs(path.join(PROJECT_DIR, 'packages', 'playwright', 'README.md'));
+    let content = fs.readFileSync(path.join(PROJECT_DIR, 'README.md')).toString();
+    content = content.replace(/<!-- GEN:([^ ]+) -->([^<]*)<!-- GEN:stop -->/ig, (match, p1) => {
+      if (!params.has(p1)) {
+        console.log(`ERROR: Invalid generate parameter "${p1}" in "${match}"`);
+        process.exit(1);
+      }
+      return `<!-- GEN:${p1} -->${params.get(p1)}<!-- GEN:stop -->`;
+    });
+    writeAssumeNoop(path.join(PROJECT_DIR, 'README.md'), content, dirtyFiles);
   }
 
-  // Report results.
-  const errors = messages.filter(message => message.type === 'error');
-  if (errors.length) {
-    console.log('DocLint Failures:');
-    for (let i = 0; i < errors.length; ++i) {
-      let error = errors[i].text;
-      error = error.split('\n').join('\n      ');
-      console.log(`  ${i + 1}) ${RED_COLOR}${error}${RESET_COLOR}`);
+  // Patch docker version in docs
+  {
+    let playwrightVersion = require(path.join(PROJECT_DIR, 'package.json')).version;
+    if (playwrightVersion.endsWith('-next'))
+      playwrightVersion = playwrightVersion.substring(0, playwrightVersion.indexOf('-next'));
+    const regex = new RegExp("(mcr.microsoft.com/playwright[^: ]*):?([^ ]*)");
+    for (const filePath of getAllMarkdownFiles(path.join(PROJECT_DIR, 'docs'))) {
+      let content = fs.readFileSync(filePath).toString();
+      content = content.replace(new RegExp('(mcr.microsoft.com/playwright[^:]*):([\\w\\d-.]+)', 'ig'), (match, imageName, imageVersion) => {
+        return `${imageName}:v${playwrightVersion}-focal`;
+      });
+      writeAssumeNoop(filePath, content, dirtyFiles);
     }
   }
-  const warnings = messages.filter(message => message.type === 'warning');
-  if (warnings.length) {
-    console.log('DocLint Warnings:');
-    for (let i = 0; i < warnings.length; ++i) {
-      let warning = warnings[i].text;
-      warning = warning.split('\n').join('\n      ');
-      console.log(`  ${i + 1}) ${YELLOW_COLOR}${warning}${RESET_COLOR}`);
+
+  // Update device descriptors
+  {
+    const devicesDescriptorsSourceFile = path.join(PROJECT_DIR, 'packages', 'playwright-core', 'src', 'server', 'deviceDescriptorsSource.json')
+    const devicesDescriptors = require(devicesDescriptorsSourceFile)
+    for (const deviceName of Object.keys(devicesDescriptors)) {
+      switch (devicesDescriptors[deviceName].defaultBrowserType) {
+        case 'chromium':
+          devicesDescriptors[deviceName].userAgent = devicesDescriptors[deviceName].userAgent.replace(
+            /(.*Chrome\/)(.*?)( .*)/,
+            `$1${versions.chromium}$3`
+          ).replace(
+            /(.*Edg\/)(.*?)$/,
+            `$1${versions.chromium}`
+          )
+          break;
+        case 'firefox':
+          devicesDescriptors[deviceName].userAgent = devicesDescriptors[deviceName].userAgent.replace(
+            /^(.*Firefox\/)(.*?)( .*?)?$/,
+            `$1${versions.firefox}$3`
+          ).replace(/^(.*rv:)(.*)(\).*?)$/, `$1${versions.firefox}$3`)
+          break;
+        case 'webkit':
+          devicesDescriptors[deviceName].userAgent = devicesDescriptors[deviceName].userAgent.replace(
+            /(.*Version\/)(.*?)( .*)/,
+            `$1${versions.webkit}$3`
+          )
+          break;
+        default:
+          break;
+      }
+    }
+    writeAssumeNoop(devicesDescriptorsSourceFile, JSON.stringify(devicesDescriptors, null, 2), dirtyFiles);
+  }
+
+  // Validate links
+  {
+    const langs = ['js', 'java', 'python', 'csharp'];
+    const documentationRoot = path.join(PROJECT_DIR, 'docs', 'src');
+    for (const lang of langs) {
+      try {
+        let documentation = parseApi(path.join(documentationRoot, 'api'));
+        documentation.filterForLanguage(lang);
+        if (lang === 'js') {
+          const testDocumentation = parseApi(path.join(documentationRoot, 'test-api'), path.join(documentationRoot, 'api', 'params.md'));
+          testDocumentation.filterForLanguage('js');
+          const testRerpoterDocumentation = parseApi(path.join(documentationRoot, 'test-reporter-api'));
+          testRerpoterDocumentation.filterForLanguage('js');
+          documentation = documentation.mergeWith(testDocumentation).mergeWith(testRerpoterDocumentation);
+        }
+
+        // This validates member links.
+        documentation.setLinkRenderer(() => undefined);
+
+        const relevantMarkdownFiles = new Set([...getAllMarkdownFiles(documentationRoot)
+          // filter out language specific files
+          .filter(filePath => {
+            const matches = filePath.match(/(-(js|python|csharp|java))+?/g);
+            // no language specific document
+            if (!matches)
+              return true;
+            // there is a language, lets filter for it
+            return matches.includes(`-${lang}`);
+          })
+          // Standardise naming and remove the filter in the file name
+          .map(filePath => filePath.replace(/(-(js|python|csharp|java))+/, ''))
+          // Internally (playwright.dev generator) we merge test-api and test-reporter-api into api.
+          .map(filePath => filePath.replace(/(\/|\\)(test-api|test-reporter-api)(\/|\\)/, `${path.sep}api${path.sep}`))]);
+
+        for (const filePath of getAllMarkdownFiles(documentationRoot)) {
+          if (langs.some(other => other !== lang && filePath.endsWith(`-${other}.md`)))
+            continue;
+          const data = fs.readFileSync(filePath, 'utf-8');
+          const rootNode = md.filterNodesForLanguage(md.parse(data), lang);
+          documentation.renderLinksInText(rootNode);
+          // Validate links
+          {
+            md.visitAll(rootNode, node => {
+              if (!node.text)
+                return;
+              for (const [, mdLinkName, mdLink] of node.text.matchAll(/\[([\w\s\d]+)\]\((.*?)\)/g)) {
+                const isExternal = mdLink.startsWith('http://') || mdLink.startsWith('https://');
+                if (isExternal)
+                  continue;
+                // ignore links with only a hash (same file)
+                if (mdLink.startsWith('#'))
+                  continue;
+
+                // The assertion classes are "virtual files" which get merged into test-assertions.md inside our docs generator
+                let markdownBasePath = path.dirname(filePath);
+                if ([
+                  'class-screenshotassertions.md',
+                  'class-locatorassertions.md',
+                  'class-pageassertions.md'
+                ].includes(path.basename(filePath))) {
+                  markdownBasePath = documentationRoot;
+                }
+
+                let linkWithoutHash = path.join(markdownBasePath, mdLink.split('#')[0]);
+                if (path.extname(linkWithoutHash) !== '.md')
+                  linkWithoutHash += '.md';
+
+                // We generate it inside the generator (playwright.dev)
+                if (path.basename(linkWithoutHash) === 'test-assertions.md')
+                  return;
+
+                if (!relevantMarkdownFiles.has(linkWithoutHash))
+                  throw new Error(`${path.relative(PROJECT_DIR, filePath)} references to '${linkWithoutHash}' as '${mdLinkName}' which does not exist.`);
+              }
+            });
+          }
+        }
+      } catch (e) {
+        e.message = `While processing "${lang}"\n` + e.message;
+        throw e;
+      }
     }
   }
-  let clearExit = messages.length === 0;
-  if (changedFiles) {
-    if (clearExit)
-      console.log(`${YELLOW_COLOR}Some files were updated.${RESET_COLOR}`);
-    clearExit = false;
+
+  // Check for missing docs
+  {
+    const apiDocumentation = parseApi(path.join(PROJECT_DIR, 'docs', 'src', 'api'));
+    apiDocumentation.filterForLanguage('js');
+    const srcClient = path.join(PROJECT_DIR, 'packages', 'playwright-core', 'src', 'client');
+    const sources = fs.readdirSync(srcClient).map(n => path.join(srcClient, n));
+    const errors = missingDocs(apiDocumentation, sources, path.join(srcClient, 'api.ts'));
+    if (errors.length) {
+      console.log('============================');
+      console.log('ERROR: missing documentation:');
+      errors.forEach(e => console.log(e));
+      console.log('============================')
+      process.exit(1);
+    }
   }
-  console.log(`${errors.length} failures, ${warnings.length} warnings.`);
-  const runningTime = Date.now() - startTime;
-  console.log(`DocLint Finished in ${runningTime / 1000} seconds`);
-  process.exit(clearExit ? 0 : 1);
+
+  if (dirtyFiles.size) {
+    console.log('============================')
+    console.log('ERROR: generated files have changed, this is only error if happens in CI:');
+    [...dirtyFiles].forEach(f => console.log(f));
+    console.log('============================')
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
+/**
+ * @param {string} name
+ * @param {string} content
+ * @param {Set<string>} dirtyFiles
+ */
+function writeAssumeNoop(name, content, dirtyFiles) {
+  fs.mkdirSync(path.dirname(name), { recursive: true });
+  const oldContent = fs.existsSync(name) ? fs.readFileSync(name).toString() : '';
+  if (oldContent !== content) {
+    fs.writeFileSync(name, content);
+    dirtyFiles.add(name);
+  }
+}
+
+async function getBrowserVersions() {
+  const names = ['chromium', 'firefox', 'webkit'];
+  const browsers = await Promise.all(names.map(name => playwright[name].launch()));
+  const result = {};
+  for (let i = 0; i < names.length; i++) {
+    result[names[i]] = browsers[i].version();
+  }
+  await Promise.all(browsers.map(browser => browser.close()));
+  return result;
 }

@@ -13,5 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const {downloadBrowser} = require('playwright-core/download-browser');
-downloadBrowser('chromium');
+
+let install;
+
+try {
+  if (!require('playwright-core/lib/utils').isLikelyNpxGlobal())
+    install = require('playwright-core/lib/server').installBrowsersForNpmInstall;
+} catch (e) {
+  // Dev build, don't install browsers by default.
+}
+
+if (install)
+  install(['chromium', 'ffmpeg']);

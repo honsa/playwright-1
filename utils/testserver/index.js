@@ -19,20 +19,25 @@ const https = require('https');
 const url = require('url');
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
+const util = require('util');
 const mime = require('mime');
 const WebSocketServer = require('ws').Server;
 
 const fulfillSymbol = Symbol('fullfil callback');
 const rejectSymbol = Symbol('reject callback');
 
+const gzipAsync = util.promisify(zlib.gzip.bind(zlib));
+
 class TestServer {
   /**
    * @param {string} dirPath
    * @param {number} port
-   * @return {!TestServer}
+   * @param {string=} loopback
+   * @return {!Promise<TestServer>}
    */
-  static async create(dirPath, port) {
-    const server = new TestServer(dirPath, port);
+  static async create(dirPath, port, loopback) {
+    const server = new TestServer(dirPath, port, loopback);
     await new Promise(x => server._server.once('listening', x));
     return server;
   }
@@ -40,12 +45,13 @@ class TestServer {
   /**
    * @param {string} dirPath
    * @param {number} port
-   * @return {!TestServer}
+   * @param {string=} loopback
+   * @return {!Promise<TestServer>}
    */
-  static async createHTTPS(dirPath, port) {
-    const server = new TestServer(dirPath, port, {
-      key: fs.readFileSync(path.join(__dirname, 'key.pem')),
-      cert: fs.readFileSync(path.join(__dirname, 'cert.pem')),
+  static async createHTTPS(dirPath, port, loopback) {
+    const server = new TestServer(dirPath, port, loopback, {
+      key: await fs.promises.readFile(path.join(__dirname, 'key.pem')),
+      cert: await fs.promises.readFile(path.join(__dirname, 'cert.pem')),
       passphrase: 'aaaa',
     });
     await new Promise(x => server._server.once('listening', x));
@@ -55,43 +61,67 @@ class TestServer {
   /**
    * @param {string} dirPath
    * @param {number} port
+   * @param {string=} loopback
    * @param {!Object=} sslOptions
    */
-  constructor(dirPath, port, sslOptions) {
+  constructor(dirPath, port, loopback, sslOptions) {
     if (sslOptions)
       this._server = https.createServer(sslOptions, this._onRequest.bind(this));
     else
       this._server = http.createServer(this._onRequest.bind(this));
     this._server.on('connection', socket => this._onSocket(socket));
-    this._wsServer = new WebSocketServer({server: this._server, path: '/ws'});
-    this._wsServer.on('connection', this._onWebSocketConnection.bind(this));
+    this._wsServer = new WebSocketServer({ noServer: true });
+    this._server.on('upgrade', async (request, socket, head) => {
+      const pathname = url.parse(request.url).pathname;
+      if (pathname === '/ws-slow')
+        await new Promise(f => setTimeout(f, 2000));
+      if (!['/ws', '/ws-slow'].includes(pathname)) {
+        socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
+        socket.destroy();
+        return;
+      }
+      this._wsServer.handleUpgrade(request, socket, head, ws => {
+        // Next emit is only for our internal 'connection' listeners.
+        this._wsServer.emit('connection', ws, request);
+      });
+    });
     this._server.listen(port);
     this._dirPath = dirPath;
+    this.debugServer = require('debug')('pw:testserver');
 
     this._startTime = new Date();
     this._cachedPathPrefix = null;
 
-    /** @type {!Set<!net.Socket>} */
+    /** @type {!Set<!NodeJS.Socket>} */
     this._sockets = new Set();
-
-    /** @type {!Map<string, function(!IncomingMessage, !ServerResponse)>} */
+    /** @type {!Map<string, function(!http.IncomingMessage,http.ServerResponse)>} */
     this._routes = new Map();
     /** @type {!Map<string, !{username:string, password:string}>} */
     this._auths = new Map();
     /** @type {!Map<string, string>} */
     this._csp = new Map();
+    /** @type {!Map<string, Object>} */
+    this._extraHeaders = new Map();
     /** @type {!Set<string>} */
     this._gzipRoutes = new Set();
     /** @type {!Map<string, !Promise>} */
     this._requestSubscribers = new Map();
+
+    const cross_origin = loopback || '127.0.0.1';
+    const same_origin = loopback || 'localhost';
+    const protocol = sslOptions ? 'https' : 'http';
+    this.PORT = port;
+    this.PREFIX = `${protocol}://${same_origin}:${port}`;
+    this.CROSS_PROCESS_PREFIX = `${protocol}://${cross_origin}:${port}`;
+    this.EMPTY_PAGE = `${protocol}://${same_origin}:${port}/empty.html`;
   }
 
   _onSocket(socket) {
     this._sockets.add(socket);
-    // ECONNRESET is a legit error given
-    // that tab closing simply kills process.
+    // ECONNRESET and HPE_INVALID_EOF_STATE are legit errors given
+    // that tab closing aborts outgoing connections to the server.
     socket.on('error', error => {
-      if (error.code !== 'ECONNRESET')
+      if (error.code !== 'ECONNRESET' && error.code !== 'HPE_INVALID_EOF_STATE')
         throw error;
     });
     socket.once('close', () => this._sockets.delete(socket));
@@ -110,6 +140,7 @@ class TestServer {
    * @param {string} password
    */
   setAuth(path, username, password) {
+    this.debugServer(`set auth for ${path} to ${username}:${password}`);
     this._auths.set(path, {username, password});
   }
 
@@ -125,6 +156,14 @@ class TestServer {
     this._csp.set(path, csp);
   }
 
+  /**
+   * @param {string} path
+   * @param {Object<string, string>} object
+   */
+  setExtraHeaders(path, object) {
+    this._extraHeaders.set(path, object);
+  }
+
   async stop() {
     this.reset();
     for (const socket of this._sockets)
@@ -135,7 +174,7 @@ class TestServer {
 
   /**
    * @param {string} path
-   * @param {function(!IncomingMessage, !ServerResponse)} handler
+   * @param {function(!http.IncomingMessage,http.ServerResponse)} handler
    */
   setRoute(path, handler) {
     this._routes.set(path, handler);
@@ -147,14 +186,15 @@ class TestServer {
    */
   setRedirect(from, to) {
     this.setRoute(from, (req, res) => {
-      res.writeHead(302, { location: to });
+      let headers = this._extraHeaders.get(req.url) || {};
+      res.writeHead(302, { ...headers, location: to });
       res.end();
     });
   }
 
   /**
    * @param {string} path
-   * @return {!Promise<!IncomingMessage>}
+   * @return {!Promise<!http.IncomingMessage>}
    */
   waitForRequest(path) {
     let promise = this._requestSubscribers.get(path);
@@ -175,6 +215,7 @@ class TestServer {
     this._routes.clear();
     this._auths.clear();
     this._csp.clear();
+    this._extraHeaders.clear();
     this._gzipRoutes.clear();
     const error = new Error('Static Server has been reset');
     for (const subscriber of this._requestSubscribers.values())
@@ -182,6 +223,10 @@ class TestServer {
     this._requestSubscribers.clear();
   }
 
+  /**
+   * @param {http.IncomingMessage} request
+   * @param {http.ServerResponse} response
+   */
   _onRequest(request, response) {
     request.on('error', error => {
       if (error.code === 'ECONNRESET')
@@ -190,43 +235,51 @@ class TestServer {
         throw error;
     });
     request.postBody = new Promise(resolve => {
-      let body = '';
-      request.on('data', chunk => body += chunk);
-      request.on('end', () => resolve(body));
+      const chunks = [];
+      request.on('data', chunk => {
+        chunks.push(chunk);
+      });
+      request.on('end', () => resolve(Buffer.concat(chunks)));
     });
-    const pathName = url.parse(request.url).path;
-    if (this._auths.has(pathName)) {
-      const auth = this._auths.get(pathName);
+    const path = url.parse(request.url).path;
+    this.debugServer(`request ${request.method} ${path}`);
+    if (this._auths.has(path)) {
+      const auth = this._auths.get(path);
       const credentials = Buffer.from((request.headers.authorization || '').split(' ')[1] || '', 'base64').toString();
+      this.debugServer(`request credentials ${credentials}`);
+      this.debugServer(`actual credentials ${auth.username}:${auth.password}`);
       if (credentials !== `${auth.username}:${auth.password}`) {
+        this.debugServer(`request write www-auth`);
         response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Secure Area"' });
         response.end('HTTP Error 401 Unauthorized: Access is denied');
         return;
       }
     }
     // Notify request subscriber.
-    if (this._requestSubscribers.has(pathName)) {
-      this._requestSubscribers.get(pathName)[fulfillSymbol].call(null, request);
-      this._requestSubscribers.delete(pathName);
+    if (this._requestSubscribers.has(path)) {
+      this._requestSubscribers.get(path)[fulfillSymbol].call(null, request);
+      this._requestSubscribers.delete(path);
     }
-    const handler = this._routes.get(pathName);
+    const handler = this._routes.get(path);
     if (handler) {
       handler.call(null, request, response);
     } else {
-      const pathName = url.parse(request.url).path;
-      this.serveFile(request, response, pathName);
+      this.serveFile(request, response);
     }
   }
 
   /**
-   * @param {!IncomingMessage} request
-   * @param {!ServerResponse} response
-   * @param {string} pathName
+   * @param {!http.IncomingMessage} request
+   * @param {!http.ServerResponse} response
+   * @param {string|undefined} filePath
    */
-  serveFile(request, response, pathName) {
-    if (pathName === '/')
-      pathName = '/index.html';
-    const filePath = path.join(this._dirPath, pathName.substring(1));
+  async serveFile(request, response, filePath) {
+    let pathName = url.parse(request.url).path;
+    if (!filePath) {
+      if (pathName === '/')
+        pathName = '/index.html';
+      filePath = path.join(this._dirPath, pathName.substring(1));
+    }
 
     if (this._cachedPathPrefix !== null && filePath.startsWith(this._cachedPathPrefix)) {
       if (request.headers['if-modified-since']) {
@@ -242,30 +295,49 @@ class TestServer {
     if (this._csp.has(pathName))
       response.setHeader('Content-Security-Policy', this._csp.get(pathName));
 
-    fs.readFile(filePath, (err, data) => {
-      if (err) {
-        response.statusCode = 404;
-        response.end(`File not found: ${filePath}`);
-        return;
-      }
-      const mimeType = mime.getType(filePath);
-      const isTextEncoding = /^text\/|^application\/(javascript|json)/.test(mimeType);
-      const contentType = isTextEncoding ? `${mimeType}; charset=utf-8` : mimeType;
-      response.setHeader('Content-Type', contentType);
-      if (this._gzipRoutes.has(pathName)) {
-        response.setHeader('Content-Encoding', 'gzip');
-        const zlib = require('zlib');
-        zlib.gzip(data, (_, result) => {
-          response.end(result);
-        });
-      } else {
-        response.end(data);
-      }
+    if (this._extraHeaders.has(pathName)) {
+      const object = this._extraHeaders.get(pathName);
+      for (const key in object)
+        response.setHeader(key, object[key]);
+    }
+
+    const {err, data} = await fs.promises.readFile(filePath).then(data => ({data})).catch(err => ({err}));
+    // The HTTP transaction might be already terminated after async hop here - do nothing in this case.
+    if (response.writableEnded)
+      return;
+    if (err) {
+      response.statusCode = 404;
+      response.end(`File not found: ${filePath}`);
+      return;
+    }
+    const extension = filePath.substring(filePath.lastIndexOf('.') + 1);
+    const mimeType = mime.getType(extension) || 'application/octet-stream';
+    const isTextEncoding = /^text\/|^application\/(javascript|json)/.test(mimeType);
+    const contentType = isTextEncoding ? `${mimeType}; charset=utf-8` : mimeType;
+    response.setHeader('Content-Type', contentType);
+    if (this._gzipRoutes.has(pathName)) {
+      response.setHeader('Content-Encoding', 'gzip');
+      const result = await gzipAsync(data);
+      // The HTTP transaction might be already terminated after async hop here.
+      if (!response.writableEnded)
+        response.end(result);
+    } else {
+      response.end(data);
+    }
+  }
+
+  onceWebSocketConnection(handler) {
+    this._wsServer.once('connection', handler);
+  }
+
+  waitForWebSocketConnectionRequest() {
+    return new Promise(fullfil => {
+      this._wsServer.once('connection', (ws, req) => fullfil(req));
     });
   }
 
-  _onWebSocketConnection(ws) {
-    ws.send('incoming');
+  sendOnWebSocketConnection(data) {
+    this.onceWebSocketConnection(ws => ws.send(data));
   }
 }
 

@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "dependencies": {
+    "@playwright/test": "1.22.0-alpha-may-11-2022"
+  }
+}

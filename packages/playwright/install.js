@@ -13,9 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const {downloadBrowser} = require('playwright-core/download-browser');
-(async function() {
-  await downloadBrowser('chromium');
-  await downloadBrowser('firefox');
-  await downloadBrowser('webkit');
-})();
+
+let install;
+
+try {
+  if (!require('playwright-core/lib/utils').isLikelyNpxGlobal())
+    install = require('playwright-core/lib/server').installDefaultBrowsersForNpmInstall;
+} catch (e) {
+  // Dev build, don't install browsers by default.
+}
+
+if (install)
+  install();
