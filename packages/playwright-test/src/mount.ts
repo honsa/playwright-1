@@ -14,59 +14,66 @@
  * limitations under the License.
  */
 
-import type { Fixtures, Locator, Page, BrowserContextOptions, PlaywrightTestArgs, PlaywrightTestOptions, PlaywrightWorkerArgs } from './types';
+import { normalizeTraceMode, normalizeVideoMode, shouldCaptureTrace, shouldCaptureVideo } from './index';
+import type { Fixtures, Locator, Page, BrowserContextOptions, PlaywrightTestArgs, PlaywrightTestOptions, PlaywrightWorkerArgs, PlaywrightWorkerOptions, BrowserContext } from './types';
 
 let boundCallbacksForMount: Function[] = [];
 
-export const fixtures: Fixtures<PlaywrightTestArgs & PlaywrightTestOptions & { mount: (component: any, options: any) => Promise<Locator> }, PlaywrightWorkerArgs & { _ctPage: { page: Page | undefined, hash: string } }>  = {
-  _ctPage: [{ page: undefined, hash: '' }, { scope: 'worker' }],
+export const fixtures: Fixtures<
+  PlaywrightTestArgs & PlaywrightTestOptions & { mount: (component: any, options: any) => Promise<Locator> },
+  PlaywrightWorkerArgs & PlaywrightWorkerOptions & { _ctWorker: { context: BrowserContext | undefined, hash: string } },
+  { _contextFactory: (options?: BrowserContextOptions) => Promise<BrowserContext> }> = {
 
-  context: async ({ page }, use) => {
-    await use(page.context());
-  },
+    _ctWorker: [{ context: undefined, hash: '' }, { scope: 'worker' }],
 
-  page: async ({ _ctPage, browser, viewport, playwright }, use) => {
-    const defaultContextOptions = (playwright.chromium as any)._defaultContextOptions as BrowserContextOptions;
-    const hash = contextHash(defaultContextOptions);
+    context: async ({ playwright, browser, _ctWorker, _contextFactory, video, trace }, use, testInfo) => {
+      const isolateTests = shouldCaptureVideo(normalizeVideoMode(video), testInfo) || shouldCaptureTrace(normalizeTraceMode(trace), testInfo);
+      const defaultContextOptions = (playwright.chromium as any)._defaultContextOptions as BrowserContextOptions;
+      const hash = contextHash(defaultContextOptions);
 
-    if (!_ctPage.page || _ctPage.hash !== hash) {
-      if (_ctPage.page)
-        await _ctPage.page.close();
-      const page = await (browser as any)._wrapApiCall(async () => {
-        const page = await browser.newPage();
-        await page.addInitScript('navigator.serviceWorker.register = () => {}');
-        await page.exposeFunction('__pw_dispatch', (ordinal: number, args: any[]) => {
+      if (!_ctWorker.context || _ctWorker.hash !== hash || isolateTests) {
+        if (_ctWorker.context)
+          await _ctWorker.context.close();
+        // Context factory sets up video so we want to use that for isolated contexts.
+        // However, it closes the context after the test, so we don't want to use it
+        // for shared contexts.
+        _ctWorker.context = isolateTests ? await _contextFactory() : await browser.newContext();
+        _ctWorker.hash = hash;
+        await _ctWorker.context.addInitScript('navigator.serviceWorker.register = () => {}');
+        await _ctWorker.context.exposeFunction('__pw_dispatch', (ordinal: number, args: any[]) => {
           boundCallbacksForMount[ordinal](...args);
         });
-        await page.goto(process.env.PLAYWRIGHT_VITE_COMPONENTS_BASE_URL!);
-        return page;
-      }, true);
-      _ctPage.page = page;
-      _ctPage.hash = hash;
-      await use(page);
-    } else {
-      const page = _ctPage.page;
-      await (page as any)._wrapApiCall(async () => {
-        await (page as any)._resetForReuse();
-        await (page.context() as any)._resetForReuse();
-        await page.goto('about:blank');
-        await page.setViewportSize(viewport || { width: 1280, height: 800 });
-        await page.goto(process.env.PLAYWRIGHT_VITE_COMPONENTS_BASE_URL!);
-      }, true);
-      await use(page);
-    }
-  },
+      } else {
+        await (_ctWorker.context as any)._resetForReuse();
+      }
+      await use(_ctWorker.context);
+    },
 
-  mount: async ({ page }, use) => {
-    await use(async (component, options) => {
-      const selector = await (page as any)._wrapApiCall(async () => {
-        return await innerMount(page, component, options);
+    page: async ({ context, viewport }, use) => {
+      let page = context.pages()[0];
+      await (context as any)._wrapApiCall(async () => {
+        if (!page) {
+          page = await context.newPage();
+        } else {
+          await (page as any)._resetForReuse();
+          await page.goto('about:blank');
+          await page.setViewportSize(viewport || { width: 1280, height: 800 });
+        }
+        await page.goto(process.env.PLAYWRIGHT_VITE_COMPONENTS_BASE_URL!);
       }, true);
-      return page.locator(selector);
-    });
-    boundCallbacksForMount = [];
-  },
-};
+      await use(page);
+    },
+
+    mount: async ({ page }, use) => {
+      await use(async (component, options) => {
+        const selector = await (page as any)._wrapApiCall(async () => {
+          return await innerMount(page, component, options);
+        }, true);
+        return page.locator(selector);
+      });
+      boundCallbacksForMount = [];
+    },
+  };
 
 async function innerMount(page: Page, jsxOrType: any, options: any): Promise<string> {
   let component;

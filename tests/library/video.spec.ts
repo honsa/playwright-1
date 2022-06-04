@@ -347,7 +347,7 @@ it.describe('screencast', () => {
     it.fixme(browserName === 'webkit' && platform === 'win32');
     it.fixme(browserName === 'firefox' && trace === 'on', 'https://github.com/microsoft/playwright/issues/10060');
 
-    const size = { width: 320, height: 240 };
+    const size = { width: 600, height: 400 };
     // Set viewport equal to screencast frame size to avoid scaling.
     const context = await browser.newContext({
       recordVideo: {
@@ -375,8 +375,9 @@ it.describe('screencast', () => {
 
   it('should work for popups', async ({ browser, server, browserName, trace }, testInfo) => {
     it.fixme(browserName === 'firefox' && trace === 'on', 'https://github.com/microsoft/playwright/issues/10060');
+    it.fixme(browserName === 'firefox', 'https://github.com/microsoft/playwright/issues/14557');
     const videosPath = testInfo.outputPath('');
-    const size = { width: 450, height: 240 };
+    const size = { width: 600, height: 400 };
     const context = await browser.newContext({
       recordVideo: {
         dir: videosPath,
@@ -514,7 +515,7 @@ it.describe('screencast', () => {
 
   it('should capture static page in persistent context @smoke', async ({ launchPersistent, browserName, trace }, testInfo) => {
     it.fixme(browserName === 'firefox' && trace === 'on', 'https://github.com/microsoft/playwright/issues/10060');
-    const size = { width: 320, height: 240 };
+    const size = { width: 600, height: 400 };
     const { context, page } = await launchPersistent({
       recordVideo: {
         dir: testInfo.outputPath(''),
@@ -532,8 +533,8 @@ it.describe('screencast', () => {
     const duration = videoPlayer.duration;
     expect(duration).toBeGreaterThan(0);
 
-    expect(videoPlayer.videoWidth).toBe(320);
-    expect(videoPlayer.videoHeight).toBe(240);
+    expect(videoPlayer.videoWidth).toBe(600);
+    expect(videoPlayer.videoHeight).toBe(400);
 
     {
       const pixels = videoPlayer.seekLastFrame().data;
@@ -656,10 +657,43 @@ it.describe('screencast', () => {
     expect(files.length).toBe(1);
   });
 
-  it('should capture full viewport on hidpi', async ({ browserType, browserName, headless }, testInfo) => {
-    it.fail(browserName === 'firefox', 'The actual picture is smaller than video frame');
+  it('should capture full viewport', async ({ browserType, browserName, headless, isWindows }, testInfo) => {
     it.fail(browserName === 'chromium' && !headless, 'The square is not on the video');
-    const size = { width: 400, height: 400 };
+    it.fail(browserName === 'firefox' && isWindows, 'https://github.com/microsoft/playwright/issues/14405');
+    const size = { width: 600, height: 400 };
+    const browser = await browserType.launch();
+
+    const videoDir = testInfo.outputPath('');
+    const context = await browser.newContext({
+      viewport: size,
+      recordVideo: {
+        dir: videoDir,
+        size,
+      },
+    });
+
+    const page = await context.newPage();
+    await page.setContent(`<div style='margin: 0; background: red; position: fixed; right:0; bottom:0; width: 30; height: 30;'></div>`);
+    await waitForRafs(page, 100);
+    await page.close();
+    await context.close();
+    await browser.close();
+
+    const videoFiles = findVideos(videoDir);
+    expect(videoFiles.length).toBe(1);
+    const videoPlayer = new VideoPlayer(videoFiles[0]);
+    expect(videoPlayer.videoWidth).toBe(size.width);
+    expect(videoPlayer.videoHeight).toBe(size.height);
+
+    // Bottom right corner should be part of the red border.
+    const pixels = videoPlayer.seekLastFrame({ x: size.width - 10, y: size.height - 10 }).data;
+    expectAll(pixels, almostRed);
+  });
+
+  it('should capture full viewport on hidpi', async ({ browserType, browserName, headless, isWindows }, testInfo) => {
+    it.fail(browserName === 'chromium' && !headless, 'The square is not on the video');
+    it.fail(browserName === 'firefox' && isWindows, 'https://github.com/microsoft/playwright/issues/14405');
+    const size = { width: 600, height: 400 };
     const browser = await browserType.launch();
 
     const videoDir = testInfo.outputPath('');
