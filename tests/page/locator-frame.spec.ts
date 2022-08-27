@@ -96,7 +96,7 @@ it('should work for $ and $$', async ({ page, server }) => {
 
 it('should wait for frame', async ({ page, server }) => {
   await page.goto(server.EMPTY_PAGE);
-  const error = await page.frameLocator('iframe').locator('span').click({ timeout: 300 }).catch(e => e);
+  const error = await page.frameLocator('iframe').locator('span').click({ timeout: 1000 }).catch(e => e);
   expect(error.message).toContain('waiting for frame "iframe"');
 });
 
@@ -107,7 +107,8 @@ it('should wait for frame 2', async ({ page, server }) => {
 });
 
 it('should wait for frame to go', async ({ page, server, isAndroid }) => {
-  it.fail(isAndroid, 'iframe is not removed on Android');
+  it.fixme(isAndroid);
+
   await routeIframe(page);
   await page.goto(server.EMPTY_PAGE);
   setTimeout(() => page.$eval('iframe', e => e.remove()).catch(() => {}), 300);

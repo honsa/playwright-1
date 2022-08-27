@@ -39,7 +39,7 @@ test('should work with the empty component list', async ({ runInlineTest }, test
   const metainfo = JSON.parse(fs.readFileSync(testInfo.outputPath('playwright/.cache/metainfo.json'), 'utf-8'));
   expect(metainfo.version).toEqual(expect.any(Number));
   expect(Object.entries(metainfo.tests)).toHaveLength(1);
-  expect(Object.entries(metainfo.sources)).toHaveLength(9);
+  expect(Object.entries(metainfo.sources)).toHaveLength(8);
 });
 
 test('should extract component list', async ({ runInlineTest }, testInfo) => {
@@ -266,4 +266,31 @@ test('should cache build', async ({ runInlineTest }, testInfo) => {
     const output = stripAnsi(result.output);
     expect(output, 'should rebuild bundle').toContain('modules transformed');
   });
+});
+
+test('should not use global config for preview', async ({ runInlineTest }) => {
+  const result1 = await runInlineTest({
+    'playwright/index.html': `<script type="module" src="/playwright/index.js"></script>`,
+    'playwright/index.js': ``,
+    'vite.config.js': `
+      export default {
+        plugins: [{
+          configurePreviewServer: () => {
+            throw new Error('Original preview throws');
+          }
+        }]
+      };
+    `,
+    'a.test.ts': `
+      //@no-header
+      import { test, expect } from '@playwright/experimental-ct-react';
+      test('pass', async ({ mount }) => {});
+    `,
+  }, { workers: 1 });
+  expect(result1.exitCode).toBe(0);
+  expect(result1.passed).toBe(1);
+
+  const result2 = await runInlineTest({}, { workers: 1 });
+  expect(result2.exitCode).toBe(0);
+  expect(result2.passed).toBe(1);
 });

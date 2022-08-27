@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+import { stringifySelector } from '../isomorphic/selectorParser';
+import type { ParsedSelector } from '../isomorphic/selectorParser';
+import type { InjectedScript } from './injectedScript';
+
 type HighlightEntry = {
   targetElement: Element,
   highlightElement: HTMLElement,
@@ -29,9 +33,12 @@ export class Highlight {
   private _highlightEntries: HighlightEntry[] = [];
   private _actionPointElement: HTMLElement;
   private _isUnderTest: boolean;
+  private _injectedScript: InjectedScript;
+  private _rafRequest: number | undefined;
 
-  constructor(isUnderTest: boolean) {
-    this._isUnderTest = isUnderTest;
+  constructor(injectedScript: InjectedScript) {
+    this._injectedScript = injectedScript;
+    this._isUnderTest = injectedScript.isUnderTest;
     this._glassPaneElement = document.createElement('x-pw-glass');
     this._glassPaneElement.style.position = 'fixed';
     this._glassPaneElement.style.top = '0';
@@ -45,8 +52,9 @@ export class Highlight {
     this._actionPointElement = document.createElement('x-pw-action-point');
     this._actionPointElement.setAttribute('hidden', 'true');
 
-    // Use a closed shadow root to prevent selectors matching our internal previews.
-    this._glassPaneShadow = this._glassPaneElement.attachShadow({ mode: isUnderTest ? 'open' : 'closed' });
+    // NOTE: do not use an open shadow root, event for test.
+    // Closed shadow root prevents selectors matching our internal previews.
+    this._glassPaneShadow = this._glassPaneElement.attachShadow({ mode: 'closed' });
     this._glassPaneShadow.appendChild(this._actionPointElement);
     const styleElement = document.createElement('style');
     styleElement.textContent = `
@@ -94,7 +102,16 @@ export class Highlight {
     document.documentElement.appendChild(this._glassPaneElement);
   }
 
+  runHighlightOnRaf(selector: ParsedSelector) {
+    if (this._rafRequest)
+      cancelAnimationFrame(this._rafRequest);
+    this.updateHighlight(this._injectedScript.querySelectorAll(selector, document.documentElement), stringifySelector(selector), false);
+    this._rafRequest = requestAnimationFrame(() => this.runHighlightOnRaf(selector));
+  }
+
   uninstall() {
+    if (this._rafRequest)
+      cancelAnimationFrame(this._rafRequest);
     this._glassPaneElement.remove();
   }
 
@@ -158,6 +175,8 @@ export class Highlight {
         tooltipElement.style.top = '0';
         tooltipElement.style.left = '0';
         tooltipElement.style.display = 'flex';
+        if (this._isUnderTest)
+          console.error('Highlight text for test: ' + JSON.stringify(tooltipElement.textContent)); // eslint-disable-line no-console
       }
       this._highlightEntries.push({ targetElement: elements[i], tooltipElement, highlightElement });
     }

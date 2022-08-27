@@ -27,7 +27,7 @@ value can be changed by using the [`method: BrowserContext.setDefaultTimeout`].
 - `strict` <[boolean]>
 
 When true, the call requires selector to resolve to a single element. If given selector resolves to more
-then one element, the call throws an exception.
+than one element, the call throws an exception.
 
 ## input-timeout
 - `timeout` <[float]>
@@ -56,11 +56,13 @@ A selector to search for an element. If there are multiple elements satisfying t
 
 ## input-source
 - `source` <[string]>
+
 A selector to search for an element to drag. If there are multiple elements satisfying the selector, the first will be used. See
 [working with selectors](../selectors.md) for more details.
 
 ## input-target
 - `target` <[string]>
+
 A selector to search for an element to drop onto. If there are multiple elements satisfying the selector, the first will be used. See
 [working with selectors](../selectors.md) for more details.
 
@@ -532,10 +534,6 @@ to `'no-preference'`.
 Emulates `'forced-colors'` media feature, supported values are `'active'`, `'none'`. See [`method: Page.emulateMedia`] for more details. Defaults
 to `'none'`.
 
-:::note
-It's not supported in WebKit, see [here](https://bugs.webkit.org/show_bug.cgi?id=225281) in their issue tracker.
-:::
-
 ## context-option-logger
 * langs: js
 - `logger` <[Logger]>
@@ -560,8 +558,11 @@ Logger sink for Playwright logging.
 * langs: js
 - `recordHar` <[Object]>
   - `omitContent` ?<[boolean]> Optional setting to control whether to omit request content from the HAR. Defaults to
-    `false`.
-  - `path` <[path]> Path on the filesystem to write the HAR file to.
+    `false`. Deprecated, use `content` policy instead.
+  - `content` ?<[HarContentPolicy]<"omit"|"embed"|"attach">> Optional setting to control resource content management. If `omit` is specified, content is not persisted. If `attach` is specified, resources are persistet as separate files or entries in the ZIP archive. If `embed` is specified, content is stored inline the HAR file as per HAR specification. Defaults to `attach` for `.zip` output files and to `embed` for all other file extensions.
+  - `path` <[path]> Path on the filesystem to write the HAR file to. If the file name ends with `.zip`, `content: 'attach'` is used by default.
+  - `mode` ?<[HarMode]<"full"|"minimal">> When set to `minimal`, only record information necessary for routing from HAR. This omits sizes, timing, page, cookies, security and other types of HAR information that are not used when replaying from HAR. Defaults to `full`.
+  - `urlFilter` ?<[string]|[RegExp]> A glob or regex pattern to filter requests that are stored in the HAR. When a [`option: baseURL`] via the context options was provided and the passed URL is a path, it gets merged via the [`new URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor.
 
 Enables [HAR](http://www.softwareishard.com/blog/har-12-spec) recording for all pages into `recordHar.path` file. If not
 specified, the HAR is not recorded. Make sure to await [`method: BrowserContext.close`] for the HAR to be
@@ -582,6 +583,25 @@ call [`method: BrowserContext.close`] for the HAR to be saved.
 - `recordHarOmitContent` ?<[boolean]>
 
 Optional setting to control whether to omit request content from the HAR. Defaults to `false`.
+
+## context-option-recordhar-content
+* langs: csharp, java, python
+  - alias-python: record_har_content
+- `recordHarContent` ?<[HarContentPolicy]<"omit"|"embed"|"attach">>
+
+Optional setting to control resource content management. If `omit` is specified, content is not persisted. If `attach` is specified, resources are persistet as separate files and all of these files are archived along with the HAR file. Defaults to `embed`, which stores content inline the HAR file as per HAR specification.
+
+## context-option-recordhar-mode
+* langs: csharp, java, python
+  - alias-python: record_har_mode
+- `recordHarMode` ?<[HarMode]<"full"|"minimal">>
+
+When set to `minimal`, only record information necessary for routing from HAR. This omits sizes, timing, page, cookies, security and other types of HAR information that are not used when replaying from HAR. Defaults to `full`.
+
+## context-option-recordhar-url-filter
+* langs: csharp, java, python
+  - alias-python: record_har_url_filter
+- `recordHarUrlFilter` ?<[string]|[RegExp]>
 
 ## context-option-recordvideo
 * langs: js
@@ -636,9 +656,17 @@ contexts override the proxy, global proxy will be never used and can be any stri
 ## context-option-strict
 - `strictSelectors` <[boolean]>
 
-It specified, enables strict selectors mode for this context. In the strict selectors mode all operations
+If specified, enables strict selectors mode for this context. In the strict selectors mode all operations
 on selectors that imply single target DOM element will throw when more than one element matches the selector.
 See [Locator] to learn more about the strict mode.
+
+## context-option-service-worker-policy
+- `serviceWorkers` <[ServiceWorkerPolicy]<"allow"|"block">>
+
+Whether to allow sites to register Service workers. Defaults to `'allow'`.
+* `'allow'`: [Service Workers](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API) can be registered.
+* `'block'`: Playwright will block all registration of Service Workers.
+
 
 ## select-options-values
 * langs: java, js, csharp
@@ -760,7 +788,7 @@ An acceptable ratio of pixels that are different to the total amount of pixels, 
 
 An acceptable perceived color difference in the [YIQ color space](https://en.wikipedia.org/wiki/YIQ) between the same pixel in compared images, between zero (strict) and one (lax), default is configurable with `TestConfig.expect`. Defaults to `0.2`.
 
-## shared-context-params-list
+## shared-context-params-list-v1.8
 - %%-context-option-acceptdownloads-%%
 - %%-context-option-ignorehttpserrors-%%
 - %%-context-option-bypasscsp-%%
@@ -791,10 +819,14 @@ An acceptable perceived color difference in the [YIQ color space](https://en.wik
 - %%-context-option-recordhar-%%
 - %%-context-option-recordhar-path-%%
 - %%-context-option-recordhar-omit-content-%%
+- %%-context-option-recordhar-content-%%
+- %%-context-option-recordhar-mode-%%
+- %%-context-option-recordhar-url-filter-%%
 - %%-context-option-recordvideo-%%
 - %%-context-option-recordvideo-dir-%%
 - %%-context-option-recordvideo-size-%%
 - %%-context-option-strict-%%
+- %%-context-option-service-worker-policy-%%
 
 ## browser-option-args
 - `args` <[Array]<[string]>>
@@ -892,7 +924,7 @@ If specified, traces are saved into this directory.
 
 Slows down Playwright operations by the specified amount of milliseconds. Useful so that you can see what is going on.
 
-## shared-browser-options-list
+## shared-browser-options-list-v1.8
 - %%-browser-option-args-%%
 - %%-browser-option-channel-%%
 - %%-browser-option-chromiumsandbox-%%
@@ -924,7 +956,7 @@ For example, `article` that has `text=Playwright` matches `<article><div>Playwri
 
 Note that outer and inner locators must belong to the same frame. Inner locator must not contain [FrameLocator]s.
 
-## locator-options-list
+## locator-options-list-v1.14
 - %%-locator-option-has-text-%%
 - %%-locator-option-has-%%
 
@@ -972,7 +1004,7 @@ Specify screenshot type, defaults to `png`.
 ## screenshot-option-mask
 - `mask` <[Array]<[Locator]>>
 
-Specify locators that should be masked when the screenshot is taken. Masked elements will be overlayed with
+Specify locators that should be masked when the screenshot is taken. Masked elements will be overlaid with
 a pink box `#FF00FF` that completely covers its bounding box.
 
 ## screenshot-option-full-page
@@ -1009,7 +1041,7 @@ Defaults to `"css"`.
 
 When set to `"hide"`, screenshot will hide text caret. When set to `"initial"`, text caret behavior will not be changed.  Defaults to `"hide"`.
 
-## screenshot-options-common-list
+## screenshot-options-common-list-v1.8
 - %%-screenshot-option-animations-%%
 - %%-screenshot-option-omit-background-%%
 - %%-screenshot-option-quality-%%
@@ -1019,4 +1051,3 @@ When set to `"hide"`, screenshot will hide text caret. When set to `"initial"`, 
 - %%-screenshot-option-type-%%
 - %%-screenshot-option-mask-%%
 - %%-input-timeout-%%
-

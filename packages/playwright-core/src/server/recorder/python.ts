@@ -26,8 +26,9 @@ import { escapeWithQuotes } from '../../utils/isomorphic/stringUtils';
 import deviceDescriptors from '../deviceDescriptors';
 
 export class PythonLanguageGenerator implements LanguageGenerator {
-  id = 'python';
-  fileName = 'Python';
+  id: string;
+  groupName = 'Python';
+  name: string;
   highlighter = 'python';
 
   private _awaitPrefix: '' | 'await ';
@@ -37,7 +38,7 @@ export class PythonLanguageGenerator implements LanguageGenerator {
 
   constructor(isAsync: boolean, isPyTest: boolean) {
     this.id = isPyTest ? 'pytest' : (isAsync ? 'python-async' : 'python');
-    this.fileName = isPyTest ? 'Pytest' : (isAsync ? 'Python Async' : 'Python');
+    this.name = isPyTest ? 'Pytest' : (isAsync ? 'Library Async' : 'Library');
     this._isAsync = isAsync;
     this._isPyTest = isPyTest;
     this._awaitPrefix = isAsync ? 'await ' : '';
@@ -240,7 +241,7 @@ function toSnakeCase(name: string): string {
 }
 
 function formatOptions(value: any, hasArguments: boolean, asDict?: boolean): string {
-  const keys = Object.keys(value);
+  const keys = Object.keys(value).filter(key => value[key] !== undefined).sort();
   if (!keys.length)
     return '';
   return (hasArguments ? ', ' : '') + keys.map(key => {
@@ -250,11 +251,24 @@ function formatOptions(value: any, hasArguments: boolean, asDict?: boolean): str
   }).join(', ');
 }
 
+function convertContextOptions(options: BrowserContextOptions): any {
+  const result: any = { ...options };
+  if (options.recordHar) {
+    result['record_har_path'] = options.recordHar.path;
+    result['record_har_content'] = options.recordHar.content;
+    result['record_har_mode'] = options.recordHar.mode;
+    result['record_har_omit_content'] = options.recordHar.omitContent;
+    result['record_har_url_filter'] = options.recordHar.urlFilter;
+    delete result.recordHar;
+  }
+  return result;
+}
+
 function formatContextOptions(options: BrowserContextOptions, deviceName: string | undefined, asDict?: boolean): string {
   const device = deviceName && deviceDescriptors[deviceName];
   if (!device)
-    return formatOptions(options, false, asDict);
-  return `**playwright.devices[${quote(deviceName!)}]` + formatOptions(sanitizeDeviceOptions(device, options), true, asDict);
+    return formatOptions(convertContextOptions(options), false, asDict);
+  return `**playwright.devices[${quote(deviceName!)}]` + formatOptions(convertContextOptions(sanitizeDeviceOptions(device, options)), true, asDict);
 }
 
 class PythonFormatter {

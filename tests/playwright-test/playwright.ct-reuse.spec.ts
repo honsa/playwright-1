@@ -26,28 +26,41 @@ test('should reuse context', async ({ runInlineTest }) => {
     'src/reuse.test.tsx': `
       //@no-header
       import { test, expect } from '@playwright/experimental-ct-react';
-      let lastContext;
+      let lastContextGuid;
 
       test('one', async ({ context }) => {
-        lastContext = context;
+        lastContextGuid = context._guid;
       });
 
       test('two', async ({ context }) => {
-        expect(context).toBe(lastContext);
+        expect(context._guid).toBe(lastContextGuid);
       });
 
-      test.describe('Dark', () => {
+      test.describe(() => {
         test.use({ colorScheme: 'dark' });
+        test('dark', async ({ context }) => {
+          expect(context._guid).toBe(lastContextGuid);
+        });
+      });
 
-        test('three', async ({ context }) => {
-          expect(context).not.toBe(lastContext);
+      test.describe(() => {
+        test.use({ userAgent: 'UA' });
+        test('UA', async ({ context }) => {
+          expect(context._guid).toBe(lastContextGuid);
+        });
+      });
+
+      test.describe(() => {
+        test.use({ timezoneId: 'Europe/Berlin' });
+        test('tz', async ({ context }) => {
+          expect(context._guid).not.toBe(lastContextGuid);
         });
       });
     `,
   }, { workers: 1 });
 
   expect(result.exitCode).toBe(0);
-  expect(result.passed).toBe(3);
+  expect(result.passed).toBe(5);
 });
 
 test('should not reuse context with video', async ({ runInlineTest }) => {
@@ -154,4 +167,89 @@ test('should work with manually closed pages', async ({ runInlineTest }) => {
 
   expect(result.exitCode).toBe(0);
   expect(result.passed).toBe(3);
+});
+
+test('should clean storage', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'playwright/index.html': `<script type="module" src="/playwright/index.ts"></script>`,
+    'playwright/index.ts': `
+      //@no-header
+    `,
+
+    'src/reuse.test.tsx': `
+      //@no-header
+      import { test, expect } from '@playwright/experimental-ct-react';
+      let lastContextGuid;
+
+      test('one', async ({ context, page }) => {
+        lastContextGuid = context._guid;
+
+        // Spam local storage.
+        page.evaluate(async () => {
+          while (true) {
+            localStorage.foo = 'bar';
+            sessionStorage.foo = 'bar';
+            await new Promise(f => setTimeout(f, 0));
+          }
+        }).catch(() => {});
+
+        const local = await page.evaluate('localStorage.foo');
+        const session = await page.evaluate('sessionStorage.foo');
+        expect(local).toBe('bar');
+        expect(session).toBe('bar');
+      });
+
+      test('two', async ({ context, page }) => {
+        expect(context._guid).toBe(lastContextGuid);
+        const local = await page.evaluate('localStorage.foo');
+        const session = await page.evaluate('sessionStorage.foo');
+
+        expect(local).toBeFalsy();
+        expect(session).toBeFalsy();
+      });
+    `,
+  }, { workers: 1 });
+  expect(result.exitCode).toBe(0);
+  expect(result.passed).toBe(2);
+});
+
+test('should clean db', async ({ runInlineTest }) => {
+  test.slow();
+  const result = await runInlineTest({
+    'playwright/index.html': `<script type="module" src="/playwright/index.ts"></script>`,
+    'playwright/index.ts': `
+      //@no-header
+    `,
+
+    'src/reuse.test.tsx': `
+      //@no-header
+      import { test, expect } from '@playwright/experimental-ct-react';
+      let lastContextGuid;
+
+      test('one', async ({ context, page }) => {
+        lastContextGuid = context._guid;
+        await page.evaluate(async () => {
+          const dbRequest = indexedDB.open('db', 1);
+          await new Promise(f => dbRequest.onsuccess = f);
+        });
+        const dbnames = await page.evaluate(async () => {
+          const dbs = await indexedDB.databases();
+          return dbs.map(db => db.name);
+        });
+        expect(dbnames).toEqual(['db']);
+      });
+
+      test('two', async ({ context, page }) => {
+        expect(context._guid).toBe(lastContextGuid);
+        const dbnames = await page.evaluate(async () => {
+          const dbs = await indexedDB.databases();
+          return dbs.map(db => db.name);
+        });
+
+        expect(dbnames).toEqual([]);
+      });
+    `,
+  }, { workers: 1 });
+  expect(result.exitCode).toBe(0);
+  expect(result.passed).toBe(2);
 });

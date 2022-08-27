@@ -7,6 +7,11 @@ Playwright Test can now test your components.
 
 <!-- TOC -->
 
+<div className="embed-youtube">
+  <iframe src="https://www.youtube.com/embed/y3YxX4sFJbM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" width="750" height="563" allowfullscreen></iframe>
+</div>
+
+
 ## Example
 
 Here is what a typical component test looks like:
@@ -39,6 +44,12 @@ Adding Playwright Test to an existing React, Vue or Svelte project is easy. Belo
 
 ```sh
 npm init playwright@latest -- --ct
+```
+
+or with Yarn:
+
+```sh
+yarn create playwright --ct
 ```
 
 This step creates several files in your workspace:
@@ -90,6 +101,57 @@ npm run test-ct
 ### Further reading: configure reporting, browsers, tracing
 
 Refer to [Playwright config](./test-configuration.md) for configuring your project.
+
+## Hooks
+
+You can use `beforeMount` and `afterMount` hooks to configure your app. This lets you setup things like your app router, fake server etc. giving you the flexibility you need. You can also pass custom configuration from the `mount` call from a test, which is accessible from the `hooksConfig` fixture.
+
+#### `playwright/index.ts`
+
+This includes any config that needs to be run before/after mounting the component. Here's an example of how to setup `miragejs` mocking library:
+
+```js
+import { beforeMount } from '@playwright/experimental-ct-react/hooks';
+import { createServer } from "miragejs"
+
+beforeMount(async ({ hooksConfig }) => {
+  // Setting default values if custom config is not provided
+  const users = hooksConfig.users ?? [
+    { id: "1", name: "Luke" },
+    { id: "2", name: "Leia" },
+    { id: "3", name: "Han" },
+  ];
+  createServer({
+    routes() {
+      this.get("/api/users", () => users)
+    },
+  });
+});
+```
+
+#### In your test file:
+
+```js
+// src/Users.spec.tsx
+import { test, expect } from "@playwright/experimental-ct-react";
+import React from "react";
+import { Users } from "./Users";
+
+test("should work", async ({ mount }) => {
+  const component = await mount(<Users />, {
+    hooksConfig: {
+      users: [
+        { id: "4", name: "Anakin" },
+        { id: "5", name: "Padme" },
+      ]
+    }
+  });
+  await expect(component.locator("li")).toContainText([
+    "Anakin",
+    "Padme",
+  ]);
+});
+```
 
 ## Under the hood
 

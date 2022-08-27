@@ -49,10 +49,11 @@ export class CRConnection extends EventEmitter {
     this._transport = transport;
     this._protocolLogger = protocolLogger;
     this._browserLogsCollector = browserLogsCollector;
-    this._transport.onmessage = this._onMessage.bind(this);
-    this._transport.onclose = this._onClose.bind(this);
     this.rootSession = new CRSession(this, '', 'browser', '');
     this._sessions.set('', this.rootSession);
+    this._transport.onmessage = this._onMessage.bind(this);
+    // onclose should be set last, since it can be immediately called.
+    this._transport.onclose = this._onClose.bind(this);
   }
 
   static fromSession(session: CRSession): CRConnection {
@@ -192,7 +193,7 @@ export class CRSession extends EventEmitter {
     } else if (object.id && object.error?.code === -32001) {
       // Message to a closed session, just ignore it.
     } else {
-      assert(!object.id);
+      assert(!object.id, object?.error?.message || undefined);
       Promise.resolve().then(() => {
         if (this._eventListener)
           this._eventListener(object.method!, object.params);

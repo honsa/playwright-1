@@ -68,6 +68,21 @@ function render(component) {
   }));
 }
 
-window.playwrightMount = component => {
-  ReactDOM.render(render(component), document.getElementById('root'));
+window.playwrightMount = async (component, rootElement, hooksConfig) => {
+  for (const hook of /** @type {any} */(window).__pw_hooks_before_mount || [])
+    await hook({ hooksConfig });
+
+  ReactDOM.render(render(component), rootElement);
+
+  for (const hook of /** @type {any} */(window).__pw_hooks_after_mount || [])
+    await hook({ hooksConfig });
+};
+
+window.playwrightUnmount = async rootElement => {
+  if (!ReactDOM.unmountComponentAtNode(rootElement))
+    throw new Error('Component was not mounted');
+};
+
+window.playwrightRerender = async (rootElement, component) => {
+  ReactDOM.render(render(/** @type {Component} */(component)), rootElement);
 };

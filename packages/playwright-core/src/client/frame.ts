@@ -29,7 +29,7 @@ import { Waiter } from './waiter';
 import { Events } from './events';
 import type { LifecycleEvent, URLMatch, SelectOption, SelectOptionOptions, FilePayload, WaitForFunctionOptions, StrictOptions } from './types';
 import { kLifecycleEvents } from './types';
-import { urlMatches } from './clientHelper';
+import { urlMatches } from '../common/netUtils';
 import type * as api from '../../types/types';
 import type * as structs from '../../types/structs';
 import { debugLogger } from '../common/debugLogger';
@@ -75,6 +75,10 @@ export class Frame extends ChannelOwner<channels.FrameChannel> implements api.Fr
       }
       if (event.remove)
         this._loadStates.delete(event.remove);
+      if (!this._parentFrame && event.add === 'load' && this._page)
+        this._page.emit(Events.Page.Load, this._page);
+      if (!this._parentFrame && event.add === 'domcontentloaded' && this._page)
+        this._page.emit(Events.Page.DOMContentLoaded, this._page);
     });
     this._channel.on('navigated', event => {
       this._url = event.url;

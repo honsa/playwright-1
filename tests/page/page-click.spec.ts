@@ -392,8 +392,7 @@ it('should click the button with em border with offset', async ({ page, server, 
   expect(await page.evaluate('offsetY')).toBe(browserName === 'webkit' ? 12 * 2 + 10 : 10);
 });
 
-it('should click a very large button with offset', async ({ page, server, browserName, isAndroid }) => {
-  it.fixme(isAndroid);
+it('should click a very large button with offset', async ({ page, server, browserName }) => {
 
   await page.goto(server.PREFIX + '/input/button.html');
   await page.$eval('button', button => button.style.borderWidth = '8px');
@@ -405,8 +404,7 @@ it('should click a very large button with offset', async ({ page, server, browse
   expect(await page.evaluate('offsetY')).toBe(browserName === 'webkit' ? 1910 + 8 : 1910);
 });
 
-it('should click a button in scrolling container with offset', async ({ page, server, browserName, isAndroid }) => {
-  it.fixme(isAndroid);
+it('should click a button in scrolling container with offset', async ({ page, server, browserName }) => {
 
   await page.goto(server.PREFIX + '/input/button.html');
   await page.$eval('button', button => {
@@ -515,7 +513,7 @@ it('should wait for becoming hit target with trial run', async ({ page, server }
 it('trial run should work with short timeout', async ({ page, server }) => {
   await page.goto(server.PREFIX + '/input/button.html');
   await page.$eval('button', button => button.disabled = true);
-  const error = await page.click('button', { trial: true, timeout: 500 }).catch(e => e);
+  const error = await page.click('button', { trial: true, timeout: 2000 }).catch(e => e);
   expect(error.message).toContain('click action (trial run)');
   expect(await page.evaluate(() => window['result'])).toBe('Was not clicked');
 });
@@ -582,7 +580,15 @@ it('should wait for input to be enabled', async ({ page }) => {
 });
 
 it('should wait for select to be enabled', async ({ page }) => {
-  await page.setContent('<select onclick="javascript:window.__CLICKED=true;" disabled><option selected>Hello</option></select>');
+  await page.setContent(`
+    <select disabled><option selected>Hello</option></select>
+    <script>
+      document.querySelector('select').addEventListener('mousedown', event => {
+        window.__CLICKED=true;
+        event.preventDefault();
+      });
+    </script>
+  `);
   let done = false;
   const clickPromise = page.click('select').then(() => done = true);
   await giveItAChanceToClick(page);
@@ -596,32 +602,6 @@ it('should wait for select to be enabled', async ({ page }) => {
 it('should click disabled div', async ({ page }) => {
   await page.setContent('<div onclick="javascript:window.__CLICKED=true;" disabled>Click target</div>');
   await page.click('text=Click target');
-  expect(await page.evaluate('__CLICKED')).toBe(true);
-});
-
-it('should climb dom for inner label with pointer-events:none', async ({ page }) => {
-  await page.setContent('<button onclick="javascript:window.__CLICKED=true;"><label style="pointer-events:none">Click target</label></button>');
-  await page.click('text=Click target');
-  expect(await page.evaluate('__CLICKED')).toBe(true);
-});
-
-it('should climb up to [role=button]', async ({ page }) => {
-  await page.setContent('<div role=button onclick="javascript:window.__CLICKED=true;"><div style="pointer-events:none"><span><div>Click target</div></span></div>');
-  await page.click('text=Click target');
-  expect(await page.evaluate('__CLICKED')).toBe(true);
-});
-
-it('should climb up to a anchor', async ({ page }) => {
-  // For Firefox its not allowed to return anything: https://bugzilla.mozilla.org/show_bug.cgi?id=1392046
-  // Note the intermediate div - it is necessary, otherwise <a><non-clickable/></a> is not recognized as a clickable link.
-  await page.setContent(`<a href="javascript:(function(){window.__CLICKED=true})()" id="outer"><div id="intermediate"><div id="inner" style="pointer-events: none">Inner</div></div></a>`);
-  await page.click('#inner');
-  expect(await page.evaluate('__CLICKED')).toBe(true);
-});
-
-it('should climb up to a [role=link]', async ({ page }) => {
-  await page.setContent(`<div role=link onclick="javascript:window.__CLICKED=true;" id="outer"><div id="inner" style="pointer-events: none">Inner</div></div>`);
-  await page.click('#inner');
   expect(await page.evaluate('__CLICKED')).toBe(true);
 });
 
@@ -832,8 +812,9 @@ it('should not throw protocol error when navigating during the click', async ({ 
   expect(await page.evaluate('result')).toBe('Clicked');
 });
 
-it('should retry when navigating during the click', async ({ page, server, mode }) => {
+it('should retry when navigating during the click', async ({ page, server, mode, isAndroid }) => {
   it.skip(mode !== 'default');
+  it.fixme(isAndroid);
 
   await page.goto(server.PREFIX + '/input/button.html');
   let firstTime = true;
@@ -876,4 +857,30 @@ it('should not hang when frame is detached', async ({ page, server, mode }) => {
   const error = await promise;
   expect(error).toBeTruthy();
   expect(error.message).toMatch(/frame got detached|Frame was detached/);
+});
+
+it('should climb dom for inner label with pointer-events:none', async ({ page }) => {
+  await page.setContent('<button onclick="javascript:window.__CLICKED=true;"><label style="pointer-events:none">Click target</label></button>');
+  await page.click('text=Click target');
+  expect(await page.evaluate('__CLICKED')).toBe(true);
+});
+
+it('should climb up to [role=button]', async ({ page }) => {
+  await page.setContent('<div role=button onclick="javascript:window.__CLICKED=true;"><div style="pointer-events:none"><span><div>Click target</div></span></div>');
+  await page.click('text=Click target');
+  expect(await page.evaluate('__CLICKED')).toBe(true);
+});
+
+it('should climb up to a anchor', async ({ page }) => {
+  // For Firefox its not allowed to return anything: https://bugzilla.mozilla.org/show_bug.cgi?id=1392046
+  // Note the intermediate div - it is necessary, otherwise <a><non-clickable/></a> is not recognized as a clickable link.
+  await page.setContent(`<a href="javascript:(function(){window.__CLICKED=true})()" id="outer"><div id="intermediate"><div id="inner" style="pointer-events: none">Inner</div></div></a>`);
+  await page.click('#inner');
+  expect(await page.evaluate('__CLICKED')).toBe(true);
+});
+
+it('should climb up to a [role=link]', async ({ page }) => {
+  await page.setContent(`<div role=link onclick="javascript:window.__CLICKED=true;" id="outer"><div id="inner" style="pointer-events: none">Inner</div></div>`);
+  await page.click('#inner');
+  expect(await page.evaluate('__CLICKED')).toBe(true);
 });

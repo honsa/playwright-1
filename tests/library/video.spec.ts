@@ -21,6 +21,7 @@ import type { Page } from 'playwright-core';
 import { spawnSync } from 'child_process';
 import { PNG } from 'playwright-core/lib/utilsBundle';
 import { registry } from '../../packages/playwright-core/lib/server';
+import { rewriteErrorMessage } from '../../packages/playwright-core/lib/utils/stackTrace';
 
 const ffmpeg = registry.findExecutable('ffmpeg')!.executablePath('javascript');
 
@@ -54,9 +55,9 @@ export class VideoPlayer {
     this.videoHeight = parseInt(resolutionMatch![2], 10);
   }
 
-  seekFirstNonEmptyFrame(offset?: { x: number, y: number } | undefined): PNG | undefined {
+  seekFirstNonEmptyFrame(offset?: { x: number, y: number }): PNG | undefined {
     for (let f = 1; f <= this.frames; ++f) {
-      const frame = this.frame(f, { x: 0, y: 0 });
+      const frame = this.frame(f, offset);
       let hasColor = false;
       for (let i = 0; i < frame.data.length; i += 4) {
         if (frame.data[i + 0] < 230 || frame.data[i + 1] < 230 || frame.data[i + 2] < 230) {
@@ -123,7 +124,7 @@ function expectAll(pixels: Buffer, rgbaPredicate) {
       checkPixel(i);
   } catch (e) {
     // Log pixel values on failure.
-    e.message += `\n\nActual pixels=[${pixels.join(',')}]`;
+    rewriteErrorMessage(e, e.message + `\n\nActual pixels=[${pixels.join(',')}]`);
     throw e;
   }
 }
@@ -153,7 +154,7 @@ function expectRedFrames(videoFile: string, size: { width: number, height: numbe
 
 it.describe('screencast', () => {
   it.slow();
-  it.skip(({ mode }) => mode === 'service', 'video.path() is not avaialble in remote mode');
+  it.skip(({ mode }) => mode !== 'default', 'video.path() is not avaialble in remote mode');
 
   it('videoSize should require videosPath', async ({ browser }) => {
     const error = await browser.newContext({ videoSize: { width: 100, height: 100 } }).catch(e => e);
@@ -163,7 +164,8 @@ it.describe('screencast', () => {
   it('should work with old options', async ({ browser, browserName, trace }, testInfo) => {
     it.fixme(browserName === 'firefox' && trace === 'on', 'https://github.com/microsoft/playwright/issues/10060');
     const videosPath = testInfo.outputPath('');
-    const size = { width: 450, height: 240 };
+    // Firefox does not have a mobile variant and has a large minimum size (500 on windows and 450 elsewhere).
+    const size = browserName === 'firefox' ? { width: 500, height: 400 } : { width: 320, height: 240 };
     const context = await browser.newContext({
       videosPath,
       viewport: size,
@@ -186,7 +188,8 @@ it.describe('screencast', () => {
 
   it('should capture static page', async ({ browser, browserName, trace }, testInfo) => {
     it.fixme(browserName === 'firefox' && trace === 'on', 'https://github.com/microsoft/playwright/issues/10060');
-    const size = { width: 450, height: 240 };
+    // Firefox does not have a mobile variant and has a large minimum size (500 on windows and 450 elsewhere).
+    const size = browserName === 'firefox' ? { width: 500, height: 400 } : { width: 320, height: 240 };
     const context = await browser.newContext({
       recordVideo: {
         dir: testInfo.outputPath(''),
@@ -222,7 +225,7 @@ it.describe('screencast', () => {
     expect(fs.existsSync(path)).toBeTruthy();
   });
 
-  it('saveAs should throw when no video frames', async ({ browser, browserName }, testInfo) => {
+  it('saveAs should throw when no video frames', async ({ browser }, testInfo) => {
     const videosPath = testInfo.outputPath('');
     const size = { width: 320, height: 240 };
     const context = await browser.newContext({
@@ -249,6 +252,7 @@ it.describe('screencast', () => {
     // and other browsers are sometimes fast as well.
     if (!fs.existsSync(saveAsPath))
       expect(error.message).toContain('Page did not produce any video frames');
+    await context.close();
   });
 
   it('should delete video', async ({ browser }, testInfo) => {
@@ -657,9 +661,10 @@ it.describe('screencast', () => {
     expect(files.length).toBe(1);
   });
 
-  it('should capture full viewport', async ({ browserType, browserName, headless, isWindows }, testInfo) => {
-    it.fail(browserName === 'chromium' && !headless, 'The square is not on the video');
-    it.fail(browserName === 'firefox' && isWindows, 'https://github.com/microsoft/playwright/issues/14405');
+  it('should capture full viewport', async ({ browserType, browserName, headless, isWindows, trace }, testInfo) => {
+    it.fixme(browserName === 'chromium' && !headless, 'The square is not on the video');
+    it.fixme(browserName === 'firefox' && isWindows, 'https://github.com/microsoft/playwright/issues/14405');
+    it.fixme(browserName === 'firefox' && trace === 'on', 'https://github.com/microsoft/playwright/issues/10060');
     const size = { width: 600, height: 400 };
     const browser = await browserType.launch();
 
@@ -686,13 +691,15 @@ it.describe('screencast', () => {
     expect(videoPlayer.videoHeight).toBe(size.height);
 
     // Bottom right corner should be part of the red border.
-    const pixels = videoPlayer.seekLastFrame({ x: size.width - 10, y: size.height - 10 }).data;
+    // However, headed browsers on mac have rounded corners, so offset by 10.
+    const pixels = videoPlayer.seekLastFrame({ x: size.width - 20, y: size.height - 20 }).data;
     expectAll(pixels, almostRed);
   });
 
-  it('should capture full viewport on hidpi', async ({ browserType, browserName, headless, isWindows }, testInfo) => {
-    it.fail(browserName === 'chromium' && !headless, 'The square is not on the video');
-    it.fail(browserName === 'firefox' && isWindows, 'https://github.com/microsoft/playwright/issues/14405');
+  it('should capture full viewport on hidpi', async ({ browserType, browserName, headless, isWindows, trace }, testInfo) => {
+    it.fixme(browserName === 'chromium' && !headless, 'The square is not on the video');
+    it.fixme(browserName === 'firefox' && isWindows, 'https://github.com/microsoft/playwright/issues/14405');
+    it.fixme(browserName === 'firefox' && trace === 'on', 'https://github.com/microsoft/playwright/issues/10060');
     const size = { width: 600, height: 400 };
     const browser = await browserType.launch();
 
@@ -720,7 +727,8 @@ it.describe('screencast', () => {
     expect(videoPlayer.videoHeight).toBe(size.height);
 
     // Bottom right corner should be part of the red border.
-    const pixels = videoPlayer.seekLastFrame({ x: size.width - 10, y: size.height - 10 }).data;
+    // However, headed browsers on mac have rounded corners, so offset by 10.
+    const pixels = videoPlayer.seekLastFrame({ x: size.width - 20, y: size.height - 20 }).data;
     expectAll(pixels, almostRed);
   });
 });

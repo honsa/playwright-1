@@ -20,7 +20,6 @@ import type { Action, DialogSignal, DownloadSignal, NavigationSignal, PopupSigna
 
 export type LanguageGeneratorOptions = {
   browserName: string;
-  generateHeaders: boolean;
   launchOptions: LaunchOptions;
   contextOptions: BrowserContextOptions;
   deviceName?: string;
@@ -29,7 +28,8 @@ export type LanguageGeneratorOptions = {
 
 export interface LanguageGenerator {
   id: string;
-  fileName: string;
+  groupName: string;
+  name: string;
   highlighter: string;
   generateHeader(options: LanguageGeneratorOptions): string;
   generateAction(actionInContext: ActionInContext): string;

@@ -20,6 +20,7 @@
 
 /** @typedef {import('../playwright-test/types/component').Component} Component */
 /** @typedef {any} FrameworkComponent */
+/** @typedef {import('svelte').SvelteComponent} SvelteComponent */
 
 /** @type {Map<string, FrameworkComponent>} */
 const registry = new Map();
@@ -32,7 +33,7 @@ export function register(components) {
     registry.set(name, value);
 }
 
-window.playwrightMount = (component, rootElement) => {
+window.playwrightMount = async (component, rootElement, hooksConfig) => {
   let componentCtor = registry.get(component.type);
   if (!componentCtor) {
     // Lookup by shorthand.
@@ -50,10 +51,28 @@ window.playwrightMount = (component, rootElement) => {
   if (component.kind !== 'object')
     throw new Error('JSX mount notation is not supported');
 
-  const wrapper = new componentCtor({
+
+  for (const hook of /** @type {any} */(window).__pw_hooks_before_mount || [])
+    await hook({ hooksConfig });
+
+  const svelteComponent = /** @type {SvelteComponent} */ (new componentCtor({
     target: rootElement,
     props: component.options?.props,
-  });
+  }));
+  rootElement[svelteComponentKey] = svelteComponent;
+
+  for (const hook of /** @type {any} */(window).__pw_hooks_after_mount || [])
+    await hook({ hooksConfig, svelteComponent });
+
   for (const [key, listener] of Object.entries(component.options?.on || {}))
-    wrapper.$on(key, event => listener(event.detail));
+    svelteComponent.$on(key, event => listener(event.detail));
 };
+
+window.playwrightUnmount = async rootElement => {
+  const svelteComponent = /** @type {SvelteComponent} */ (rootElement[svelteComponentKey]);
+  if (!svelteComponent)
+    throw new Error('Component was not mounted');
+  svelteComponent.$destroy();
+};
+
+const svelteComponentKey = Symbol('svelteComponent');

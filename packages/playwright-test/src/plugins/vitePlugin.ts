@@ -17,17 +17,18 @@
 import fs from 'fs';
 import type { Suite } from '../../types/testReporter';
 import path from 'path';
-import type { InlineConfig, Plugin, PreviewServer } from 'vite';
+import type { InlineConfig, Plugin } from 'vite';
 import type { TestRunnerPlugin } from '.';
 import { parse, traverse, types as t } from '../babelBundle';
+import { stoppable } from '../utilsBundle';
 import type { ComponentInfo } from '../tsxTransform';
 import { collectComponentUsages, componentInfo } from '../tsxTransform';
 import type { FullConfig } from '../types';
 import { assert, calculateSha1 } from 'playwright-core/lib/utils';
 import type { AddressInfo } from 'net';
 
-let previewServer: PreviewServer;
-const VERSION = 4;
+let stoppableServer: any;
+const VERSION = 6;
 
 type CtConfig = {
   ctPort?: number;
@@ -36,6 +37,8 @@ type CtConfig = {
   ctViteConfig?: InlineConfig;
 };
 
+const importReactRE = /(^|\n)import\s+(\*\s+as\s+)?React(,|\s+)/;
+const compiledReactRE = /(const|var)\s+React\s*=/;
 
 export function createPlugin(
   registerSourceFile: string,
@@ -86,7 +89,6 @@ export function createPlugin(
       const sourcesDirty = !buildExists || hasNewComponents || await checkSources(buildInfo);
 
       viteConfig.root = rootDir;
-      viteConfig.publicDir = false;
       viteConfig.preview = { port };
       viteConfig.build = {
         outDir
@@ -108,33 +110,39 @@ export function createPlugin(
         };
       }
       const { build, preview } = require('vite');
-      if (sourcesDirty) {
-        viteConfig.plugins = viteConfig.plugins || [
-          frameworkPluginFactory()
-        ];
+      // Build config unconditionally, either build or build & preview will use it.
+      viteConfig.plugins = viteConfig.plugins || [
+        frameworkPluginFactory()
+      ];
+      // But only add out own plugin when we actually build / transform.
+      if (sourcesDirty)
         viteConfig.plugins.push(vitePlugin(registerSource, relativeTemplateDir, buildInfo, componentRegistry));
-        viteConfig.configFile = viteConfig.configFile || false;
-        viteConfig.define = viteConfig.define || {};
-        viteConfig.define.__VUE_PROD_DEVTOOLS__ = true;
-        viteConfig.css = viteConfig.css || {};
-        viteConfig.css.devSourcemap = true;
-        viteConfig.build = {
-          ...viteConfig.build,
-          target: 'esnext',
-          minify: false,
-          rollupOptions: {
-            treeshake: false,
-            input: {
-              index: path.join(templateDir, 'index.html')
-            },
+      viteConfig.configFile = viteConfig.configFile || false;
+      viteConfig.define = viteConfig.define || {};
+      viteConfig.define.__VUE_PROD_DEVTOOLS__ = true;
+      viteConfig.css = viteConfig.css || {};
+      viteConfig.css.devSourcemap = true;
+      viteConfig.build = {
+        ...viteConfig.build,
+        target: 'esnext',
+        minify: false,
+        rollupOptions: {
+          treeshake: false,
+          input: {
+            index: path.join(templateDir, 'index.html')
           },
-          sourcemap: true,
-        };
+        },
+        sourcemap: true,
+      };
+
+      if (sourcesDirty)
         await build(viteConfig);
-      }
+
       if (hasNewTests || hasNewComponents || sourcesDirty)
         await fs.promises.writeFile(buildInfoFile, JSON.stringify(buildInfo, undefined, 2));
-      previewServer = await preview(viteConfig);
+
+      const previewServer = await preview(viteConfig);
+      stoppableServer = stoppable(previewServer.httpServer, 0);
       const isAddressInfo = (x: any): x is AddressInfo => x?.address;
       const address = previewServer.httpServer.address();
       if (isAddressInfo(address))
@@ -142,12 +150,7 @@ export function createPlugin(
     },
 
     teardown: async () => {
-      await new Promise<void>((f, r) => previewServer.httpServer.close(err => {
-        if (err)
-          r(err);
-        else
-          f();
-      }));
+      await new Promise(f => stoppableServer.stop(f));
     },
   };
 }
@@ -274,7 +277,7 @@ function vitePlugin(registerSource: string, relativeTemplateDir: string, buildIn
       }
 
       // Vite React plugin will do this for .jsx files, but not .js files.
-      if (id.endsWith('.js') && content.includes('React.createElement') && !content.includes('import React')) {
+      if (id.endsWith('.js') && content.includes('React.createElement') && !content.match(importReactRE) && !content.match(compiledReactRE)) {
         const code = `import React from 'react';\n${content}`;
         return { code, map: { mappings: '' } };
       }

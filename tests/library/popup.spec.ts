@@ -126,15 +126,23 @@ it('should inherit viewport size from browser context', async function({ browser
   expect(size).toEqual({ width: 400, height: 500 });
 });
 
-it('should use viewport size from window features', async function({ browser, server }) {
+it('should use viewport size from window features', async function({ browser, server, browserName }) {
   const context = await browser.newContext({
     viewport: { width: 700, height: 700 }
   });
   const page = await context.newPage();
   await page.goto(server.EMPTY_PAGE);
   const [size, popup] = await Promise.all([
-    page.evaluate(() => {
+    page.evaluate(async () => {
       const win = window.open(window.location.href, 'Title', 'toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=600,height=300,top=0,left=0');
+      await new Promise<void>(resolve => {
+        const interval = setInterval(() => {
+          if (win.innerWidth === 600 && win.innerHeight === 300) {
+            clearInterval(interval);
+            resolve();
+          }
+        }, 10);
+      });
       return { width: win.innerWidth, height: win.innerHeight };
     }),
     page.waitForEvent('popup'),
@@ -240,9 +248,8 @@ it('should not dispatch binding on a closed page', async function({ browser, ser
     expect(messages.join('|')).toBe('binding|close');
 });
 
-it('should not throttle rAF in the opener page', async ({ page, server, browserName }) => {
+it('should not throttle rAF in the opener page', async ({ page, server }) => {
   it.info().annotations.push({ type: 'issue', description: 'https://github.com/microsoft/playwright/issues/14557' });
-  it.fixme(browserName === 'firefox');
   await page.goto(server.EMPTY_PAGE);
   const [popup] = await Promise.all([
     page.waitForEvent('popup'),
@@ -252,7 +259,6 @@ it('should not throttle rAF in the opener page', async ({ page, server, browserN
     waitForRafs(page, 30),
     waitForRafs(popup, 30)
   ]);
-  console.log('done');
 });
 
 async function waitForRafs(page: Page, count: number): Promise<void> {

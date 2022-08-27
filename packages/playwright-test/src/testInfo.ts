@@ -23,7 +23,8 @@ import type { Loader } from './loader';
 import type { TestCase } from './test';
 import { TimeoutManager } from './timeoutManager';
 import type { Annotation, TestStepInternal } from './types';
-import { addSuffixToFilePath, getContainedPath, monotonicTime, normalizeAndSaveAttachment, sanitizeForFilePath, serializeError, trimLongString } from './util';
+import { addSuffixToFilePath, getContainedPath, normalizeAndSaveAttachment, sanitizeForFilePath, serializeError, trimLongString } from './util';
+import { monotonicTime } from 'playwright-core/lib/utils';
 
 export class TestInfoImpl implements TestInfo {
   private _addStepImpl: (data: Omit<TestStepInternal, 'complete'>) => TestStepInternal;
@@ -33,6 +34,7 @@ export class TestInfoImpl implements TestInfo {
   readonly _startWallTime: number;
   private _hasHardError: boolean = false;
   readonly _screenshotsDir: string;
+  readonly _onTestFailureImmediateCallbacks = new Map<() => Promise<void>, string>(); // fn -> title
 
   // ------------ TestInfo fields ------------
   readonly repeatEachIndex: number;
@@ -74,7 +76,7 @@ export class TestInfoImpl implements TestInfo {
   }
 
   get timeout(): number {
-    return this._timeoutManager.defaultTimeout();
+    return this._timeoutManager.defaultSlotTimings().timeout;
   }
 
   set timeout(timeout: number) {
@@ -111,20 +113,13 @@ export class TestInfoImpl implements TestInfo {
     this._timeoutManager = new TimeoutManager(this.project.timeout);
 
     this.outputDir = (() => {
-      const sameName = loader.fullConfig().projects.filter(project => project.name === this.project.name);
-      let uniqueProjectNamePathSegment: string;
-      if (sameName.length > 1)
-        uniqueProjectNamePathSegment = this.project.name + (sameName.indexOf(this.project) + 1);
-      else
-        uniqueProjectNamePathSegment = this.project.name;
-
       const relativeTestFilePath = path.relative(this.project.testDir, test._requireFile.replace(/\.(spec|test)\.(js|ts|mjs)$/, ''));
       const sanitizedRelativePath = relativeTestFilePath.replace(process.platform === 'win32' ? new RegExp('\\\\', 'g') : new RegExp('/', 'g'), '-');
       const fullTitleWithoutSpec = test.titlePath().slice(1).join(' ');
 
       let testOutputDir = trimLongString(sanitizedRelativePath + '-' + sanitizeForFilePath(fullTitleWithoutSpec));
-      if (uniqueProjectNamePathSegment)
-        testOutputDir += '-' + sanitizeForFilePath(uniqueProjectNamePathSegment);
+      if (project._id)
+        testOutputDir += '-' + sanitizeForFilePath(project._id);
       if (this.retry)
         testOutputDir += '-retry' + this.retry;
       if (this.repeatEachIndex)
@@ -172,11 +167,11 @@ export class TestInfoImpl implements TestInfo {
   async _runWithTimeout(cb: () => Promise<any>): Promise<void> {
     const timeoutError = await this._timeoutManager.runWithTimeout(cb);
     // Do not overwrite existing failure upon hook/teardown timeout.
-    if (timeoutError && this.status === 'passed') {
+    if (timeoutError && (this.status === 'passed' || this.status === 'skipped')) {
       this.status = 'timedOut';
       this.errors.push(timeoutError);
     }
-    this.duration = monotonicTime() - this._startTime;
+    this.duration = this._timeoutManager.defaultSlotTimings().elapsed | 0;
   }
 
   async _runFn(fn: Function, skips?: 'allowSkips'): Promise<TestError | undefined> {
@@ -207,7 +202,7 @@ export class TestInfoImpl implements TestInfo {
       return;
     if (isHardError)
       this._hasHardError = true;
-    if (this.status === 'passed')
+    if (this.status === 'passed' || this.status === 'skipped')
       this.status = 'failed';
     this.errors.push(error);
   }
@@ -222,6 +217,10 @@ export class TestInfoImpl implements TestInfo {
       step.complete({ error: e instanceof SkipError ? undefined : serializeError(e) });
       throw e;
     }
+  }
+
+  _isFailure() {
+    return this.status !== 'skipped' && this.status !== this.expectedStatus;
   }
 
   // ------------ TestInfo methods ------------

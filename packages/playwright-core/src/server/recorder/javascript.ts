@@ -27,13 +27,14 @@ import { escapeWithQuotes } from '../../utils/isomorphic/stringUtils';
 
 export class JavaScriptLanguageGenerator implements LanguageGenerator {
   id: string;
-  fileName: string;
+  groupName = 'Node.js';
+  name: string;
   highlighter = 'javascript';
   private _isTest: boolean;
 
   constructor(isTest: boolean) {
     this.id = isTest ? 'test' : 'javascript';
-    this.fileName = isTest ? 'Playwright Test' : 'JavaScript';
+    this.name = isTest ? 'Test Runner' : 'Library';
     this._isTest = isTest;
   }
 
@@ -222,7 +223,7 @@ function formatObject(value: any, indent = '  '): string {
   if (Array.isArray(value))
     return `[${value.map(o => formatObject(o)).join(', ')}]`;
   if (typeof value === 'object') {
-    const keys = Object.keys(value);
+    const keys = Object.keys(value).filter(key => value[key] !== undefined).sort();
     if (!keys.length)
       return '{}';
     const tokens: string[] = [];

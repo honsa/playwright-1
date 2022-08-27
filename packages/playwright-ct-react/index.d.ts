@@ -34,8 +34,17 @@ export type PlaywrightTestConfig = Omit<BasePlaywrightTestConfig, 'use'> & {
   }
 };
 
-interface ComponentFixtures {
-  mount(component: JSX.Element): Promise<Locator>;
+export interface MountOptions {
+  hooksConfig?: any;
+}
+
+interface MountResult extends Locator {
+  unmount(): Promise<void>;
+  rerender(component: JSX.Element): Promise<void>;
+}
+
+export interface ComponentFixtures {
+  mount(component: JSX.Element, options?: MountOptions): Promise<MountResult>;
 }
 
 export const test: TestType<

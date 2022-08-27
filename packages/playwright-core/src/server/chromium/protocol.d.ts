@@ -134,6 +134,10 @@ export module Protocol {
        */
       role?: AXValue;
       /**
+       * This `Node`'s Chrome raw role.
+       */
+      chromeRole?: AXValue;
+      /**
        * The accessible name for this `Node`.
        */
       name?: AXValue;
@@ -810,7 +814,7 @@ CORS RFC1918 enforcement.
     export type AttributionReportingIssueType = "PermissionPolicyDisabled"|"AttributionSourceUntrustworthyOrigin"|"AttributionUntrustworthyOrigin"|"InvalidHeader";
     /**
      * Details for issues around "Attribution Reporting API" usage.
-Explainer: https://github.com/WICG/conversion-measurement-api
+Explainer: https://github.com/WICG/attribution-reporting-api
      */
     export interface AttributionReportingIssueDetails {
       violationType: AttributionReportingIssueType;
@@ -849,7 +853,7 @@ instead of "limited-quirks".
       errorType: GenericIssueErrorType;
       frameId?: Page.FrameId;
     }
-    export type DeprecationIssueType = "AuthorizationCoveredByWildcard"|"CanRequestURLHTTPContainingNewline"|"ChromeLoadTimesConnectionInfo"|"ChromeLoadTimesFirstPaintAfterLoadTime"|"ChromeLoadTimesWasAlternateProtocolAvailable"|"CookieWithTruncatingChar"|"CrossOriginAccessBasedOnDocumentDomain"|"CrossOriginWindowAlert"|"CrossOriginWindowConfirm"|"CSSSelectorInternalMediaControlsOverlayCastButton"|"CustomCursorIntersectsViewport"|"DeprecationExample"|"DocumentDomainSettingWithoutOriginAgentClusterHeader"|"EventPath"|"GeolocationInsecureOrigin"|"GeolocationInsecureOriginDeprecatedNotRemoved"|"GetUserMediaInsecureOrigin"|"HostCandidateAttributeGetter"|"InsecurePrivateNetworkSubresourceRequest"|"LegacyConstraintGoogIPv6"|"LocalCSSFileExtensionRejected"|"MediaElementAudioSourceNode"|"MediaSourceAbortRemove"|"MediaSourceDurationTruncatingBuffered"|"NoSysexWebMIDIWithoutPermission"|"NotificationInsecureOrigin"|"NotificationPermissionRequestedIframe"|"ObsoleteWebRtcCipherSuite"|"PaymentRequestBasicCard"|"PaymentRequestShowWithoutGesture"|"PictureSourceSrc"|"PrefixedCancelAnimationFrame"|"PrefixedRequestAnimationFrame"|"PrefixedStorageInfo"|"PrefixedVideoDisplayingFullscreen"|"PrefixedVideoEnterFullscreen"|"PrefixedVideoEnterFullScreen"|"PrefixedVideoExitFullscreen"|"PrefixedVideoExitFullScreen"|"PrefixedVideoSupportsFullscreen"|"RangeExpand"|"RequestedSubresourceWithEmbeddedCredentials"|"RTCConstraintEnableDtlsSrtpFalse"|"RTCConstraintEnableDtlsSrtpTrue"|"RTCPeerConnectionComplexPlanBSdpUsingDefaultSdpSemantics"|"RTCPeerConnectionSdpSemanticsPlanB"|"RtcpMuxPolicyNegotiate"|"RTPDataChannel"|"SharedArrayBufferConstructedWithoutIsolation"|"TextToSpeech_DisallowedByAutoplay"|"V8SharedArrayBufferConstructedInExtensionWithoutIsolation"|"XHRJSONEncodingDetection"|"XMLHttpRequestSynchronousInNonWorkerOutsideBeforeUnload"|"XRSupportsSession";
+    export type DeprecationIssueType = "AuthorizationCoveredByWildcard"|"CanRequestURLHTTPContainingNewline"|"ChromeLoadTimesConnectionInfo"|"ChromeLoadTimesFirstPaintAfterLoadTime"|"ChromeLoadTimesWasAlternateProtocolAvailable"|"CookieWithTruncatingChar"|"CrossOriginAccessBasedOnDocumentDomain"|"CrossOriginWindowAlert"|"CrossOriginWindowConfirm"|"CSSSelectorInternalMediaControlsOverlayCastButton"|"DeprecationExample"|"DocumentDomainSettingWithoutOriginAgentClusterHeader"|"EventPath"|"ExpectCTHeader"|"GeolocationInsecureOrigin"|"GeolocationInsecureOriginDeprecatedNotRemoved"|"GetUserMediaInsecureOrigin"|"HostCandidateAttributeGetter"|"IdentityInCanMakePaymentEvent"|"InsecurePrivateNetworkSubresourceRequest"|"LegacyConstraintGoogIPv6"|"LocalCSSFileExtensionRejected"|"MediaSourceAbortRemove"|"MediaSourceDurationTruncatingBuffered"|"NavigateEventRestoreScroll"|"NavigateEventTransitionWhile"|"NoSysexWebMIDIWithoutPermission"|"NotificationInsecureOrigin"|"NotificationPermissionRequestedIframe"|"ObsoleteWebRtcCipherSuite"|"OpenWebDatabaseInsecureContext"|"OverflowVisibleOnReplacedElement"|"PictureSourceSrc"|"PrefixedCancelAnimationFrame"|"PrefixedRequestAnimationFrame"|"PrefixedStorageInfo"|"PrefixedVideoDisplayingFullscreen"|"PrefixedVideoEnterFullscreen"|"PrefixedVideoEnterFullScreen"|"PrefixedVideoExitFullscreen"|"PrefixedVideoExitFullScreen"|"PrefixedVideoSupportsFullscreen"|"RangeExpand"|"RequestedSubresourceWithEmbeddedCredentials"|"RTCConstraintEnableDtlsSrtpFalse"|"RTCConstraintEnableDtlsSrtpTrue"|"RTCPeerConnectionComplexPlanBSdpUsingDefaultSdpSemantics"|"RTCPeerConnectionSdpSemanticsPlanB"|"RtcpMuxPolicyNegotiate"|"SharedArrayBufferConstructedWithoutIsolation"|"TextToSpeech_DisallowedByAutoplay"|"V8SharedArrayBufferConstructedInExtensionWithoutIsolation"|"XHRJSONEncodingDetection"|"XMLHttpRequestSynchronousInNonWorkerOutsideBeforeUnload"|"XRSupportsSession";
     /**
      * This issue tracks information needed to print a deprecation message.
 https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/core/frame/third_party/blink/renderer/core/frame/deprecation/README.md
@@ -1533,6 +1537,10 @@ inspector" rules), "regular" for regular stylesheets.
        */
       pseudoType: DOM.PseudoType;
       /**
+       * Pseudo element custom ident.
+       */
+      pseudoIdentifier?: string;
+      /**
        * Matches of CSS rules applicable to the pseudo style.
        */
       matches: RuleMatch[];
@@ -1719,6 +1727,11 @@ The array enumerates @supports at-rules starting with the innermost one, going o
 with the innermost layer and going outwards.
        */
       layers?: CSSLayer[];
+      /**
+       * @scope CSS at-rule array.
+The array enumerates @scope at-rules starting with the innermost one, going outwards.
+       */
+      scopes?: CSSScope[];
     }
     /**
      * CSS coverage information.
@@ -1966,6 +1979,24 @@ available).
       styleSheetId?: StyleSheetId;
     }
     /**
+     * CSS Scope at-rule descriptor.
+     */
+    export interface CSSScope {
+      /**
+       * Scope rule text.
+       */
+      text: string;
+      /**
+       * The associated rule header range in the enclosing stylesheet (if
+available).
+       */
+      range?: SourceRange;
+      /**
+       * Identifier of the stylesheet containing this object (if exists).
+       */
+      styleSheetId?: StyleSheetId;
+    }
+    /**
      * CSS Layer at-rule descriptor.
      */
     export interface CSSLayer {
@@ -2068,6 +2099,10 @@ and additional information such as platformFontFamily and fontVariationAxes.
        * The font-stretch.
        */
       fontStretch: string;
+      /**
+       * The font-display.
+       */
+      fontDisplay: string;
       /**
        * The unicode-range.
        */
@@ -2349,6 +2384,10 @@ attributes) for a DOM node identified by `nodeId`.
        * A list of CSS keyframed animations matching this node.
        */
       cssKeyframesRules?: CSSKeyframesRule[];
+      /**
+       * Id of the first parent element that does not have display: contents.
+       */
+      parentLayoutNodeId?: DOM.NodeId;
     }
     /**
      * Returns all media queries parsed by the rendering engine.
@@ -2488,6 +2527,20 @@ property
        * The resulting CSS Supports rule after modification.
        */
       supports: CSSSupports;
+    }
+    /**
+     * Modifies the expression of a scope at-rule.
+     */
+    export type setScopeTextParameters = {
+      styleSheetId: StyleSheetId;
+      range: SourceRange;
+      text: string;
+    }
+    export type setScopeTextReturnValue = {
+      /**
+       * The resulting CSS Scope rule after modification.
+       */
+      scope: CSSScope;
     }
     /**
      * Modifies the rule selector.
@@ -2959,6 +3012,11 @@ fire DOM events for nodes known to the client.
        */
       pseudoType?: PseudoType;
       /**
+       * Pseudo element identifier for this node. Only present if there is a
+valid pseudoType.
+       */
+      pseudoIdentifier?: string;
+      /**
        * Shadow root type.
        */
       shadowRootType?: ShadowRootType;
@@ -2997,6 +3055,7 @@ The property is always undefined now.
        */
       isSVG?: boolean;
       compatibilityMode?: CompatibilityMode;
+      assignedSlot?: BackendNode;
     }
     /**
      * A structure holding an RGBA color.
@@ -3230,6 +3289,10 @@ The property is always undefined now.
        */
       pseudoElement: Node;
     }
+    /**
+     * Called when top layer elements are changed.
+     */
+    export type topLayerElementsUpdatedPayload = void;
     /**
      * Called when a pseudo element is removed from an element.
      */
@@ -3803,6 +3866,19 @@ backendNodeIds.
     export type querySelectorAllReturnValue = {
       /**
        * Query selector result.
+       */
+      nodeIds: NodeId[];
+    }
+    /**
+     * Returns NodeIds of current top layer elements.
+Top layer is rendered closest to the user within a viewport, therefore its elements always
+appear on top of all other content.
+     */
+    export type getTopLayerElementsParameters = {
+    }
+    export type getTopLayerElementsReturnValue = {
+      /**
+       * NodeIds of top layer elements
        */
       nodeIds: NodeId[];
     }
@@ -4707,6 +4783,11 @@ getSnapshot was true.
        */
       pseudoType?: RareStringData;
       /**
+       * Pseudo element identifier for this node. Only present if there is a
+valid pseudoType.
+       */
+      pseudoIdentifier?: RareStringData;
+      /**
        * Whether this DOM node responds to mouse clicks. This includes nodes that have had click
 event listeners attached via JavaScript as well as anchor tags that naturally navigate when
 clicked.
@@ -4977,12 +5058,6 @@ The final text color opacity is computed based on the opacity of all overlapping
       value: string;
     }
     export type setDOMStorageItemReturnValue = {
-    }
-    export type getStorageKeyForFrameParameters = {
-      frameId: Page.FrameId;
-    }
-    export type getStorageKeyForFrameReturnValue = {
-      storageKey: SerializedStorageKey;
     }
   }
   
@@ -5532,6 +5607,14 @@ on Android.
       imageTypes: DisabledImageType[];
     }
     export type setDisabledImageTypesReturnValue = {
+    }
+    export type setHardwareConcurrencyOverrideParameters = {
+      /**
+       * Hardware concurrency to report
+       */
+      hardwareConcurrency: number;
+    }
+    export type setHardwareConcurrencyOverrideReturnValue = {
     }
     /**
      * Allows overriding user agent with the given string.
@@ -7154,7 +7237,7 @@ file, data and other requests and responses, their headers, bodies, timing, etc.
     /**
      * Resource type as it was perceived by the rendering engine.
      */
-    export type ResourceType = "Document"|"Stylesheet"|"Image"|"Media"|"Font"|"Script"|"TextTrack"|"XHR"|"Fetch"|"EventSource"|"WebSocket"|"Manifest"|"SignedExchange"|"Ping"|"CSPViolationReport"|"Preflight"|"Other";
+    export type ResourceType = "Document"|"Stylesheet"|"Image"|"Media"|"Font"|"Script"|"TextTrack"|"XHR"|"Fetch"|"Prefetch"|"EventSource"|"WebSocket"|"Manifest"|"SignedExchange"|"Ping"|"CSPViolationReport"|"Preflight"|"Other";
     /**
      * Unique loader identifier.
      */
@@ -7444,6 +7527,16 @@ milliseconds since January 1, 1970, UTC, not the number of seconds.
        * Whether the request complied with Certificate Transparency policy
        */
       certificateTransparencyCompliance: CertificateTransparencyCompliance;
+      /**
+       * The signature algorithm used by the server in the TLS server signature,
+represented as a TLS SignatureScheme code point. Omitted if not
+applicable or not known.
+       */
+      serverSignatureAlgorithm?: number;
+      /**
+       * Whether the connection used Encrypted ClientHello
+       */
+      encryptedClientHello: boolean;
     }
     /**
      * Whether the request complied with Certificate Transparency policy.
@@ -8063,7 +8156,7 @@ the same request (but not for redirected requests).
       initiatorIPAddressSpace: IPAddressSpace;
       privateNetworkRequestPolicy: PrivateNetworkRequestPolicy;
     }
-    export type CrossOriginOpenerPolicyValue = "SameOrigin"|"SameOriginAllowPopups"|"UnsafeNone"|"SameOriginPlusCoep"|"SameOriginAllowPopupsPlusCoep";
+    export type CrossOriginOpenerPolicyValue = "SameOrigin"|"SameOriginAllowPopups"|"RestrictProperties"|"UnsafeNone"|"SameOriginPlusCoep"|"RestrictPropertiesPlusCoep";
     export interface CrossOriginOpenerPolicyStatus {
       value: CrossOriginOpenerPolicyValue;
       reportOnlyValue: CrossOriginOpenerPolicyValue;
@@ -10167,6 +10260,21 @@ Backend then generates 'inspectNodeRequested' event upon element selection.
       explanations?: AdFrameExplanation[];
     }
     /**
+     * Identifies the bottom-most script which caused the frame to be labelled
+as an ad.
+     */
+    export interface AdScriptId {
+      /**
+       * Script Id of the bottom-most script which caused the frame to be labelled
+as an ad.
+       */
+      scriptId: Runtime.ScriptId;
+      /**
+       * Id of adScriptId's debugger.
+       */
+      debuggerId: Runtime.UniqueDebuggerId;
+    }
+    /**
      * Indicates whether the frame is a secure context and why it is the case.
      */
     export type SecureContextType = "Secure"|"SecureLocalhost"|"InsecureScheme"|"InsecureAncestor";
@@ -10179,11 +10287,11 @@ Backend then generates 'inspectNodeRequested' event upon element selection.
      * All Permissions Policy features. This enum should match the one defined
 in third_party/blink/renderer/core/permissions_policy/permissions_policy_features.json5.
      */
-    export type PermissionsPolicyFeature = "accelerometer"|"ambient-light-sensor"|"attribution-reporting"|"autoplay"|"browsing-topics"|"camera"|"ch-dpr"|"ch-device-memory"|"ch-downlink"|"ch-ect"|"ch-partitioned-cookies"|"ch-prefers-color-scheme"|"ch-rtt"|"ch-save-data"|"ch-ua"|"ch-ua-arch"|"ch-ua-bitness"|"ch-ua-platform"|"ch-ua-model"|"ch-ua-mobile"|"ch-ua-full"|"ch-ua-full-version"|"ch-ua-full-version-list"|"ch-ua-platform-version"|"ch-ua-reduced"|"ch-ua-wow64"|"ch-viewport-height"|"ch-viewport-width"|"ch-width"|"clipboard-read"|"clipboard-write"|"cross-origin-isolated"|"direct-sockets"|"display-capture"|"document-domain"|"encrypted-media"|"execution-while-out-of-viewport"|"execution-while-not-rendered"|"focus-without-user-activation"|"fullscreen"|"frobulate"|"gamepad"|"geolocation"|"gyroscope"|"hid"|"idle-detection"|"interest-cohort"|"join-ad-interest-group"|"keyboard-map"|"local-fonts"|"magnetometer"|"microphone"|"midi"|"otp-credentials"|"payment"|"picture-in-picture"|"publickey-credentials-get"|"run-ad-auction"|"screen-wake-lock"|"serial"|"shared-autofill"|"storage-access-api"|"sync-xhr"|"trust-token-redemption"|"usb"|"vertical-scroll"|"web-share"|"window-placement"|"xr-spatial-tracking";
+    export type PermissionsPolicyFeature = "accelerometer"|"ambient-light-sensor"|"attribution-reporting"|"autoplay"|"bluetooth"|"browsing-topics"|"camera"|"ch-dpr"|"ch-device-memory"|"ch-downlink"|"ch-ect"|"ch-prefers-color-scheme"|"ch-rtt"|"ch-save-data"|"ch-ua"|"ch-ua-arch"|"ch-ua-bitness"|"ch-ua-platform"|"ch-ua-model"|"ch-ua-mobile"|"ch-ua-full"|"ch-ua-full-version"|"ch-ua-full-version-list"|"ch-ua-platform-version"|"ch-ua-reduced"|"ch-ua-wow64"|"ch-viewport-height"|"ch-viewport-width"|"ch-width"|"clipboard-read"|"clipboard-write"|"cross-origin-isolated"|"direct-sockets"|"display-capture"|"document-domain"|"encrypted-media"|"execution-while-out-of-viewport"|"execution-while-not-rendered"|"federated-credentials"|"focus-without-user-activation"|"fullscreen"|"frobulate"|"gamepad"|"geolocation"|"gyroscope"|"hid"|"idle-detection"|"interest-cohort"|"join-ad-interest-group"|"keyboard-map"|"local-fonts"|"magnetometer"|"microphone"|"midi"|"otp-credentials"|"payment"|"picture-in-picture"|"publickey-credentials-get"|"run-ad-auction"|"screen-wake-lock"|"serial"|"shared-autofill"|"shared-storage"|"storage-access-api"|"sync-xhr"|"trust-token-redemption"|"usb"|"vertical-scroll"|"web-share"|"window-placement"|"xr-spatial-tracking";
     /**
      * Reason for a permissions policy feature to be disabled.
      */
-    export type PermissionsPolicyBlockReason = "Header"|"IframeAttribute"|"InFencedFrameTree";
+    export type PermissionsPolicyBlockReason = "Header"|"IframeAttribute"|"InFencedFrameTree"|"InIsolatedApp";
     export interface PermissionsPolicyBlockLocator {
       frameId: FrameId;
       blockReason: PermissionsPolicyBlockReason;
@@ -10644,7 +10752,7 @@ Example URLs: http://www.google.com/file.html -> "google.com"
     /**
      * List of not restored reasons for back-forward cache.
      */
-    export type BackForwardCacheNotRestoredReason = "NotPrimaryMainFrame"|"BackForwardCacheDisabled"|"RelatedActiveContentsExist"|"HTTPStatusNotOK"|"SchemeNotHTTPOrHTTPS"|"Loading"|"WasGrantedMediaAccess"|"DisableForRenderFrameHostCalled"|"DomainNotAllowed"|"HTTPMethodNotGET"|"SubframeIsNavigating"|"Timeout"|"CacheLimit"|"JavaScriptExecution"|"RendererProcessKilled"|"RendererProcessCrashed"|"SchedulerTrackedFeatureUsed"|"ConflictingBrowsingInstance"|"CacheFlushed"|"ServiceWorkerVersionActivation"|"SessionRestored"|"ServiceWorkerPostMessage"|"EnteredBackForwardCacheBeforeServiceWorkerHostAdded"|"RenderFrameHostReused_SameSite"|"RenderFrameHostReused_CrossSite"|"ServiceWorkerClaim"|"IgnoreEventAndEvict"|"HaveInnerContents"|"TimeoutPuttingInCache"|"BackForwardCacheDisabledByLowMemory"|"BackForwardCacheDisabledByCommandLine"|"NetworkRequestDatapipeDrainedAsBytesConsumer"|"NetworkRequestRedirected"|"NetworkRequestTimeout"|"NetworkExceedsBufferLimit"|"NavigationCancelledWhileRestoring"|"NotMostRecentNavigationEntry"|"BackForwardCacheDisabledForPrerender"|"UserAgentOverrideDiffers"|"ForegroundCacheLimit"|"BrowsingInstanceNotSwapped"|"BackForwardCacheDisabledForDelegate"|"UnloadHandlerExistsInMainFrame"|"UnloadHandlerExistsInSubFrame"|"ServiceWorkerUnregistration"|"CacheControlNoStore"|"CacheControlNoStoreCookieModified"|"CacheControlNoStoreHTTPOnlyCookieModified"|"NoResponseHead"|"Unknown"|"ActivationNavigationsDisallowedForBug1234857"|"ErrorDocument"|"FencedFramesEmbedder"|"WebSocket"|"WebTransport"|"WebRTC"|"MainResourceHasCacheControlNoStore"|"MainResourceHasCacheControlNoCache"|"SubresourceHasCacheControlNoStore"|"SubresourceHasCacheControlNoCache"|"ContainsPlugins"|"DocumentLoaded"|"DedicatedWorkerOrWorklet"|"OutstandingNetworkRequestOthers"|"OutstandingIndexedDBTransaction"|"RequestedNotificationsPermission"|"RequestedMIDIPermission"|"RequestedAudioCapturePermission"|"RequestedVideoCapturePermission"|"RequestedBackForwardCacheBlockedSensors"|"RequestedBackgroundWorkPermission"|"BroadcastChannel"|"IndexedDBConnection"|"WebXR"|"SharedWorker"|"WebLocks"|"WebHID"|"WebShare"|"RequestedStorageAccessGrant"|"WebNfc"|"OutstandingNetworkRequestFetch"|"OutstandingNetworkRequestXHR"|"AppBanner"|"Printing"|"WebDatabase"|"PictureInPicture"|"Portal"|"SpeechRecognizer"|"IdleManager"|"PaymentManager"|"SpeechSynthesis"|"KeyboardLock"|"WebOTPService"|"OutstandingNetworkRequestDirectSocket"|"InjectedJavascript"|"InjectedStyleSheet"|"Dummy"|"ContentSecurityHandler"|"ContentWebAuthenticationAPI"|"ContentFileChooser"|"ContentSerial"|"ContentFileSystemAccess"|"ContentMediaDevicesDispatcherHost"|"ContentWebBluetooth"|"ContentWebUSB"|"ContentMediaSession"|"ContentMediaSessionService"|"ContentScreenReader"|"EmbedderPopupBlockerTabHelper"|"EmbedderSafeBrowsingTriggeredPopupBlocker"|"EmbedderSafeBrowsingThreatDetails"|"EmbedderAppBannerManager"|"EmbedderDomDistillerViewerSource"|"EmbedderDomDistillerSelfDeletingRequestDelegate"|"EmbedderOomInterventionTabHelper"|"EmbedderOfflinePage"|"EmbedderChromePasswordManagerClientBindCredentialManager"|"EmbedderPermissionRequestManager"|"EmbedderModalDialog"|"EmbedderExtensions"|"EmbedderExtensionMessaging"|"EmbedderExtensionMessagingForOpenPort"|"EmbedderExtensionSentMessageToCachedFrame";
+    export type BackForwardCacheNotRestoredReason = "NotPrimaryMainFrame"|"BackForwardCacheDisabled"|"RelatedActiveContentsExist"|"HTTPStatusNotOK"|"SchemeNotHTTPOrHTTPS"|"Loading"|"WasGrantedMediaAccess"|"DisableForRenderFrameHostCalled"|"DomainNotAllowed"|"HTTPMethodNotGET"|"SubframeIsNavigating"|"Timeout"|"CacheLimit"|"JavaScriptExecution"|"RendererProcessKilled"|"RendererProcessCrashed"|"SchedulerTrackedFeatureUsed"|"ConflictingBrowsingInstance"|"CacheFlushed"|"ServiceWorkerVersionActivation"|"SessionRestored"|"ServiceWorkerPostMessage"|"EnteredBackForwardCacheBeforeServiceWorkerHostAdded"|"RenderFrameHostReused_SameSite"|"RenderFrameHostReused_CrossSite"|"ServiceWorkerClaim"|"IgnoreEventAndEvict"|"HaveInnerContents"|"TimeoutPuttingInCache"|"BackForwardCacheDisabledByLowMemory"|"BackForwardCacheDisabledByCommandLine"|"NetworkRequestDatapipeDrainedAsBytesConsumer"|"NetworkRequestRedirected"|"NetworkRequestTimeout"|"NetworkExceedsBufferLimit"|"NavigationCancelledWhileRestoring"|"NotMostRecentNavigationEntry"|"BackForwardCacheDisabledForPrerender"|"UserAgentOverrideDiffers"|"ForegroundCacheLimit"|"BrowsingInstanceNotSwapped"|"BackForwardCacheDisabledForDelegate"|"UnloadHandlerExistsInMainFrame"|"UnloadHandlerExistsInSubFrame"|"ServiceWorkerUnregistration"|"CacheControlNoStore"|"CacheControlNoStoreCookieModified"|"CacheControlNoStoreHTTPOnlyCookieModified"|"NoResponseHead"|"Unknown"|"ActivationNavigationsDisallowedForBug1234857"|"ErrorDocument"|"FencedFramesEmbedder"|"WebSocket"|"WebTransport"|"WebRTC"|"MainResourceHasCacheControlNoStore"|"MainResourceHasCacheControlNoCache"|"SubresourceHasCacheControlNoStore"|"SubresourceHasCacheControlNoCache"|"ContainsPlugins"|"DocumentLoaded"|"DedicatedWorkerOrWorklet"|"OutstandingNetworkRequestOthers"|"OutstandingIndexedDBTransaction"|"RequestedNotificationsPermission"|"RequestedMIDIPermission"|"RequestedAudioCapturePermission"|"RequestedVideoCapturePermission"|"RequestedBackForwardCacheBlockedSensors"|"RequestedBackgroundWorkPermission"|"BroadcastChannel"|"IndexedDBConnection"|"WebXR"|"SharedWorker"|"WebLocks"|"WebHID"|"WebShare"|"RequestedStorageAccessGrant"|"WebNfc"|"OutstandingNetworkRequestFetch"|"OutstandingNetworkRequestXHR"|"AppBanner"|"Printing"|"WebDatabase"|"PictureInPicture"|"Portal"|"SpeechRecognizer"|"IdleManager"|"PaymentManager"|"SpeechSynthesis"|"KeyboardLock"|"WebOTPService"|"OutstandingNetworkRequestDirectSocket"|"InjectedJavascript"|"InjectedStyleSheet"|"Dummy"|"ContentSecurityHandler"|"ContentWebAuthenticationAPI"|"ContentFileChooser"|"ContentSerial"|"ContentFileSystemAccess"|"ContentMediaDevicesDispatcherHost"|"ContentWebBluetooth"|"ContentWebUSB"|"ContentMediaSessionService"|"ContentScreenReader"|"EmbedderPopupBlockerTabHelper"|"EmbedderSafeBrowsingTriggeredPopupBlocker"|"EmbedderSafeBrowsingThreatDetails"|"EmbedderAppBannerManager"|"EmbedderDomDistillerViewerSource"|"EmbedderDomDistillerSelfDeletingRequestDelegate"|"EmbedderOomInterventionTabHelper"|"EmbedderOfflinePage"|"EmbedderChromePasswordManagerClientBindCredentialManager"|"EmbedderPermissionRequestManager"|"EmbedderModalDialog"|"EmbedderExtensions"|"EmbedderExtensionMessaging"|"EmbedderExtensionMessagingForOpenPort"|"EmbedderExtensionSentMessageToCachedFrame";
     /**
      * Types of not restored reasons for back-forward cache.
      */
@@ -10696,13 +10804,13 @@ dependent on the reason:
        */
       frameId: FrameId;
       /**
-       * Input node id.
-       */
-      backendNodeId: DOM.BackendNodeId;
-      /**
        * Input mode.
        */
       mode: "selectSingle"|"selectMultiple";
+      /**
+       * Input node id. Only present for file choosers opened via an <input type="file"> element.
+       */
+      backendNodeId?: DOM.BackendNodeId;
     }
     /**
      * Fired when frame has been attached to its parent.
@@ -10720,6 +10828,11 @@ dependent on the reason:
        * JavaScript stack trace of when frame was attached, only set if frame initiated from script.
        */
       stack?: Runtime.StackTrace;
+      /**
+       * Identifies the bottom-most script which caused the frame to be labelled
+as an ad. Only sent if frame is labelled as an ad and id is available.
+       */
+      adScriptId?: AdScriptId;
     }
     /**
      * Fired when frame no longer has a scheduled navigation.
@@ -12669,6 +12782,15 @@ Tokens from that issuer.
     }
     
     /**
+     * Returns a storage key given a frame id.
+     */
+    export type getStorageKeyForFrameParameters = {
+      frameId: Page.FrameId;
+    }
+    export type getStorageKeyForFrameReturnValue = {
+      storageKey: SerializedStorageKey;
+    }
+    /**
      * Clears storage for origin.
      */
     export type clearDataForOriginParameters = {
@@ -12682,6 +12804,21 @@ Tokens from that issuer.
       storageTypes: string;
     }
     export type clearDataForOriginReturnValue = {
+    }
+    /**
+     * Clears storage for storage key.
+     */
+    export type clearDataForStorageKeyParameters = {
+      /**
+       * Storage key.
+       */
+      storageKey: string;
+      /**
+       * Comma separated list of StorageType to clear.
+       */
+      storageTypes: string;
+    }
+    export type clearDataForStorageKeyReturnValue = {
     }
     /**
      * Returns all browser cookies.
@@ -13517,6 +13654,11 @@ to run paused targets.
        * Controls how the trace buffer stores data.
        */
       recordMode?: "recordUntilFull"|"recordContinuously"|"recordAsMuchAsPossible"|"echoToConsole";
+      /**
+       * Size of the trace buffer in kilobytes. If not specified or zero is passed, a default value
+of 200 MB would be used.
+       */
+      traceBufferSizeInKb?: number;
       /**
        * Turns on JavaScript stack sampling.
        */
@@ -14842,6 +14984,16 @@ variables as its properties.
       columnNumber?: number;
       type?: "debuggerStatement"|"call"|"return";
     }
+    export interface WasmDisassemblyChunk {
+      /**
+       * The next chunk of disassembled lines.
+       */
+      lines: string[];
+      /**
+       * The bytecode offsets describing the start of each line.
+       */
+      bytecodeOffsets: number[];
+    }
     /**
      * Enum of possible script languages.
      */
@@ -15200,6 +15352,47 @@ of scripts is used as end of range.
        */
       bytecode?: binary;
     }
+    export type disassembleWasmModuleParameters = {
+      /**
+       * Id of the script to disassemble
+       */
+      scriptId: Runtime.ScriptId;
+    }
+    export type disassembleWasmModuleReturnValue = {
+      /**
+       * For large modules, return a stream from which additional chunks of
+disassembly can be read successively.
+       */
+      streamId?: string;
+      /**
+       * The total number of lines in the disassembly text.
+       */
+      totalNumberOfLines: number;
+      /**
+       * The offsets of all function bodies plus one additional entry pointing
+one by past the end of the last function.
+       */
+      functionBodyOffsets: number[];
+      /**
+       * The first chunk of disassembly.
+       */
+      chunk: WasmDisassemblyChunk;
+    }
+    /**
+     * Disassemble the next chunk of lines for the module corresponding to the
+stream. If disassembly is complete, this API will invalidate the streamId
+and return an empty chunk. Any subsequent calls for the now invalid stream
+will return errors.
+     */
+    export type nextWasmDisassemblyChunkParameters = {
+      streamId: string;
+    }
+    export type nextWasmDisassemblyChunkReturnValue = {
+      /**
+       * The next chunk of disassembly.
+       */
+      chunk: WasmDisassemblyChunk;
+    }
     /**
      * This command is deprecated. Use getScriptSource instead.
      */
@@ -15248,13 +15441,30 @@ of scripts is used as end of range.
     export type removeBreakpointReturnValue = {
     }
     /**
-     * Restarts particular call frame from the beginning.
+     * Restarts particular call frame from the beginning. The old, deprecated
+behavior of `restartFrame` is to stay paused and allow further CDP commands
+after a restart was scheduled. This can cause problems with restarting, so
+we now continue execution immediatly after it has been scheduled until we
+reach the beginning of the restarted frame.
+
+To stay back-wards compatible, `restartFrame` now expects a `mode`
+parameter to be present. If the `mode` parameter is missing, `restartFrame`
+errors out.
+
+The various return values are deprecated and `callFrames` is always empty.
+Use the call frames from the `Debugger#paused` events instead, that fires
+once V8 pauses at the beginning of the restarted function.
      */
     export type restartFrameParameters = {
       /**
        * Call frame identifier to evaluate on.
        */
       callFrameId: CallFrameId;
+      /**
+       * The `mode` parameter must be present and set to 'StepInto', otherwise
+`restartFrame` will error out.
+       */
+      mode?: "StepInto";
     }
     export type restartFrameReturnValue = {
       /**
@@ -15493,6 +15703,12 @@ no exceptions. Initial pause on exceptions state is `none`.
     }
     /**
      * Edits JavaScript source live.
+
+In general, functions that are currently on the stack can not be edited with
+a single exception: If the edited function is the top-most stack frame and
+that is the only activation of that function on the stack. In this case
+the live edit will be successful and a `Debugger.restartFrame` for the
+top-most function is automatically triggered.
      */
     export type setScriptSourceParameters = {
       /**
@@ -15508,6 +15724,11 @@ no exceptions. Initial pause on exceptions state is `none`.
 description without actually modifying the code.
        */
       dryRun?: boolean;
+      /**
+       * If true, then `scriptSource` is allowed to change the function on top of the stack
+as long as the top-most stack frame is the only activation of that function.
+       */
+      allowTopFrameEditing?: boolean;
     }
     export type setScriptSourceReturnValue = {
       /**
@@ -15527,7 +15748,13 @@ description without actually modifying the code.
        */
       asyncStackTraceId?: Runtime.StackTraceId;
       /**
-       * Exception details if any.
+       * Whether the operation was successful or not. Only `Ok` denotes a
+successful live edit while the other enum variants denote why
+the live edit failed.
+       */
+      status: "Ok"|"CompileError"|"BlockedByActiveGenerator"|"BlockedByActiveFunction";
+      /**
+       * Exception details if any. Only present when `status` is `CompileError`.
        */
       exceptionDetails?: Runtime.ExceptionDetails;
     }
@@ -17215,6 +17442,7 @@ Error was thrown.
     "DOM.documentUpdated": DOM.documentUpdatedPayload;
     "DOM.inlineStyleInvalidated": DOM.inlineStyleInvalidatedPayload;
     "DOM.pseudoElementAdded": DOM.pseudoElementAddedPayload;
+    "DOM.topLayerElementsUpdated": DOM.topLayerElementsUpdatedPayload;
     "DOM.pseudoElementRemoved": DOM.pseudoElementRemovedPayload;
     "DOM.setChildNodes": DOM.setChildNodesPayload;
     "DOM.shadowRootPopped": DOM.shadowRootPoppedPayload;
@@ -17426,6 +17654,7 @@ Error was thrown.
     "CSS.setMediaText": CSS.setMediaTextParameters;
     "CSS.setContainerQueryText": CSS.setContainerQueryTextParameters;
     "CSS.setSupportsText": CSS.setSupportsTextParameters;
+    "CSS.setScopeText": CSS.setScopeTextParameters;
     "CSS.setRuleSelector": CSS.setRuleSelectorParameters;
     "CSS.setStyleSheetText": CSS.setStyleSheetTextParameters;
     "CSS.setStyleTexts": CSS.setStyleTextsParameters;
@@ -17472,6 +17701,7 @@ Error was thrown.
     "DOM.pushNodesByBackendIdsToFrontend": DOM.pushNodesByBackendIdsToFrontendParameters;
     "DOM.querySelector": DOM.querySelectorParameters;
     "DOM.querySelectorAll": DOM.querySelectorAllParameters;
+    "DOM.getTopLayerElements": DOM.getTopLayerElementsParameters;
     "DOM.redo": DOM.redoParameters;
     "DOM.removeAttribute": DOM.removeAttributeParameters;
     "DOM.removeNode": DOM.removeNodeParameters;
@@ -17514,7 +17744,6 @@ Error was thrown.
     "DOMStorage.getDOMStorageItems": DOMStorage.getDOMStorageItemsParameters;
     "DOMStorage.removeDOMStorageItem": DOMStorage.removeDOMStorageItemParameters;
     "DOMStorage.setDOMStorageItem": DOMStorage.setDOMStorageItemParameters;
-    "DOMStorage.getStorageKeyForFrame": DOMStorage.getStorageKeyForFrameParameters;
     "Database.disable": Database.disableParameters;
     "Database.enable": Database.enableParameters;
     "Database.executeSQL": Database.executeSQLParameters;
@@ -17547,6 +17776,7 @@ Error was thrown.
     "Emulation.setTimezoneOverride": Emulation.setTimezoneOverrideParameters;
     "Emulation.setVisibleSize": Emulation.setVisibleSizeParameters;
     "Emulation.setDisabledImageTypes": Emulation.setDisabledImageTypesParameters;
+    "Emulation.setHardwareConcurrencyOverride": Emulation.setHardwareConcurrencyOverrideParameters;
     "Emulation.setUserAgentOverride": Emulation.setUserAgentOverrideParameters;
     "Emulation.setAutomationOverride": Emulation.setAutomationOverrideParameters;
     "HeadlessExperimental.beginFrame": HeadlessExperimental.beginFrameParameters;
@@ -17744,7 +17974,9 @@ Error was thrown.
     "ServiceWorker.stopWorker": ServiceWorker.stopWorkerParameters;
     "ServiceWorker.unregister": ServiceWorker.unregisterParameters;
     "ServiceWorker.updateRegistration": ServiceWorker.updateRegistrationParameters;
+    "Storage.getStorageKeyForFrame": Storage.getStorageKeyForFrameParameters;
     "Storage.clearDataForOrigin": Storage.clearDataForOriginParameters;
+    "Storage.clearDataForStorageKey": Storage.clearDataForStorageKeyParameters;
     "Storage.getCookies": Storage.getCookiesParameters;
     "Storage.setCookies": Storage.setCookiesParameters;
     "Storage.clearCookies": Storage.clearCookiesParameters;
@@ -17818,6 +18050,8 @@ Error was thrown.
     "Debugger.evaluateOnCallFrame": Debugger.evaluateOnCallFrameParameters;
     "Debugger.getPossibleBreakpoints": Debugger.getPossibleBreakpointsParameters;
     "Debugger.getScriptSource": Debugger.getScriptSourceParameters;
+    "Debugger.disassembleWasmModule": Debugger.disassembleWasmModuleParameters;
+    "Debugger.nextWasmDisassemblyChunk": Debugger.nextWasmDisassemblyChunkParameters;
     "Debugger.getWasmBytecode": Debugger.getWasmBytecodeParameters;
     "Debugger.getStackTrace": Debugger.getStackTraceParameters;
     "Debugger.pause": Debugger.pauseParameters;
@@ -17956,6 +18190,7 @@ Error was thrown.
     "CSS.setMediaText": CSS.setMediaTextReturnValue;
     "CSS.setContainerQueryText": CSS.setContainerQueryTextReturnValue;
     "CSS.setSupportsText": CSS.setSupportsTextReturnValue;
+    "CSS.setScopeText": CSS.setScopeTextReturnValue;
     "CSS.setRuleSelector": CSS.setRuleSelectorReturnValue;
     "CSS.setStyleSheetText": CSS.setStyleSheetTextReturnValue;
     "CSS.setStyleTexts": CSS.setStyleTextsReturnValue;
@@ -18002,6 +18237,7 @@ Error was thrown.
     "DOM.pushNodesByBackendIdsToFrontend": DOM.pushNodesByBackendIdsToFrontendReturnValue;
     "DOM.querySelector": DOM.querySelectorReturnValue;
     "DOM.querySelectorAll": DOM.querySelectorAllReturnValue;
+    "DOM.getTopLayerElements": DOM.getTopLayerElementsReturnValue;
     "DOM.redo": DOM.redoReturnValue;
     "DOM.removeAttribute": DOM.removeAttributeReturnValue;
     "DOM.removeNode": DOM.removeNodeReturnValue;
@@ -18044,7 +18280,6 @@ Error was thrown.
     "DOMStorage.getDOMStorageItems": DOMStorage.getDOMStorageItemsReturnValue;
     "DOMStorage.removeDOMStorageItem": DOMStorage.removeDOMStorageItemReturnValue;
     "DOMStorage.setDOMStorageItem": DOMStorage.setDOMStorageItemReturnValue;
-    "DOMStorage.getStorageKeyForFrame": DOMStorage.getStorageKeyForFrameReturnValue;
     "Database.disable": Database.disableReturnValue;
     "Database.enable": Database.enableReturnValue;
     "Database.executeSQL": Database.executeSQLReturnValue;
@@ -18077,6 +18312,7 @@ Error was thrown.
     "Emulation.setTimezoneOverride": Emulation.setTimezoneOverrideReturnValue;
     "Emulation.setVisibleSize": Emulation.setVisibleSizeReturnValue;
     "Emulation.setDisabledImageTypes": Emulation.setDisabledImageTypesReturnValue;
+    "Emulation.setHardwareConcurrencyOverride": Emulation.setHardwareConcurrencyOverrideReturnValue;
     "Emulation.setUserAgentOverride": Emulation.setUserAgentOverrideReturnValue;
     "Emulation.setAutomationOverride": Emulation.setAutomationOverrideReturnValue;
     "HeadlessExperimental.beginFrame": HeadlessExperimental.beginFrameReturnValue;
@@ -18274,7 +18510,9 @@ Error was thrown.
     "ServiceWorker.stopWorker": ServiceWorker.stopWorkerReturnValue;
     "ServiceWorker.unregister": ServiceWorker.unregisterReturnValue;
     "ServiceWorker.updateRegistration": ServiceWorker.updateRegistrationReturnValue;
+    "Storage.getStorageKeyForFrame": Storage.getStorageKeyForFrameReturnValue;
     "Storage.clearDataForOrigin": Storage.clearDataForOriginReturnValue;
+    "Storage.clearDataForStorageKey": Storage.clearDataForStorageKeyReturnValue;
     "Storage.getCookies": Storage.getCookiesReturnValue;
     "Storage.setCookies": Storage.setCookiesReturnValue;
     "Storage.clearCookies": Storage.clearCookiesReturnValue;
@@ -18348,6 +18586,8 @@ Error was thrown.
     "Debugger.evaluateOnCallFrame": Debugger.evaluateOnCallFrameReturnValue;
     "Debugger.getPossibleBreakpoints": Debugger.getPossibleBreakpointsReturnValue;
     "Debugger.getScriptSource": Debugger.getScriptSourceReturnValue;
+    "Debugger.disassembleWasmModule": Debugger.disassembleWasmModuleReturnValue;
+    "Debugger.nextWasmDisassemblyChunk": Debugger.nextWasmDisassemblyChunkReturnValue;
     "Debugger.getWasmBytecode": Debugger.getWasmBytecodeReturnValue;
     "Debugger.getStackTrace": Debugger.getStackTraceReturnValue;
     "Debugger.pause": Debugger.pauseReturnValue;

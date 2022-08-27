@@ -24,7 +24,7 @@ const esbuild = require('esbuild');
 let patchFdSlicerToHideBufferDeprecationWarning = {
   name: 'patch-fd-slicer-deprecation',
   setup(build) {
-    build.onResolve({ filter: /fd-slicer/ }, () => {
+    build.onResolve({ filter: /^fd-slicer$/ }, () => {
       const originalPath = require.resolve('fd-slicer');
       const patchedPath = path.join(path.dirname(originalPath), path.basename(originalPath, '.js') + '.pw-patched.js');
       let sourceFileContent = fs.readFileSync(originalPath, 'utf8')
@@ -46,4 +46,7 @@ esbuild.build({
   watch: process.argv.includes('--watch'),
   sourcemap: process.argv.includes('--sourcemap'),
   minify: process.argv.includes('--minify'),
-}).catch(() => process.exit(1));
+}).catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

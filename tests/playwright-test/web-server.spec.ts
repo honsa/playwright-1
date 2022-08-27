@@ -43,7 +43,9 @@ test('should create a server', async ({ runInlineTest }, { workerIndex }) => {
       };
     `,
     'globalSetup.ts': `
-      module.exports = async () => {
+      const { expect } = pwt;
+      module.exports = async (config) => {
+        expect(config.webServer.port, "For backwards compatibility reasons, we ensure this shows up.").toBe(${port});
         const http = require("http");
         const response = await new Promise(resolve => {
           const request = http.request("http://localhost:${port}/hello", resolve);
@@ -310,7 +312,7 @@ test('should be able to specify a custom baseURL with the server', async ({ runI
   await new Promise(resolve => server.close(resolve));
 });
 
-test('should be able to use an existing server when reuseExistingServer:true ', async ({ runInlineTest }, { workerIndex }) => {
+test('should be able to use an existing server when reuseExistingServer:true', async ({ runInlineTest }, { workerIndex }) => {
   const port = workerIndex + 10500;
   const server = http.createServer((req: http.IncomingMessage, res: http.ServerResponse) => {
     res.end('<html><body>hello</body></html>');
@@ -343,7 +345,7 @@ test('should be able to use an existing server when reuseExistingServer:true ', 
   await new Promise(resolve => server.close(resolve));
 });
 
-test('should throw when a server is already running on the given port and strict is true ', async ({ runInlineTest }, { workerIndex }) => {
+test('should throw when a server is already running on the given port and strict is true', async ({ runInlineTest }, { workerIndex }) => {
   const port = workerIndex + 10500;
   const server = http.createServer((req: http.IncomingMessage, res: http.ServerResponse) => {
     res.end('<html><body>hello</body></html>');
@@ -408,7 +410,7 @@ for (const host of ['localhost', '127.0.0.1', '0.0.0.0']) {
   });
 }
 
-test(`should suport self signed certificate`, async ({ runInlineTest, httpsServer }) => {
+test(`should support self signed certificate`, async ({ runInlineTest, httpsServer }) => {
   const result = await runInlineTest({
     'test.spec.js': `
       const { test } = pwt;
@@ -427,20 +429,39 @@ test(`should suport self signed certificate`, async ({ runInlineTest, httpsServe
   expect(result.exitCode).toBe(0);
 });
 
+test('should send Accept header', async ({ runInlineTest, server }) => {
+  let acceptHeader: string | undefined | null = null;
+  server.setRoute('/hello', (req, res) => {
+    if (acceptHeader === null) acceptHeader = req.headers.accept;
+    res.end('<html><body>hello</body></html>');
+  });
+  const result = await runInlineTest({
+    'test.spec.ts': `
+      const { test } = pwt;
+      test('connect to the server', async ({baseURL, page}) => {
+        await page.goto('http://localhost:${server.PORT}/hello');
+        expect(await page.textContent('body')).toBe('hello');
+      });
+    `,
+    'playwright.config.ts': `
+      module.exports = {
+        webServer: {
+          command: 'node ${JSON.stringify(SIMPLE_SERVER_PATH)} ${server.PORT}',
+          url: 'http://localhost:${server.PORT}/hello',
+          reuseExistingServer: true,
+        }
+      };
+    `,
+  });
+  expect(result.exitCode).toBe(0);
+  expect(acceptHeader).toBe('*/*');
+});
+
 test('should create multiple servers', async ({ runInlineTest }, { workerIndex }) => {
   const port = workerIndex + 10500;
   const result = await runInlineTest({
     'test.spec.ts': `
-        import { webServer } from '@playwright/test/lib/plugins';
-        const { test, _addRunnerPlugin } = pwt;
-        _addRunnerPlugin(webServer({
-            command: 'node ${JSON.stringify(SIMPLE_SERVER_PATH)} ${port}',
-            url: 'http://localhost:${port}/port',
-        }));
-        _addRunnerPlugin(webServer({
-            command: 'node ${JSON.stringify(SIMPLE_SERVER_PATH)} ${port + 1}',
-            url: 'http://localhost:${port + 1}/port',
-        }));
+        const { test } = pwt;
 
         test('connect to the server', async ({page}) => {
           await page.goto('http://localhost:${port}/port');
@@ -452,12 +473,24 @@ test('should create multiple servers', async ({ runInlineTest }, { workerIndex }
       `,
     'playwright.config.ts': `
         module.exports = {
+          webServer: [
+            {
+              command: 'node ${JSON.stringify(SIMPLE_SERVER_PATH)} ${port}',
+              url: 'http://localhost:${port}/port',
+            },
+            {
+              command: 'node ${JSON.stringify(SIMPLE_SERVER_PATH)} ${port + 1}',
+              url: 'http://localhost:${port + 1}/port',
+            }
+          ],
           globalSetup: 'globalSetup.ts',
           globalTeardown: 'globalTeardown.ts',
         };
         `,
     'globalSetup.ts': `
-        module.exports = async () => {
+        const { expect } = pwt;
+        module.exports = async (config) => {
+          expect(config.webServer, "The public API defines this type as singleton or null, so if using array style we fallback to null to avoid having the type lie to the user.").toBe(null);
           const http = require("http");
           const response = await new Promise(resolve => {
             const request = http.request("http://localhost:${port}/hello", resolve);
@@ -545,4 +578,26 @@ test.describe('baseURL with plugins', () => {
     expect(result.exitCode).toBe(0);
     expect(result.passed).toBe(1);
   });
+});
+
+test('should treat 3XX as available server', async ({ runInlineTest }, { workerIndex }) => {
+  const port = workerIndex + 10500;
+  const result = await runInlineTest({
+    'test.spec.ts': `
+      const { test } = pwt;
+      test('pass', async ({}) => {});
+    `,
+    'playwright.config.ts': `
+      module.exports = {
+        webServer: {
+          command: 'node ${JSON.stringify(SIMPLE_SERVER_PATH)} ${port}',
+          url: 'http://localhost:${port}/redirect',
+        }
+      };
+    `,
+  }, {}, { DEBUG: 'pw:webserver' });
+  expect(result.exitCode).toBe(0);
+  expect(result.passed).toBe(1);
+  expect(result.output).toContain('[WebServer] listening');
+  expect(result.output).toContain('[WebServer] error from server');
 });

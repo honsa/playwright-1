@@ -24,6 +24,8 @@ import { launchProcess } from 'playwright-core/lib/utils/processLauncher';
 
 import type { FullConfig, Reporter } from '../../types/testReporter';
 import type { TestRunnerPlugin } from '.';
+import type { FullConfigInternal } from '../types';
+import { envWithoutExperimentalLoaderOptions } from '../cli';
 
 
 export type WebServerPluginOptions = {
@@ -90,7 +92,7 @@ export class WebServerPlugin implements TestRunnerPlugin {
       command: this._options.command,
       env: {
         ...DEFAULT_ENVIRONMENT_VARIABLES,
-        ...process.env,
+        ...envWithoutExperimentalLoaderOptions(),
         ...this._options.env,
       },
       cwd: this._options.cwd,
@@ -98,7 +100,7 @@ export class WebServerPlugin implements TestRunnerPlugin {
       shell: true,
       attemptToGracefullyClose: async () => {},
       log: () => {},
-      onExit: code => processExitedReject(new Error(`Process from config.webServer was not able to start. Exit code: ${code}`)),
+      onExit: code => processExitedReject(new Error(code ? `Process from config.webServer was not able to start. Exit code: ${code}` : 'Process from config.webServer exited early.')),
       tempDirectories: [],
     });
     this._killProcess = kill;
@@ -153,14 +155,16 @@ async function isURLAvailable(url: URL, ignoreHTTPSErrors: boolean, onStdErr: Re
     indexUrl.pathname = '/index.html';
     statusCode = await httpStatusCode(indexUrl, ignoreHTTPSErrors, onStdErr);
   }
-  return statusCode >= 200 && statusCode < 300;
+  return statusCode >= 200 && statusCode < 404;
 }
 
 async function httpStatusCode(url: URL, ignoreHTTPSErrors: boolean, onStdErr: Reporter['onStdErr']): Promise<number> {
+  const commonRequestOptions = { headers: { Accept: '*/*' } };
   const isHttps = url.protocol === 'https:';
   const requestOptions = isHttps ? {
+    ...commonRequestOptions,
     rejectUnauthorized: !ignoreHTTPSErrors,
-  } : {};
+  } : commonRequestOptions;
   return new Promise(resolve => {
     debugWebServer(`HTTP GET: ${url}`);
     (isHttps ? https : http).get(url, requestOptions, res => {
@@ -202,18 +206,21 @@ export const webServer = (options: WebServerPluginOptions): TestRunnerPlugin => 
   return new WebServerPlugin(options, false, { onStdOut: d => console.log(d.toString()), onStdErr: d => console.error(d.toString()) });
 };
 
-export const webServerPluginForConfig = (config: FullConfig, reporter: Reporter): TestRunnerPlugin => {
-  const webServer = config.webServer!;
-  if (webServer.port !== undefined && webServer.url !== undefined)
-    throw new Error(`Exactly one of 'port' or 'url' is required in config.webServer.`);
+export const webServerPluginsForConfig = (config: FullConfigInternal, reporter: Reporter): TestRunnerPlugin[] => {
+  const shouldSetBaseUrl = !!config.webServer;
+  const webServerPlugins = [];
+  for (const webServerConfig of config._webServers) {
+    if (webServerConfig.port !== undefined && webServerConfig.url !== undefined)
+      throw new Error(`Exactly one of 'port' or 'url' is required in config.webServer.`);
 
-  const url = webServer.url || `http://localhost:${webServer.port}`;
+    const url = webServerConfig.url || `http://localhost:${webServerConfig.port}`;
 
-  // We only set base url when only the port is given. That's a legacy mode we have regrets about.
-  if (!webServer.url)
-    process.env.PLAYWRIGHT_TEST_BASE_URL = url;
+    // We only set base url when only the port is given. That's a legacy mode we have regrets about.
+    if (shouldSetBaseUrl && !webServerConfig.url)
+      process.env.PLAYWRIGHT_TEST_BASE_URL = url;
 
-  // TODO: replace with reporter once plugins are removed.
-  // eslint-disable-next-line no-console
-  return new WebServerPlugin({ ...webServer, url }, webServer.port !== undefined, reporter);
+    webServerPlugins.push(new WebServerPlugin({ ...webServerConfig,  url }, webServerConfig.port !== undefined, reporter));
+  }
+
+  return webServerPlugins;
 };
