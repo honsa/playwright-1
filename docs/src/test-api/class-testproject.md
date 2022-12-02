@@ -116,7 +116,7 @@ export default config;
     - `animations` ?<[ScreenshotAnimations]<"allow"|"disabled">> See [`option: animations`] in [`method: Page.screenshot`]. Defaults to `"disabled"`.
     - `caret` ?<[ScreenshotCaret]<"hide"|"initial">> See [`option: caret`] in [`method: Page.screenshot`]. Defaults to `"hide"`.
     - `scale` ?<[ScreenshotScale]<"css"|"device">> See [`option: scale`] in [`method: Page.screenshot`]. Defaults to `"css"`.
-  - `toMatchSnapshot` ?<[Object]> Configuration for the [`method: ScreenshotAssertions.toMatchSnapshot#1`] method.
+  - `toMatchSnapshot` ?<[Object]> Configuration for the [`method: SnapshotAssertions.toMatchSnapshot#1`] method.
     - `threshold` ?<[float]> an acceptable perceived color difference in the [YIQ color space](https://en.wikipedia.org/wiki/YIQ) between the same pixel in compared images, between zero (strict) and one (lax). Defaults to `0.2`.
     - `maxDiffPixels` ?<[int]> an acceptable amount of pixels that could be different, unset by default.
     - `maxDiffPixelRatio` ?<[float]> an acceptable ratio of pixels that are different to the total amount of pixels, between `0` and `1` , unset by default.
@@ -138,7 +138,7 @@ You can configure entire test project to concurrently run all tests in all files
 * since: v1.10
 - type: ?<[RegExp]|[Array]<[RegExp]>>
 
-Filter to only run tests with a title matching one of the patterns. For example, passing `grep: /cart/` should only run tests with "cart" in the title. Also available globally and in the [command line](../test-cli.md) with the `-g` option.
+Filter to only run tests with a title matching one of the patterns. For example, passing `grep: /cart/` should only run tests with "cart" in the title. Also available globally and in the [command line](../test-cli.md) with the `-g` option. The regular expression will be tested against the string that consists of the test file name, `test.describe` name (if any) and the test name divided by spaces, e.g. `my-test.spec.ts my suite my test`.
 
 `grep` option is also useful for [tagging tests](../test-annotations.md#tag-tests).
 
@@ -146,7 +146,7 @@ Filter to only run tests with a title matching one of the patterns. For example,
 * since: v1.10
 - type: ?<[RegExp]|[Array]<[RegExp]>>
 
-Filter to only run tests with a title **not** matching one of the patterns. This is the opposite of [`property: TestProject.grep`]. Also available globally and in the [command line](../test-cli.md) with the `--grep-invert` option.
+Filter to only run tests with a title **not** matching one of the patterns. This is the opposite of [`property: TestProject.grep`]. Also available globally and in the [command line](../test-cli.md) with the `--grep-invert` option. This filter and its command line counterpart also applies to the setup files. If all [`property: TestProject.setup`] tests match the filter Playwright **will** run all setup files before running the matching tests.
 
 `grepInvert` option is also useful for [tagging tests](../test-annotations.md#tag-tests).
 
@@ -162,44 +162,13 @@ Metadata that will be put directly to the test report serialized as JSON.
 
 Project name is visible in the report and during test execution.
 
+## property: TestProject.setup
+* since: v1.28
+- type: ?<[string]|[RegExp]|[Array]<[string]|[RegExp]>>
 
-## property: TestProject.screenshotsDir
-* since: v1.10
-* experimental
-- type: ?<[string]>
+Project setup files that would be executed before all tests in the project. If project setup fails the tests in this project will be skipped. All project setup files will run in every shard if the project is sharded. [`property: TestProject.grep`] and [`property: TestProject.grepInvert`] and their command line counterparts also apply to the setup files. If such filters match only tests in the project Playwright will run all setup files before running the matching tests.
 
-The base directory, relative to the config file, for screenshot files created with `toHaveScreenshot`. Defaults to
-
-```
-<directory-of-configuration-file>/__screenshots__/<platform name>/<project name>
-```
-
-This path will serve as the base directory for each test file screenshot directory. For example, the following test structure:
-
-```
-smoke-tests/
-└── basic.spec.ts
-```
-
-will result in the following screenshots folder structure:
-
-```
-__screenshots__/
-└── darwin/
-    ├── Mobile Safari/
-    │   └── smoke-tests/
-    │       └── basic.spec.ts/
-    │           └── screenshot-expectation.png
-    └── Desktop Chrome/
-        └── smoke-tests/
-            └── basic.spec.ts/
-                └── screenshot-expectation.png
-```
-
-where:
-* `darwin/` - a platform name folder
-* `Mobile Safari` and `Desktop Chrome` - project names
-
+If there is a file that matches both [`property: TestProject.setup`] and [`property: TestProject.testMatch`] filters an error will be thrown.
 
 ## property: TestProject.snapshotDir
 * since: v1.10
@@ -210,6 +179,9 @@ The base directory, relative to the config file, for snapshot files created with
 The directory for each test can be accessed by [`property: TestInfo.snapshotDir`] and [`method: TestInfo.snapshotPath`].
 
 This path will serve as the base directory for each test file snapshot directory. Setting `snapshotDir` to `'snapshots'`, the [`property: TestInfo.snapshotDir`] would resolve to `snapshots/a.spec.js-snapshots`.
+
+## property: TestProject.snapshotPathTemplate = %%-test-config-snapshot-path-template-%%
+* since: v1.28
 
 ## property: TestProject.outputDir
 * since: v1.10
@@ -256,6 +228,8 @@ Use [`property: TestConfig.repeatEach`] to change this option for all projects.
 - type: ?<[int]>
 
 The maximum number of retry attempts given to failed tests. Learn more about [test retries](../test-retries.md#retries).
+
+Use [`method: Test.describe.configure`] to change the number of retries for a specific file or a group of tests.
 
 Use [`property: TestConfig.retries`] to change this option for all projects.
 
@@ -377,7 +351,7 @@ Use [`property: TestConfig.testMatch`] to change this option for all projects.
 
 Timeout for each test in milliseconds. Defaults to 30 seconds.
 
-This is a base timeout for all tests. In addition, each test can configure its own timeout with [`method: Test.setTimeout`].
+This is a base timeout for all tests. Each test can configure its own timeout with [`method: Test.setTimeout`]. Each file or a group of tests can configure the timeout with [`method: Test.describe.configure`].
 
 Use [`property: TestConfig.timeout`] to change this option for all projects.
 

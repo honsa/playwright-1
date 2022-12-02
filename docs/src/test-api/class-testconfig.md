@@ -45,7 +45,7 @@ export default config;
     - `animations` ?<[ScreenshotAnimations]<"allow"|"disabled">> See [`option: animations`] in [`method: Page.screenshot`]. Defaults to `"disabled"`.
     - `caret` ?<[ScreenshotCaret]<"hide"|"initial">> See [`option: caret`] in [`method: Page.screenshot`]. Defaults to `"hide"`.
     - `scale` ?<[ScreenshotScale]<"css"|"device">> See [`option: scale`] in [`method: Page.screenshot`]. Defaults to `"css"`.
-  - `toMatchSnapshot` ?<[Object]> Configuration for the [`method: ScreenshotAssertions.toMatchSnapshot#1`] method.
+  - `toMatchSnapshot` ?<[Object]> Configuration for the [`method: SnapshotAssertions.toMatchSnapshot#1`] method.
     - `threshold` ?<[float]> an acceptable perceived color difference in the [YIQ color space](https://en.wikipedia.org/wiki/YIQ) between the same pixel in compared images, between zero (strict) and one (lax). Defaults to `0.2`.
     - `maxDiffPixels` ?<[int]> an acceptable amount of pixels that could be different, unset by default.
     - `maxDiffPixelRatio` ?<[float]> an acceptable ratio of pixels that are different to the total amount of pixels, between `0` and `1` , unset by default.
@@ -113,7 +113,7 @@ export default config;
 ```
 
 ## property: TestConfig.fullyParallel
-* since: v1.10
+* since: v1.20
 - type: ?<[boolean]>
 
 Playwright Test runs tests in parallel. In order to achieve that, it runs several worker processes that run at the same time.
@@ -226,6 +226,11 @@ Filter to only run tests with a title **not** matching one of the patterns. This
 
 `grepInvert` option is also useful for [tagging tests](../test-annotations.md#tag-tests).
 
+## property: TestConfig.ignoreSnapshots
+* since: v1.26
+- type: ?<[boolean]>
+
+Whether to skip snapshot expectations, such as `expect(value).toMatchSnapshot()` and `await expect(page).toHaveScreenshot()`.
 
 ## property: TestConfig.maxFailures
 * since: v1.10
@@ -326,11 +331,19 @@ test('example test', async ({}, testInfo) => {
 * since: v1.10
 - type: ?<[string]>
 
+:::note
+Use of [`property: TestConfig.snapshotDir`] is discouraged. Please use [`property: TestConfig.snapshotPathTemplate`] to configure
+snapshot paths.
+:::
+
 The base directory, relative to the config file, for snapshot files created with `toMatchSnapshot`. Defaults to [`property: TestConfig.testDir`].
 
 The directory for each test can be accessed by [`property: TestInfo.snapshotDir`] and [`method: TestInfo.snapshotPath`].
 
 This path will serve as the base directory for each test file snapshot directory. Setting `snapshotDir` to `'snapshots'`, the [`property: TestInfo.snapshotDir`] would resolve to `snapshots/a.spec.js-snapshots`.
+
+## property: TestConfig.snapshotPathTemplate = %%-test-config-snapshot-path-template-%%
+* since: v1.28
 
 ## property: TestConfig.preserveOutput
 * since: v1.10
@@ -435,43 +448,6 @@ const config: PlaywrightTestConfig = {
 };
 export default config;
 ```
-
-## property: TestConfig.screenshotsDir
-* since: v1.10
-* experimental
-- type: ?<[string]>
-
-The base directory, relative to the config file, for screenshot files created with [`method: PageAssertions.toHaveScreenshot#1`]. Defaults to
-
-```
-<directory-of-configuration-file>/__screenshots__/<platform name>/<project name>
-```
-
-This path will serve as the base directory for each test file screenshot directory. For example, the following test structure:
-
-```
-smoke-tests/
-└── basic.spec.ts
-```
-
-will result in the following screenshots folder structure:
-
-```
-__screenshots__/
-└── darwin/
-    ├── Mobile Safari/
-    │   └── smoke-tests/
-    │       └── basic.spec.ts/
-    │           └── screenshot-expectation.png
-    └── Desktop Chrome/
-        └── smoke-tests/
-            └── basic.spec.ts/
-                └── screenshot-expectation.png
-```
-
-where:
-* `darwin/` - a platform name folder
-* `Mobile Safari` and `Desktop Chrome` - project names
 
 ## property: TestConfig.shard
 * since: v1.10
@@ -780,13 +756,13 @@ module.exports = config;
 
 ## property: TestConfig.workers
 * since: v1.10
-- type: ?<[int]>
+- type: ?<[int]|[string]>
 
-The maximum number of concurrent worker processes to use for parallelizing tests.
+The maximum number of concurrent worker processes to use for parallelizing tests. Can also be set as percentage of logical CPU cores, e.g. `'50%'.`
 
 Playwright Test uses worker processes to run tests. There is always at least one worker process, but more can be used to speed up test execution.
 
-Defaults to one half of the number of CPU cores. Learn more about [parallelism and sharding](../test-parallel.md) with Playwright Test.
+Defaults to half of the number of logical CPU cores. Learn more about [parallelism and sharding](../test-parallel.md) with Playwright Test.
 
 ```js tab=js-js
 // playwright.config.js

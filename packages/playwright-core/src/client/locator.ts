@@ -16,15 +16,17 @@
 
 import type * as structs from '../../types/structs';
 import type * as api from '../../types/types';
-import type * as channels from '../protocol/channels';
+import type * as channels from '@protocol/channels';
 import type { ParsedStackTrace } from '../utils/stackTrace';
 import * as util from 'util';
-import { isRegExp, monotonicTime } from '../utils';
+import { monotonicTime } from '../utils';
 import { ElementHandle } from './elementHandle';
 import type { Frame } from './frame';
 import type { FilePayload, FrameExpectOptions, Rect, SelectOption, SelectOptionOptions, TimeoutOptions } from './types';
 import { parseResult, serializeArgument } from './jsHandle';
-import { escapeWithQuotes } from '../utils/isomorphic/stringUtils';
+import { escapeForTextSelector } from '../utils/isomorphic/stringUtils';
+import type { ByRoleOptions } from '../utils/isomorphic/locatorUtils';
+import { getByAltTextSelector, getByLabelSelector, getByPlaceholderSelector, getByRoleSelector, getByTestIdSelector, getByTextSelector, getByTitleSelector } from '../utils/isomorphic/locatorUtils';
 
 export type LocatorOptions = {
   hasText?: string | RegExp;
@@ -39,19 +41,14 @@ export class Locator implements api.Locator {
     this._frame = frame;
     this._selector = selector;
 
-    if (options?.hasText) {
-      const text = options.hasText;
-      if (isRegExp(text))
-        this._selector += ` >> has=${JSON.stringify('text=' + text.toString())}`;
-      else
-        this._selector += ` >> :scope:has-text(${escapeWithQuotes(text, '"')})`;
-    }
+    if (options?.hasText)
+      this._selector += ` >> internal:has-text=${escapeForTextSelector(options.hasText, false)}`;
 
     if (options?.has) {
       const locator = options.has;
       if (locator._frame !== frame)
         throw new Error(`Inner "has" locator must belong to the same frame.`);
-      this._selector += ` >> has=` + JSON.stringify(locator._selector);
+      this._selector += ` >> internal:has=` + JSON.stringify(locator._selector);
     }
   }
 
@@ -119,6 +116,10 @@ export class Locator implements api.Locator {
     return this._frame.fill(this._selector, value, { strict: true, ...options });
   }
 
+  async clear(options: channels.ElementHandleFillOptions = {}): Promise<void> {
+    return this.fill('', options);
+  }
+
   async _highlight() {
     // VS Code extension uses this one, keep it for now.
     return this._frame._highlight(this._selector);
@@ -130,6 +131,34 @@ export class Locator implements api.Locator {
 
   locator(selector: string, options?: LocatorOptions): Locator {
     return new Locator(this._frame, this._selector + ' >> ' + selector, options);
+  }
+
+  getByTestId(testId: string): Locator {
+    return this.locator(getByTestIdSelector(testIdAttributeName(), testId));
+  }
+
+  getByAltText(text: string | RegExp, options?: { exact?: boolean }): Locator {
+    return this.locator(getByAltTextSelector(text, options));
+  }
+
+  getByLabel(text: string | RegExp, options?: { exact?: boolean }): Locator {
+    return this.locator(getByLabelSelector(text, options));
+  }
+
+  getByPlaceholder(text: string | RegExp, options?: { exact?: boolean }): Locator {
+    return this.locator(getByPlaceholderSelector(text, options));
+  }
+
+  getByText(text: string | RegExp, options?: { exact?: boolean }): Locator {
+    return this.locator(getByTextSelector(text, options));
+  }
+
+  getByTitle(text: string | RegExp, options?: { exact?: boolean }): Locator {
+    return this.locator(getByTitleSelector(text, options));
+  }
+
+  getByRole(role: string, options: ByRoleOptions = {}): Locator {
+    return this.locator(getByRoleSelector(role, options));
   }
 
   frameLocator(selector: string): FrameLocator {
@@ -162,6 +191,10 @@ export class Locator implements api.Locator {
 
   async focus(options?: TimeoutOptions): Promise<void> {
     return this._frame.focus(this._selector, { strict: true, ...options });
+  }
+
+  async blur(options?: TimeoutOptions): Promise<void> {
+    await this._frame._channel.blur({ selector: this._selector, strict: true, ...options });
   }
 
   async count(): Promise<number> {
@@ -273,7 +306,7 @@ export class Locator implements api.Locator {
     await this._frame._channel.waitForSelector({ selector: this._selector, strict: true, omitReturnValue: true, ...options });
   }
 
-  async _expect(customStackTrace: ParsedStackTrace, expression: string, options: Omit<FrameExpectOptions, 'expectedValue'> & { expectedValue?: any }): Promise<{ matches: boolean, received?: any, log?: string[] }> {
+  async _expect(customStackTrace: ParsedStackTrace, expression: string, options: Omit<FrameExpectOptions, 'expectedValue'> & { expectedValue?: any }): Promise<{ matches: boolean, received?: any, log?: string[], timedOut?: boolean }> {
     return this._frame._wrapApiCall(async () => {
       const params: channels.FrameExpectParams = { selector: this._selector, expression, ...options, isNot: !!options.isNot };
       params.expectedValue = serializeArgument(options.expectedValue);
@@ -303,11 +336,39 @@ export class FrameLocator implements api.FrameLocator {
   }
 
   locator(selector: string, options?: { hasText?: string | RegExp }): Locator {
-    return new Locator(this._frame, this._frameSelector + ' >> control=enter-frame >> ' + selector, options);
+    return new Locator(this._frame, this._frameSelector + ' >> internal:control=enter-frame >> ' + selector, options);
+  }
+
+  getByTestId(testId: string): Locator {
+    return this.locator(getByTestIdSelector(testIdAttributeName(), testId));
+  }
+
+  getByAltText(text: string | RegExp, options?: { exact?: boolean }): Locator {
+    return this.locator(getByAltTextSelector(text, options));
+  }
+
+  getByLabel(text: string | RegExp, options?: { exact?: boolean }): Locator {
+    return this.locator(getByLabelSelector(text, options));
+  }
+
+  getByPlaceholder(text: string | RegExp, options?: { exact?: boolean }): Locator {
+    return this.locator(getByPlaceholderSelector(text, options));
+  }
+
+  getByText(text: string | RegExp, options?: { exact?: boolean }): Locator {
+    return this.locator(getByTextSelector(text, options));
+  }
+
+  getByTitle(text: string | RegExp, options?: { exact?: boolean }): Locator {
+    return this.locator(getByTitleSelector(text, options));
+  }
+
+  getByRole(role: string, options: ByRoleOptions = {}): Locator {
+    return this.locator(getByRoleSelector(role, options));
   }
 
   frameLocator(selector: string): FrameLocator {
-    return new FrameLocator(this._frame, this._frameSelector + ' >> control=enter-frame >> ' + selector);
+    return new FrameLocator(this._frame, this._frameSelector + ' >> internal:control=enter-frame >> ' + selector);
   }
 
   first(): FrameLocator {
@@ -321,4 +382,14 @@ export class FrameLocator implements api.FrameLocator {
   nth(index: number): FrameLocator {
     return new FrameLocator(this._frame, this._frameSelector + ` >> nth=${index}`);
   }
+}
+
+let _testIdAttributeName: string = 'data-testid';
+
+export function testIdAttributeName(): string {
+  return _testIdAttributeName;
+}
+
+export function setTestIdAttribute(attributeName: string) {
+  _testIdAttributeName = attributeName;
 }

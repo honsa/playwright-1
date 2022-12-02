@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { FrameSnapshot, NodeSnapshot, RenderedFrameSnapshot, ResourceSnapshot } from '@playwright-core/server/trace/common/snapshotTypes';
+import type { FrameSnapshot, NodeSnapshot, RenderedFrameSnapshot, ResourceSnapshot } from '@trace/snapshot';
 
 export class SnapshotRenderer {
   private _snapshots: FrameSnapshot[];
@@ -259,7 +259,7 @@ function snapshotScript() {
       if (pointX) {
         const pointElement = document.createElement('x-pw-pointer');
         pointElement.style.position = 'fixed';
-        pointElement.style.backgroundColor = 'red';
+        pointElement.style.backgroundColor = '#f44336';
         pointElement.style.width = '20px';
         pointElement.style.height = '20px';
         pointElement.style.borderRadius = '10px';

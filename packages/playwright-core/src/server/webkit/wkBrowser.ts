@@ -25,15 +25,15 @@ import * as network from '../network';
 import type { Page, PageBinding, PageDelegate } from '../page';
 import type { ConnectionTransport } from '../transport';
 import type * as types from '../types';
-import type * as channels from '../../protocol/channels';
+import type * as channels from '@protocol/channels';
 import type { Protocol } from './protocol';
 import type { PageProxyMessageReceivedPayload } from './wkConnection';
 import { kPageProxyMessageReceived, WKConnection, WKSession } from './wkConnection';
 import { WKPage } from './wkPage';
 import { kBrowserClosedError } from '../../common/errors';
 
-const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15';
-const BROWSER_VERSION = '16.0';
+const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15';
+const BROWSER_VERSION = '16.4';
 
 export class WKBrowser extends Browser {
   private readonly _connection: WKConnection;
@@ -338,9 +338,14 @@ export class WKBrowserContext extends BrowserContext {
   onClosePersistent() {}
 
   async doClose() {
-    assert(this._browserContextId);
-    await this._browser._browserSession.send('Playwright.deleteContext', { browserContextId: this._browserContextId });
-    this._browser._contexts.delete(this._browserContextId);
+    if (!this._browserContextId) {
+      await Promise.all(this._wkPages().map(wkPage => wkPage._stopVideo()));
+      // Closing persistent context should close the browser.
+      await this._browser.close();
+    } else {
+      await this._browser._browserSession.send('Playwright.deleteContext', { browserContextId: this._browserContextId });
+      this._browser._contexts.delete(this._browserContextId);
+    }
   }
 
   async cancelDownload(uuid: string) {

@@ -92,6 +92,7 @@ export interface FullConfig<TestArgs = {}, WorkerArgs = {}> {
   updateSnapshots: 'all' | 'none' | 'missing';
   workers: number;
   webServer: TestConfigWebServer | null;
+  configFile?: string;
   // [internal] !!! DO NOT ADD TO THIS !!! See prior note.
 }
 
@@ -128,7 +129,7 @@ export interface TestType<TestArgs extends KeyValue, WorkerArgs extends KeyValue
     parallel: SuiteFunction & {
       only: SuiteFunction;
     };
-    configure: (options: { mode?: 'parallel' | 'serial' }) => void;
+    configure: (options: { mode?: 'parallel' | 'serial', retries?: number, timeout?: number }) => void;
   };
   skip(title: string, testFunction: (args: TestArgs & WorkerArgs, testInfo: TestInfo) => Promise<void> | void): void;
   skip(): void;
@@ -195,6 +196,11 @@ type ConnectOptions = {
   timeout?: number;
 };
 
+export interface Storage {
+  get<T>(name: string): Promise<T | undefined>;
+  set<T>(name: string, value: T | undefined): Promise<void>;
+}
+
 export interface PlaywrightWorkerOptions {
   browserName: BrowserName;
   defaultBrowserType: BrowserName;
@@ -227,6 +233,7 @@ export interface PlaywrightTestOptions {
   permissions: string[] | undefined;
   proxy: Proxy | undefined;
   storageState: StorageState | undefined;
+  storageStateName: string | undefined;
   timezoneId: string | undefined;
   userAgent: string | undefined;
   viewport: ViewportSize | null | undefined;
@@ -235,6 +242,7 @@ export interface PlaywrightTestOptions {
   actionTimeout: number | undefined;
   navigationTimeout: number | undefined;
   serviceWorkers: ServiceWorkerPolicy | undefined;
+  testIdAttribute: string | undefined;
 }
 
 
@@ -294,7 +302,7 @@ type MakeMatchers<R, T> = BaseMatchers<R, T> & {
     * If the promise is fulfilled the assertion fails.
     */
     rejects: MakeMatchers<Promise<R>, Awaited<T>>;
-  } & ScreenshotAssertions &
+  } & SnapshotAssertions &
   ExtraMatchers<T, Page, PageAssertions> &
   ExtraMatchers<T, Locator, LocatorAssertions> &
   ExtraMatchers<T, APIResponse, APIResponseAssertions>;

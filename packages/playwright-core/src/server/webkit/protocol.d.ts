@@ -861,6 +861,10 @@ export module Protocol {
        */
       type: "media-rule"|"media-import-rule"|"media-link-node"|"media-style-node"|"supports-rule"|"layer-rule"|"layer-import-rule"|"container-rule";
       /**
+       * The CSS rule identifier for the `@rule` (absent for non-editable grouping rules). In CSSOM terms, this is the parent rule of either the previous Grouping for a CSSRule, or of a CSSRule itself.
+       */
+      ruleId?: CSSRuleId;
+      /**
        * Query text if specified by a @media, @supports, or @container rule. Layer name (or not present for anonymous layers) for @layer rules.
        */
       text?: string;
@@ -868,6 +872,10 @@ export module Protocol {
        * URL of the document containing the CSS grouping.
        */
       sourceURL?: string;
+      /**
+       * @-rule's header text range in the enclosing stylesheet (if available). This is from the first non-whitespace character after the @ declarartion to the last non-whitespace character before an opening curly bracket or semicolon.
+       */
+      range?: SourceRange;
     }
     /**
      * A representation of WebCore::Font. Conceptually this is backed by either a font file on disk or from the network.
@@ -881,6 +889,14 @@ export module Protocol {
        * The variation axes defined by the font.
        */
       variationAxes: FontVariationAxis[];
+      /**
+       * Whether the font has synthesized its boldness or not.
+       */
+      synthesizedBold?: boolean;
+      /**
+       * Whether the font has synthesized its obliqueness or not
+       */
+      synthesizedOblique?: boolean;
     }
     /**
      * A single variation axis associated with a Font.
@@ -910,7 +926,7 @@ export module Protocol {
     /**
      * Relevant layout information about the node. Things not in this list are not important to Web Inspector.
      */
-    export type LayoutFlag = "rendered"|"flex"|"grid";
+    export type LayoutFlag = "rendered"|"scrollable"|"flex"|"grid"|"event";
     /**
      * The mode for how layout context type changes are handled (default: <code>Observed</code>). <code>Observed</code> limits handling to those nodes already known to the frontend by other means (generally, this means the node is a visible item in the Elements tab). <code>All</code> informs the frontend of all layout context type changes and all nodes with a known layout context are sent to the frontend.
      */
@@ -1109,6 +1125,19 @@ export module Protocol {
        * The resulting rule after the selector modification.
        */
       rule: CSSRule;
+    }
+    /**
+     * Modifies an @rule grouping's header text.
+     */
+    export type setGroupingHeaderTextParameters = {
+      ruleId: CSSRuleId;
+      headerText: string;
+    }
+    export type setGroupingHeaderTextReturnValue = {
+      /**
+       * The resulting grouping after the header text modification.
+       */
+      grouping: Grouping;
     }
     /**
      * Creates a new special "inspector" stylesheet in the frame with given <code>frameId</code>.
@@ -2557,6 +2586,10 @@ export module Protocol {
        * Id of the node to get listeners for.
        */
       nodeId: NodeId;
+      /**
+       * Controls whether ancestor event listeners are included. Defaults to true.
+       */
+      includeAncestors?: boolean;
     }
     export type getEventListenersForNodeReturnValue = {
       /**
@@ -2975,6 +3008,10 @@ export module Protocol {
        */
       objectId?: Runtime.RemoteObjectId;
       /**
+       * Id of the frame to resolve the owner element.
+       */
+      frameId?: Network.FrameId;
+      /**
        * Specifies in which execution context to adopt to.
        */
       executionContextId?: Runtime.ExecutionContextId;
@@ -3207,6 +3244,14 @@ might return multiple quads for inline nodes.
        */
       eventName?: string;
       /**
+       * If true, eventName is case sensitive. Defaults to true.
+       */
+      caseSensitive?: boolean;
+      /**
+       * If true, treats eventName as a regex. Defaults to false.
+       */
+      isRegex?: boolean;
+      /**
        * Options to apply to this breakpoint to modify its behavior.
        */
       options?: Debugger.BreakpointOptions;
@@ -3222,6 +3267,14 @@ might return multiple quads for inline nodes.
        * The name of the specific event to stop on.
        */
       eventName?: string;
+      /**
+       * If true, eventName is case sensitive. Defaults to true.
+       */
+      caseSensitive?: boolean;
+      /**
+       * If true, treats eventName as a regex. Defaults to false.
+       */
+      isRegex?: boolean;
     }
     export type removeEventBreakpointReturnValue = {
     }
@@ -3722,7 +3775,7 @@ might return multiple quads for inline nodes.
       /**
        * Pause reason.
        */
-      reason: "XHR"|"Fetch"|"DOM"|"AnimationFrame"|"Interval"|"Listener"|"Timeout"|"exception"|"assert"|"CSPViolation"|"DebuggerStatement"|"Breakpoint"|"PauseOnNextStatement"|"Microtask"|"FunctionCall"|"BlackboxedScript"|"other";
+      reason: "URL"|"DOM"|"AnimationFrame"|"Interval"|"Listener"|"Timeout"|"exception"|"assert"|"CSPViolation"|"DebuggerStatement"|"Breakpoint"|"PauseOnNextStatement"|"Microtask"|"FunctionCall"|"BlackboxedScript"|"other";
       /**
        * Object containing break-specific auxiliary properties.
        */
@@ -4015,6 +4068,25 @@ might return multiple quads for inline nodes.
        * Information about the function.
        */
       details: FunctionDetails;
+    }
+    /**
+     * Returns a list of valid breakpoint locations within the given location range.
+     */
+    export type getBreakpointLocationsParameters = {
+      /**
+       * Starting location to look for breakpoint locations after (inclusive). Must have same scriptId as end.
+       */
+      start: Location;
+      /**
+       * Ending location to look for breakpoint locations before (exclusive). Must have same scriptId as start.
+       */
+      end: Location;
+    }
+    export type getBreakpointLocationsReturnValue = {
+      /**
+       * List of resolved breakpoint locations.
+       */
+      locations: Location[];
     }
     /**
      * Control whether the debugger pauses execution before `debugger` statements.
@@ -9011,6 +9083,7 @@ the top of the viewport and Y increases as it proceeds towards the bottom of the
     "CSS.setStyleSheetText": CSS.setStyleSheetTextParameters;
     "CSS.setStyleText": CSS.setStyleTextParameters;
     "CSS.setRuleSelector": CSS.setRuleSelectorParameters;
+    "CSS.setGroupingHeaderText": CSS.setGroupingHeaderTextParameters;
     "CSS.createStyleSheet": CSS.createStyleSheetParameters;
     "CSS.addRule": CSS.addRuleParameters;
     "CSS.getSupportedCSSProperties": CSS.getSupportedCSSPropertiesParameters;
@@ -9122,6 +9195,7 @@ the top of the viewport and Y increases as it proceeds towards the bottom of the
     "Debugger.searchInContent": Debugger.searchInContentParameters;
     "Debugger.getScriptSource": Debugger.getScriptSourceParameters;
     "Debugger.getFunctionDetails": Debugger.getFunctionDetailsParameters;
+    "Debugger.getBreakpointLocations": Debugger.getBreakpointLocationsParameters;
     "Debugger.setPauseOnDebuggerStatements": Debugger.setPauseOnDebuggerStatementsParameters;
     "Debugger.setPauseOnExceptions": Debugger.setPauseOnExceptionsParameters;
     "Debugger.setPauseOnAssertions": Debugger.setPauseOnAssertionsParameters;
@@ -9318,6 +9392,7 @@ the top of the viewport and Y increases as it proceeds towards the bottom of the
     "CSS.setStyleSheetText": CSS.setStyleSheetTextReturnValue;
     "CSS.setStyleText": CSS.setStyleTextReturnValue;
     "CSS.setRuleSelector": CSS.setRuleSelectorReturnValue;
+    "CSS.setGroupingHeaderText": CSS.setGroupingHeaderTextReturnValue;
     "CSS.createStyleSheet": CSS.createStyleSheetReturnValue;
     "CSS.addRule": CSS.addRuleReturnValue;
     "CSS.getSupportedCSSProperties": CSS.getSupportedCSSPropertiesReturnValue;
@@ -9429,6 +9504,7 @@ the top of the viewport and Y increases as it proceeds towards the bottom of the
     "Debugger.searchInContent": Debugger.searchInContentReturnValue;
     "Debugger.getScriptSource": Debugger.getScriptSourceReturnValue;
     "Debugger.getFunctionDetails": Debugger.getFunctionDetailsReturnValue;
+    "Debugger.getBreakpointLocations": Debugger.getBreakpointLocationsReturnValue;
     "Debugger.setPauseOnDebuggerStatements": Debugger.setPauseOnDebuggerStatementsReturnValue;
     "Debugger.setPauseOnExceptions": Debugger.setPauseOnExceptionsReturnValue;
     "Debugger.setPauseOnAssertions": Debugger.setPauseOnAssertionsReturnValue;

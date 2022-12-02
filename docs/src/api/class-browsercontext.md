@@ -73,7 +73,6 @@ Only works with Chromium browser's persistent context.
 
 Emitted when new background page is created in the context.
 
-
 ```js
 const backgroundPage = await context.waitForEvent('backgroundpage');
 ```
@@ -107,30 +106,29 @@ popup with `window.open('http://example.com')`, this event will fire when the ne
 done and its response has started loading in the popup.
 
 ```js
-const [newPage] = await Promise.all([
-  context.waitForEvent('page'),
-  page.locator('a[target=_blank]').click(),
-]);
+const newPagePromise = context.waitForEvent('page');
+await page.getByText('open new page').click();
+const newPage = await newPagePromise;
 console.log(await newPage.evaluate('location.href'));
 ```
 
 ```java
 Page newPage = context.waitForPage(() -> {
-  page.locator("a[target=_blank]").click();
+  page.getByText("open new page").click();
 });
 System.out.println(newPage.evaluate("location.href"));
 ```
 
 ```python async
 async with context.expect_page() as page_info:
-    await page.locator("a[target=_blank]").click(),
+    await page.get_by_text("open new page").click(),
 page = await page_info.value
 print(await page.evaluate("location.href"))
 ```
 
 ```python sync
 with context.expect_page() as page_info:
-    page.locator("a[target=_blank]").click(),
+    page.get_by_text("open new page").click(),
 page = page_info.value
 print(page.evaluate("location.href"))
 ```
@@ -138,7 +136,7 @@ print(page.evaluate("location.href"))
 ```csharp
 var popup = await context.RunAndWaitForPageAsync(async =>
 {
-    await page.Locator("a").ClickAsync();
+    await page.GetByText("open new page").ClickAsync();
 });
 Console.WriteLine(await popup.EvaluateAsync<string>("location.href"));
 ```
@@ -204,6 +202,8 @@ Emitted when new service worker is created in the context.
 Adds cookies into this browser context. All pages within this context will have these cookies installed. Cookies can be
 obtained via [`method: BrowserContext.cookies`].
 
+**Usage**
+
 ```js
 await browserContext.addCookies([cookieObject1, cookieObject2]);
 ```
@@ -247,6 +247,8 @@ Adds a script which would be evaluated in one of the following scenarios:
 
 The script is evaluated after the document was created but before any of its scripts were run. This is useful to amend
 the JavaScript environment, e.g. to seed `Math.random`.
+
+**Usage**
 
 An example of overriding `Math.random` before the page loads:
 
@@ -337,6 +339,8 @@ Clears context cookies.
 
 Clears all permission overrides for the browser context.
 
+**Usage**
+
 ```js
 const context = await browser.newContext();
 await context.grantPermissions(['clipboard-read']);
@@ -416,6 +420,8 @@ BrowserContext, page: Page, frame: Frame }`.
 
 See [`method: Page.exposeBinding`] for page-only version.
 
+**Usage**
+
 An example of exposing page URL to all frames in all pages in the context:
 
 ```js
@@ -435,7 +441,7 @@ const { webkit } = require('playwright');  // Or 'chromium' or 'firefox'.
     <button onclick="onClick()">Click me</button>
     <div></div>
   `);
-  await page.locator('button').click();
+  await page.getByRole('button').click();
 })();
 ```
 
@@ -457,7 +463,7 @@ public class Example {
         "</script>\n" +
         "<button onclick=\"onClick()\">Click me</button>\n" +
         "<div></div>");
-      page.locator("button").click();
+      page.getByRole(AriaRole.BUTTON).click();
     }
   }
 }
@@ -482,7 +488,7 @@ async def run(playwright):
     <button onclick="onClick()">Click me</button>
     <div></div>
     """)
-    await page.locator("button").click()
+    await page.get_by_role("button").click()
 
 async def main():
     async with async_playwright() as playwright:
@@ -508,7 +514,7 @@ def run(playwright):
     <button onclick="onClick()">Click me</button>
     <div></div>
     """)
-    page.locator("button").click()
+    page.get_by_role("button").click()
 
 with sync_playwright() as playwright:
     run(playwright)
@@ -530,7 +536,7 @@ await page.SetContentAsync("<script>\n" +
 "</script>\n" +
 "<button onclick=\"onClick()\">Click me</button>\n" +
 "<div></div>");
-await page.Locator("button").ClickAsync();
+await page.GetByRole(AriaRole.Button).ClickAsync();
 ```
 
 An example of passing an element handle:
@@ -640,6 +646,8 @@ If the [`param: callback`] returns a [Promise], it will be awaited.
 
 See [`method: Page.exposeFunction`] for page-only version.
 
+**Usage**
+
 An example of adding a `sha256` function to all pages in the context:
 
 ```js
@@ -660,7 +668,7 @@ const crypto = require('crypto');
     <button onclick="onClick()">Click me</button>
     <div></div>
   `);
-  await page.locator('button').click();
+  await page.getByRole('button').click();
 })();
 ```
 
@@ -696,7 +704,7 @@ public class Example {
         "</script>\n" +
         "<button onclick=\"onClick()\">Click me</button>\n" +
         "<div></div>\n");
-      page.locator("button").click();
+      page.getByRole(AriaRole.BUTTON).click();
     }
   }
 }
@@ -728,7 +736,7 @@ async def run(playwright):
         <button onclick="onClick()">Click me</button>
         <div></div>
     """)
-    await page.locator("button").click()
+    await page.get_by_role("button").click()
 
 async def main():
     async with async_playwright() as playwright:
@@ -761,7 +769,7 @@ def run(playwright):
         <button onclick="onClick()">Click me</button>
         <div></div>
     """)
-    page.locator("button").click()
+    page.get_by_role("button").click()
 
 with sync_playwright() as playwright:
     run(playwright)
@@ -796,7 +804,7 @@ class BrowserContextExamples
         "<button onclick=\"onClick()\">Click me</button>\n" +
         "<div></div>");
 
-        await page.Locator("button").ClickAsync();
+        await page.GetByRole(AriaRole.Button).ClickAsync();
         Console.WriteLine(await page.TextContentAsync("div"));
     }
 }
@@ -894,6 +902,8 @@ is enabled, every request matching the url pattern will stall unless it's contin
 :::note
 [`method: BrowserContext.route`] will not intercept requests intercepted by Service Worker. See [this](https://github.com/microsoft/playwright/issues/1090) issue. We recommend disabling Service Workers when using request interception by setting [`option: Browser.newContext.serviceWorkers`] to `'block'`.
 :::
+
+**Usage**
 
 An example of a naive handler that aborts all image requests:
 
@@ -1083,7 +1093,6 @@ Path to a [HAR](http://www.softwareishard.com/blog/har-12-spec) file with prerec
 ### option: BrowserContext.routeFromHAR.notFound
 * since: v1.23
 - `notFound` ?<[HarNotFound]<"abort"|"fallback">>
-
 * If set to 'abort' any request not found in the HAR file will be aborted.
 * If set to 'fallback' falls through to the next route handler in the handler chain.
 
@@ -1093,7 +1102,7 @@ Defaults to abort.
 * since: v1.23
 - `update` ?<boolean>
 
-If specified, updates the given HAR with the actual network information instead of serving from file.
+If specified, updates the given HAR with the actual network information instead of serving from file. The file is written to disk when [`method: BrowserContext.close`] is called.
 
 ### option: BrowserContext.routeFromHAR.url
 * since: v1.23
@@ -1172,6 +1181,8 @@ An object containing additional HTTP headers to be sent with every request. All 
 
 Sets the context's geolocation. Passing `null` or `undefined` emulates position unavailable.
 
+**Usage**
+
 ```js
 await browserContext.setGeolocation({latitude: 59.95, longitude: 30.31667});
 ```
@@ -1211,8 +1222,7 @@ its geolocation.
 ## async method: BrowserContext.setHTTPCredentials
 * since: v1.8
 * langs: js
-
-**DEPRECATED** Browsers may cache credentials after successful authentication. Create a new browser context instead.
+* deprecated: Browsers may cache credentials after successful authentication. Create a new browser context instead.
 
 ### param: BrowserContext.setHTTPCredentials.httpCredentials
 * since: v1.8
@@ -1297,33 +1307,34 @@ Optional handler function used to register a routing with [`method: BrowserConte
 Waits for event to fire and passes its value into the predicate function. Returns when the predicate returns truthy
 value. Will throw an error if the context closes before the event is fired. Returns the event data value.
 
+**Usage**
+
 ```js
-const [page, _] = await Promise.all([
-  context.waitForEvent('page'),
-  page.locator('button').click()
-]);
+const pagePromise = context.waitForEvent('page');
+await page.getByRole('button').click();
+const page = await pagePromise;
 ```
 
 ```java
-Page newPage = context.waitForPage(() -> page.locator("button").click());
+Page newPage = context.waitForPage(() -> page.getByRole(AriaRole.BUTTON).click());
 ```
 
 ```python async
 async with context.expect_event("page") as event_info:
-    await page.locator("button").click()
+    await page.get_by_role("button").click()
 page = await event_info.value
 ```
 
 ```python sync
 with context.expect_event("page") as event_info:
-    page.locator("button").click()
+    page.get_by_role("button").click()
 page = event_info.value
 ```
 
 ```csharp
 var page = await context.RunAndWaitForPageAsync(async () =>
 {
-    await page.Locator("button").ClickAsync();
+    await page.GetByRole(AriaRole.Button).ClickAsync();
 });
 ```
 
@@ -1380,7 +1391,9 @@ Will throw an error if the browser context is closed before the `event` is fired
 
 ### param: BrowserContext.waitForEvent2.event = %%-wait-for-event-event-%%
 * since: v1.8
+
 ### option: BrowserContext.waitForEvent2.predicate = %%-wait-for-event-predicate-%%
 * since: v1.8
+
 ### option: BrowserContext.waitForEvent2.timeout = %%-wait-for-event-timeout-%%
 * since: v1.8

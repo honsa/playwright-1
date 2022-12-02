@@ -46,6 +46,7 @@ export class Suite extends Base implements reporterTypes.Suite {
   _entries: (Suite | TestCase)[] = [];
   _hooks: { type: 'beforeEach' | 'afterEach' | 'beforeAll' | 'afterAll', fn: Function, location: Location }[] = [];
   _timeout: number | undefined;
+  _retries: number | undefined;
   _annotations: Annotation[] = [];
   _modifiers: Modifier[] = [];
   _parallelMode: 'default' | 'serial' | 'parallel' = 'default';
@@ -103,6 +104,17 @@ export class Suite extends Base implements reporterTypes.Suite {
     return items;
   }
 
+  _deepClone(): Suite {
+    const suite = this._clone();
+    for (const entry of this._entries) {
+      if (entry instanceof Suite)
+        suite._addSuite(entry._deepClone());
+      else
+        suite._addTest(entry._clone());
+    }
+    return suite;
+  }
+
   _clone(): Suite {
     const suite = new Suite(this.title, this._type);
     suite._only = this._only;
@@ -111,6 +123,7 @@ export class Suite extends Base implements reporterTypes.Suite {
     suite._use = this._use.slice();
     suite._hooks = this._hooks.slice();
     suite._timeout = this._timeout;
+    suite._retries = this._retries;
     suite._annotations = this._annotations.slice();
     suite._modifiers = this._modifiers.slice();
     suite._parallelMode = this._parallelMode;

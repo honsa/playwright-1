@@ -16,15 +16,14 @@
 
 import fs from 'fs';
 import path from 'path';
-import type { TestError, TestInfo, TestStatus } from '../types/test';
-import type { FullConfigInternal, FullProjectInternal } from './types';
+import { monotonicTime } from 'playwright-core/lib/utils';
+import type { Storage, TestError, TestInfo, TestStatus } from '../types/test';
 import type { WorkerInitParams } from './ipc';
 import type { Loader } from './loader';
 import type { TestCase } from './test';
 import { TimeoutManager } from './timeoutManager';
-import type { Annotation, TestStepInternal } from './types';
-import { addSuffixToFilePath, getContainedPath, normalizeAndSaveAttachment, sanitizeForFilePath, serializeError, trimLongString } from './util';
-import { monotonicTime } from 'playwright-core/lib/utils';
+import type { Annotation, FullConfigInternal, FullProjectInternal, TestStepInternal } from './types';
+import { getContainedPath, normalizeAndSaveAttachment, sanitizeForFilePath, serializeError, trimLongString } from './util';
 
 export class TestInfoImpl implements TestInfo {
   private _addStepImpl: (data: Omit<TestStepInternal, 'complete'>) => TestStepInternal;
@@ -33,8 +32,8 @@ export class TestInfoImpl implements TestInfo {
   readonly _startTime: number;
   readonly _startWallTime: number;
   private _hasHardError: boolean = false;
-  readonly _screenshotsDir: string;
   readonly _onTestFailureImmediateCallbacks = new Map<() => Promise<void>, string>(); // fn -> title
+  _didTimeout = false;
 
   // ------------ TestInfo fields ------------
   readonly repeatEachIndex: number;
@@ -61,18 +60,16 @@ export class TestInfoImpl implements TestInfo {
   readonly snapshotDir: string;
   errors: TestError[] = [];
   currentStep: TestStepInternal | undefined;
+  private readonly _storage: JsonStorage;
 
   get error(): TestError | undefined {
-    return this.errors.length > 0 ? this.errors[0] : undefined;
+    return this.errors[0];
   }
 
   set error(e: TestError | undefined) {
     if (e === undefined)
       throw new Error('Cannot assign testInfo.error undefined value!');
-    if (!this.errors.length)
-      this.errors.push(e);
-    else
-      this.errors[0] = e;
+    this.errors[0] = e;
   }
 
   get timeout(): number {
@@ -111,6 +108,7 @@ export class TestInfoImpl implements TestInfo {
     this.expectedStatus = test.expectedStatus;
 
     this._timeoutManager = new TimeoutManager(this.project.timeout);
+    this._storage = new JsonStorage(this);
 
     this.outputDir = (() => {
       const relativeTestFilePath = path.relative(this.project.testDir, test._requireFile.replace(/\.(spec|test)\.(js|ts|mjs)$/, ''));
@@ -130,10 +128,6 @@ export class TestInfoImpl implements TestInfo {
     this.snapshotDir = (() => {
       const relativeTestFilePath = path.relative(this.project.testDir, test._requireFile);
       return path.join(this.project.snapshotDir, relativeTestFilePath + '-snapshots');
-    })();
-    this._screenshotsDir = (() => {
-      const relativeTestFilePath = path.relative(this.project.testDir, test._requireFile);
-      return path.join(this.project._screenshotsDir, relativeTestFilePath);
     })();
   }
 
@@ -167,9 +161,11 @@ export class TestInfoImpl implements TestInfo {
   async _runWithTimeout(cb: () => Promise<any>): Promise<void> {
     const timeoutError = await this._timeoutManager.runWithTimeout(cb);
     // Do not overwrite existing failure upon hook/teardown timeout.
-    if (timeoutError && (this.status === 'passed' || this.status === 'skipped')) {
-      this.status = 'timedOut';
+    if (timeoutError && !this._didTimeout) {
+      this._didTimeout = true;
       this.errors.push(timeoutError);
+      if (this.status === 'passed' || this.status === 'skipped')
+        this.status = 'timedOut';
     }
     this.duration = this._timeoutManager.defaultSlotTimings().elapsed | 0;
   }
@@ -238,26 +234,32 @@ export class TestInfoImpl implements TestInfo {
     throw new Error(`The outputPath is not allowed outside of the parent directory. Please fix the defined path.\n\n\toutputPath: ${joinedPath}`);
   }
 
-  snapshotPath(...pathSegments: string[]) {
-    let suffix = '';
-    const projectNamePathSegment = sanitizeForFilePath(this.project.name);
-    if (projectNamePathSegment)
-      suffix += '-' + projectNamePathSegment;
-    if (this.snapshotSuffix)
-      suffix += '-' + this.snapshotSuffix;
-    const subPath = addSuffixToFilePath(path.join(...pathSegments), suffix);
-    const snapshotPath =  getContainedPath(this.snapshotDir, subPath);
-    if (snapshotPath)
-      return snapshotPath;
-    throw new Error(`The snapshotPath is not allowed outside of the parent directory. Please fix the defined path.\n\n\tsnapshotPath: ${subPath}`);
+  _fsSanitizedTestName() {
+    const fullTitleWithoutSpec = this.titlePath.slice(1).join(' ');
+    return sanitizeForFilePath(trimLongString(fullTitleWithoutSpec));
   }
 
-  _screenshotPath(...pathSegments: string[]) {
+  snapshotPath(...pathSegments: string[]) {
     const subPath = path.join(...pathSegments);
-    const screenshotPath = getContainedPath(this._screenshotsDir, subPath);
-    if (screenshotPath)
-      return screenshotPath;
-    throw new Error(`Screenshot name "${subPath}" should not point outside of the parent directory.`);
+    const parsedSubPath = path.parse(subPath);
+    const relativeTestFilePath = path.relative(this.project.testDir, this._test._requireFile);
+    const parsedRelativeTestFilePath = path.parse(relativeTestFilePath);
+    const projectNamePathSegment = sanitizeForFilePath(this.project.name);
+
+    const snapshotPath = this.project.snapshotPathTemplate
+        .replace(/\{(.)?testDir\}/g, '$1' + this.project.testDir)
+        .replace(/\{(.)?snapshotDir\}/g, '$1' + this.project.snapshotDir)
+        .replace(/\{(.)?snapshotSuffix\}/g, this.snapshotSuffix ? '$1' + this.snapshotSuffix : '')
+        .replace(/\{(.)?testFileDir\}/g, '$1' + parsedRelativeTestFilePath.dir)
+        .replace(/\{(.)?platform\}/g, '$1' + process.platform)
+        .replace(/\{(.)?projectName\}/g, projectNamePathSegment ? '$1' + projectNamePathSegment : '')
+        .replace(/\{(.)?testName\}/g, '$1' + this._fsSanitizedTestName())
+        .replace(/\{(.)?testFileName\}/g, '$1' + parsedRelativeTestFilePath.base)
+        .replace(/\{(.)?testFilePath\}/g, '$1' + relativeTestFilePath)
+        .replace(/\{(.)?arg\}/g, '$1' + path.join(parsedSubPath.dir, parsedSubPath.name))
+        .replace(/\{(.)?ext\}/g, parsedSubPath.ext ? '$1' + parsedSubPath.ext : '');
+
+    return path.normalize(path.resolve(this.config._configDir, snapshotPath));
   }
 
   skip(...args: [arg?: any, description?: string]) {
@@ -278,6 +280,41 @@ export class TestInfoImpl implements TestInfo {
 
   setTimeout(timeout: number) {
     this._timeoutManager.setTimeout(timeout);
+  }
+
+  storage() {
+    return this._storage;
+  }
+}
+
+class JsonStorage implements Storage {
+  constructor(private _testInfo: TestInfoImpl) {
+  }
+
+  private _toFilePath(name: string) {
+    const fileName = sanitizeForFilePath(trimLongString(name)) + '.json';
+    return path.join(this._testInfo.config._storageDir, this._testInfo.project._id, fileName);
+  }
+
+  async get<T>(name: string) {
+    const file = this._toFilePath(name);
+    try {
+      const data = (await fs.promises.readFile(file)).toString('utf-8');
+      return JSON.parse(data) as T;
+    } catch (e) {
+      return undefined;
+    }
+  }
+
+  async set<T>(name: string, value: T | undefined) {
+    const file = this._toFilePath(name);
+    if (value === undefined) {
+      await fs.promises.rm(file, { force: true });
+      return;
+    }
+    const data = JSON.stringify(value, undefined, 2);
+    await fs.promises.mkdir(path.dirname(file), { recursive: true });
+    await fs.promises.writeFile(file, data);
   }
 }
 

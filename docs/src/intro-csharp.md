@@ -73,7 +73,7 @@ dotnet build
 pwsh bin/Debug/netX/playwright.ps1 install
 ```
 
-If `pwsh` is not available, you have to [install PowerShell](https://docs.microsoft.com/powershell/scripting/install/installing-powershell). 
+If `pwsh` is not available, you have to [install PowerShell](https://docs.microsoft.com/powershell/scripting/install/installing-powershell).
 
 ## Add Example Tests
 
@@ -98,6 +98,7 @@ using NUnit.Framework;
 namespace PlaywrightTests;
 
 [Parallelizable(ParallelScope.Self)]
+[TestFixture]
 public class Tests : PageTest
 {
     [Test]
@@ -109,7 +110,7 @@ public class Tests : PageTest
         await Expect(Page).ToHaveTitleAsync(new Regex("Playwright"));
 
         // create a locator
-        var getStarted = Page.Locator("text=Get Started");
+        var getStarted = Page.GetByRole(AriaRole.Link, new() { Name = "Get started" });
 
         // Expect an attribute "to be strictly equal" to the value.
         await Expect(getStarted).ToHaveAttributeAsync("href", "/docs/intro");
@@ -144,7 +145,7 @@ public class UnitTest1 : PageTest
         await Expect(Page).ToHaveTitleAsync(new Regex("Playwright"));
 
         // create a locator
-        var getStarted = Page.Locator("text=Get Started");
+        var getStarted = Page.GetByRole(AriaRole.Link, new() { Name = "Get started" });
 
         // Expect an attribute "to be strictly equal" to the value.
         await Expect(getStarted).ToHaveAttributeAsync("href", "/docs/intro");
@@ -194,7 +195,7 @@ See our doc on [Test Runners](./test-runners.md) to learn more about running tes
 ## What's next
 
 - [Write tests using web first assertions, page fixtures and locators](./writing-tests.md)
-- [Run single tests, multiple tests, headed mode](./running-tests.md)
+- [Run single test, multiple tests, headed mode](./running-tests.md)
 - [Learn more about the NUnit and MSTest base classes](./test-runners.md)
 - [Generate tests with Codegen](./codegen.md)
 - [See a trace of your tests](./trace-viewer-intro.md)

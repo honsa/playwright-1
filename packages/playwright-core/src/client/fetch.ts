@@ -20,12 +20,11 @@ import * as util from 'util';
 import type { Serializable } from '../../types/structs';
 import type * as api from '../../types/types';
 import type { HeadersArray } from '../common/types';
-import type * as channels from '../protocol/channels';
+import type * as channels from '@protocol/channels';
 import { kBrowserOrContextClosedError } from '../common/errors';
 import { assert, headersObjectToArray, isFilePayload, isString, objectToArray } from '../utils';
 import { mkdirIfNeeded } from '../utils/fileUtils';
 import { ChannelOwner } from './channelOwner';
-import * as network from './network';
 import { RawHeaders } from './network';
 import type { FilePayload, Headers, StorageState } from './types';
 import type { Playwright } from './playwright';
@@ -42,6 +41,7 @@ export type FetchOptions = {
   timeout?: number,
   failOnStatusCode?: boolean,
   ignoreHTTPSErrors?: boolean,
+  maxRedirects?: number,
 };
 
 type NewContextOptions = Omit<channels.PlaywrightNewRequestOptions, 'extraHTTPHeaders' | 'storageState'> & {
@@ -50,7 +50,6 @@ type NewContextOptions = Omit<channels.PlaywrightNewRequestOptions, 'extraHTTPHe
 };
 
 type RequestWithBodyOptions = Omit<FetchOptions, 'method'>;
-type RequestWithoutBodyOptions = Omit<RequestWithBodyOptions, 'data'|'form'|'multipart'>;
 
 export class APIRequest implements api.APIRequest {
   private _playwright: Playwright;
@@ -106,14 +105,14 @@ export class APIRequestContext extends ChannelOwner<channels.APIRequestContextCh
     });
   }
 
-  async head(url: string, options?: RequestWithoutBodyOptions): Promise<APIResponse> {
+  async head(url: string, options?: RequestWithBodyOptions): Promise<APIResponse> {
     return this.fetch(url, {
       ...options,
       method: 'HEAD',
     });
   }
 
-  async get(url: string, options?: RequestWithoutBodyOptions): Promise<APIResponse> {
+  async get(url: string, options?: RequestWithBodyOptions): Promise<APIResponse> {
     return this.fetch(url, {
       ...options,
       method: 'GET',
@@ -142,15 +141,22 @@ export class APIRequestContext extends ChannelOwner<channels.APIRequestContextCh
   }
 
   async fetch(urlOrRequest: string | api.Request, options: FetchOptions = {}): Promise<APIResponse> {
+    const url = isString(urlOrRequest) ? urlOrRequest : undefined;
+    const request = isString(urlOrRequest) ? undefined : urlOrRequest;
+    return this._innerFetch({ url, request, ...options });
+  }
+
+  async _innerFetch(options: FetchOptions & { url?: string, request?: api.Request } = {}): Promise<APIResponse> {
     return this._wrapApiCall(async () => {
-      const request: network.Request | undefined = (urlOrRequest instanceof network.Request) ? urlOrRequest as network.Request : undefined;
-      assert(request || typeof urlOrRequest === 'string', 'First argument must be either URL string or Request');
+      assert(options.request || typeof options.url === 'string', 'First argument must be either URL string or Request');
       assert((options.data === undefined ? 0 : 1) + (options.form === undefined ? 0 : 1) + (options.multipart === undefined ? 0 : 1) <= 1, `Only one of 'data', 'form' or 'multipart' can be specified`);
-      const url = request ? request.url() : urlOrRequest as string;
+      assert(options.maxRedirects === undefined || options.maxRedirects >= 0, `'maxRedirects' should be greater than or equal to '0'`);
+      const url = options.url !== undefined ? options.url : options.request!.url();
       const params = objectToArray(options.params);
-      const method = options.method || request?.method();
+      const method = options.method || options.request?.method();
+      const maxRedirects = options.maxRedirects;
       // Cannot call allHeaders() here as the request may be paused inside route handler.
-      const headersObj = options.headers || request?.headers() ;
+      const headersObj = options.headers || options.request?.headers() ;
       const headers = headersObj ? headersObjectToArray(headersObj) : undefined;
       let jsonData: any;
       let formData: channels.NameValue[] | undefined;
@@ -188,7 +194,7 @@ export class APIRequestContext extends ChannelOwner<channels.APIRequestContextCh
         }
       }
       if (postDataBuffer === undefined && jsonData === undefined && formData === undefined && multipartData === undefined)
-        postDataBuffer = request?.postDataBuffer() || undefined;
+        postDataBuffer = options.request?.postDataBuffer() || undefined;
       const result = await this._channel.fetch({
         url,
         params,
@@ -201,6 +207,7 @@ export class APIRequestContext extends ChannelOwner<channels.APIRequestContextCh
         timeout: options.timeout,
         failOnStatusCode: options.failOnStatusCode,
         ignoreHTTPSErrors: options.ignoreHTTPSErrors,
+        maxRedirects: maxRedirects,
       });
       return new APIResponse(this, result.response);
     });

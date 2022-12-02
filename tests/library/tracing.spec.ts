@@ -107,6 +107,19 @@ test('should not collect snapshots by default', async ({ context, page, server }
   expect(events.some(e => e.type === 'resource-snapshot')).toBeFalsy();
 });
 
+test('should not include buffers in the trace', async ({ context, page, server, mode }, testInfo) => {
+  test.skip(mode !== 'default', 'no buffers with remote connections');
+
+  await context.tracing.start({ snapshots: true });
+  await page.goto(server.PREFIX + '/empty.html');
+  await page.screenshot();
+  await context.tracing.stop({ path: testInfo.outputPath('trace.zip') });
+  const { events } = await parseTrace(testInfo.outputPath('trace.zip'));
+  const screenshotEvent = events.find(e => e.type === 'action' && e.metadata.apiName === 'page.screenshot');
+  expect(screenshotEvent.metadata.snapshots.length).toBe(2);
+  expect(screenshotEvent.metadata.result).toEqual({});
+});
+
 test('should exclude internal pages', async ({ browserName, context, page, server }, testInfo) => {
   test.fixme(true, 'https://github.com/microsoft/playwright/issues/6743');
   await page.goto(server.EMPTY_PAGE);
@@ -182,7 +195,7 @@ test('should not include trace resources from the provious chunks', async ({ con
   await page.setContent('<button>Click</button>');
   await page.click('"Click"');
   // Give it enough time for both screenshots to get into the trace.
-  await new Promise(f => setTimeout(f, 1000));
+  await new Promise(f => setTimeout(f, 3000));
   await context.tracing.stopChunk({ path: testInfo.outputPath('trace1.zip') });
 
   await context.tracing.startChunk();

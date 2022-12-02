@@ -9,29 +9,19 @@ browser context is closed.
 Download event is emitted once the download starts. Download path becomes available once download completes:
 
 ```js
-// Note that Promise.all prevents a race condition
-// between clicking and waiting for the download.
-const [ download ] = await Promise.all([
-  // It is important to call waitForEvent before click to set up waiting.
-  page.waitForEvent('download'),
-  // Triggers the download.
-  page.locator('text=Download file').click(),
-]);
-// wait for download to complete
-const path = await download.path();
-```
+// Start waiting for download before clicking. Note no await.
+const downloadPromise = page.waitForEvent('download');
+await page.getByText('Download file').click();
+const download = await downloadPromise;
 
-```java
-// wait for download to start
-Download download  = page.waitForDownload(() -> page.locator("a").click());
-// wait for download to complete
-Path path = download.path();
+// Wait for the download process to complete.
+console.log(await download.path());
 ```
 
 ```java
 // wait for download to start
 Download download = page.waitForDownload(() -> {
-  page.locator("a").click();
+  page.getByText("Download file").click();
 });
 // wait for download to complete
 Path path = download.path();
@@ -39,7 +29,7 @@ Path path = download.path();
 
 ```python async
 async with page.expect_download() as download_info:
-    await page.locator("a").click()
+    await page.get_by_text("Download file").click()
 download = await download_info.value
 # waits for download to complete
 path = await download.path()
@@ -47,7 +37,7 @@ path = await download.path()
 
 ```python sync
 with page.expect_download() as download_info:
-    page.locator("a").click()
+    page.get_by_text("Download file").click()
 download = download_info.value
 # wait for download to complete
 path = download.path()
@@ -56,7 +46,7 @@ path = download.path()
 ```csharp
 var download = await page.RunAndWaitForDownloadAsync(async () =>
 {
-    await page.Locator("#downloadButton").ClickAsync();
+    await page.GetByText("Download file").ClickAsync();
 });
 Console.WriteLine(await download.PathAsync());
 ```

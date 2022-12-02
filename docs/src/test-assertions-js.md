@@ -3,8 +3,7 @@ id: test-assertions
 title: "Assertions"
 ---
 
-Playwright Test uses [expect](https://jestjs.io/docs/expect) library for test assertions. This library provides
-a lot of matchers like `toEqual`, `toContain`, `toMatch`, `toMatchSnapshot` and many more:
+Playwright Test uses [expect](https://jestjs.io/docs/expect) library for test assertions. This library provides a lot of matchers like `toEqual`, `toContain`, `toMatch`, `toMatchSnapshot` and many more:
 
 ```js
 expect(success).toBeTruthy();
@@ -17,14 +16,37 @@ the expected condition is met. Consider the following example:
 await expect(page.locator('.status')).toHaveText('Submitted');
 ```
 
-Playwright Test will be re-testing the node with the selector `.status` until fetched Node has the `"Submitted"`
-text. It will be re-fetching the node and checking it over and over, until the condition is met or until the timeout is
-reached. You can either pass this timeout or configure it once via the [`property: TestConfig.expect`] value
-in test config.
+Playwright Test will be re-testing the node with the selector `.status` until fetched Node has the `"Submitted"` text. It will be re-fetching the node and checking it over and over, until the condition is met or until the timeout is reached. You can either pass this timeout or configure it once via the [`property: TestConfig.expect`] value in test config.
 
 By default, the timeout for assertions is set to 5 seconds. Learn more about [various timeouts](./test-timeouts.md).
 
-<!-- TOC -->
+## List of assertions
+
+| Assertion | Description |
+| :- | :- |
+| [`method: LocatorAssertions.toBeChecked`] | Checkbox is checked |
+| [`method: LocatorAssertions.toBeDisabled`] | Element is disabled |
+| [`method: LocatorAssertions.toBeEditable`] | Element is enabled |
+| [`method: LocatorAssertions.toBeEmpty`] | Container is empty |
+| [`method: LocatorAssertions.toBeEnabled`] | Element is enabled |
+| [`method: LocatorAssertions.toBeFocused`] | Element is focused |
+| [`method: LocatorAssertions.toBeHidden`] | Element is not visible |
+| [`method: LocatorAssertions.toBeVisible`] | Element is visible |
+| [`method: LocatorAssertions.toContainText`] | Element contains text |
+| [`method: LocatorAssertions.toHaveAttribute`] | Element has a DOM attribute |
+| [`method: LocatorAssertions.toHaveClass`] | Element has a class property |
+| [`method: LocatorAssertions.toHaveCount`] | List has exact number of children |
+| [`method: LocatorAssertions.toHaveCSS`] | Element has CSS property |
+| [`method: LocatorAssertions.toHaveId`] | Element has an ID |
+| [`method: LocatorAssertions.toHaveJSProperty`] | Element has a JavaScript property |
+| [`method: LocatorAssertions.toHaveScreenshot#1`] | Element has a screenshot |
+| [`method: LocatorAssertions.toHaveText`] | Element matches text |
+| [`method: LocatorAssertions.toHaveValue`] | Input has a value |
+| [`method: LocatorAssertions.toHaveValues`] | Select has options selected |
+| [`method: PageAssertions.toHaveScreenshot#1`] | Page has a screenshot |
+| [`method: PageAssertions.toHaveTitle`] | Page has a title |
+| [`method: PageAssertions.toHaveURL`] | Page has a URL |
+| [`method: APIResponseAssertions.toBeOK`] | Response has an OK status |
 
 ## Negating Matchers
 
@@ -64,12 +86,14 @@ await expect.soft(page.locator('#eta')).toHaveText('1 day');
 expect(test.info().errors).toHaveLength(0);
 ```
 
+Note that soft assertions only work with Playwright test runner.
+
 ## Custom Expect Message
 
 You can specify a custom error message as a second argument to the `expect` function, for example:
 
 ```js
-await expect(page.locator('text=Name'), 'should be logged in').toBeVisible();
+await expect(page.getByText('Name'), 'should be logged in').toBeVisible();
 ```
 
 The error would look like this:
@@ -79,12 +103,12 @@ The error would look like this:
 
     Call log:
       - expect.toBeVisible with timeout 5000ms
-      - waiting for selector "text=Name"
+      - waiting for "getByText('Name')"
 
 
       2 |
       3 | test('example test', async({ page }) => {
-    > 4 |   await expect(page.locator('text=Name'), 'should be logged in').toBeVisible();
+    > 4 |   await expect(page.getByText('Name'), 'should be logged in').toBeVisible();
         |                                                                  ^
       5 | });
       6 |

@@ -15,7 +15,7 @@
  */
 
 import { EventEmitter } from 'events';
-import type * as channels from '../protocol/channels';
+import type * as channels from '@protocol/channels';
 import { maybeFindValidator, ValidationError, type ValidatorContext } from '../protocol/validator';
 import { debugLogger } from '../common/debugLogger';
 import type { ParsedStackTrace } from '../utils/stackTrace';
@@ -25,6 +25,8 @@ import { zones } from '../utils/zones';
 import type { ClientInstrumentation } from './clientInstrumentation';
 import type { Connection } from './connection';
 import type { Logger } from './types';
+
+type Listener = (...args: any[]) => void;
 
 export abstract class ChannelOwner<T extends channels.Channel = channels.Channel> extends EventEmitter {
   readonly _connection: Connection;
@@ -37,6 +39,7 @@ export abstract class ChannelOwner<T extends channels.Channel = channels.Channel
   readonly _initializer: channels.InitializerTraits<T>;
   _logger: Logger | undefined;
   _instrumentation: ClientInstrumentation | undefined;
+  private _eventToSubscriptionMapping: Map<string, string> = new Map();
 
   constructor(parent: ChannelOwner | Connection, type: string, guid: string, initializer: channels.InitializerTraits<T>, instrumentation?: ClientInstrumentation) {
     super();
@@ -55,6 +58,51 @@ export abstract class ChannelOwner<T extends channels.Channel = channels.Channel
 
     this._channel = this._createChannel(new EventEmitter());
     this._initializer = initializer;
+  }
+
+  _setEventToSubscriptionMapping(mapping: Map<string, string>) {
+    this._eventToSubscriptionMapping = mapping;
+  }
+
+  private _updateSubscription(event: string | symbol, enabled: boolean) {
+    const protocolEvent = this._eventToSubscriptionMapping.get(String(event));
+    if (protocolEvent)
+      (this._channel as any).updateSubscription({ event: protocolEvent, enabled }).catch(() => {});
+  }
+
+  override on(event: string | symbol, listener: Listener): this {
+    if (!this.listenerCount(event))
+      this._updateSubscription(event, true);
+    super.on(event, listener);
+    return this;
+  }
+
+  override addListener(event: string | symbol, listener: Listener): this {
+    if (!this.listenerCount(event))
+      this._updateSubscription(event, true);
+    super.addListener(event, listener);
+    return this;
+  }
+
+  override prependListener(event: string | symbol, listener: Listener): this {
+    if (!this.listenerCount(event))
+      this._updateSubscription(event, true);
+    super.prependListener(event, listener);
+    return this;
+  }
+
+  override off(event: string | symbol, listener: Listener): this {
+    super.off(event, listener);
+    if (!this.listenerCount(event))
+      this._updateSubscription(event, false);
+    return this;
+  }
+
+  override removeListener(event: string | symbol, listener: Listener): this {
+    super.removeListener(event, listener);
+    if (!this.listenerCount(event))
+      this._updateSubscription(event, false);
+    return this;
   }
 
   _adopt(child: ChannelOwner<any>) {
@@ -132,8 +180,13 @@ export abstract class ChannelOwner<T extends channels.Channel = channels.Channel
       return result;
     } catch (e) {
       const innerError = ((process.env.PWDEBUGIMPL || isUnderTest()) && e.stack) ? '\n<inner error>\n' + e.stack : '';
-      e.message = apiName + ': ' + e.message;
-      e.stack = e.message + '\n' + frameTexts.join('\n') + innerError;
+      if (apiName && !apiName.includes('<anonymous>'))
+        e.message = apiName + ': ' + e.message;
+      const stackFrames = '\n' + frameTexts.join('\n') + innerError;
+      if (stackFrames.trim())
+        e.stack = e.message + stackFrames;
+      else
+        e.stack = '';
       csi?.onApiCallEnd(callCookie, e);
       logApiCall(logger, `<= ${apiName} failed`, isInternal);
       throw e;

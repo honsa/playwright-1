@@ -25,8 +25,8 @@ import { test, expect } from '@playwright/test';
 import { username, password } from './helper';
 
 test('example', async ({ page }) => {
-  await page.locator('#username').fill(username);
-  await page.locator('#password').fill(password);
+  await page.getByLabel('User Name').fill(username);
+  await page.getByLabel('Password').fill(password);
 });
 ```
 
@@ -34,7 +34,7 @@ test('example', async ({ page }) => {
 
 You can opt into using [ECMAScript modules](https://nodejs.org/api/esm.html) by setting `type: "module"` in your `package.json` file. Playwright Test will switch to the ESM mode once it reads the `playwright.config.ts` file, so make sure you have one.
 
-Playwright Test follows the [experimental support for ESM in TypeScript](https://www.typescriptlang.org/docs/handbook/esm-node.html) and, according to the specification, **requires an extension** when importing from a module, either `'.js'` or `'.ts'`.
+Playwright Test follows the [experimental support for ESM in TypeScript](https://www.typescriptlang.org/docs/handbook/esm-node.html) and, according to the specification, **requires a file extension** when importing from a module, either `'.js'` or `'.ts'`.
 
 First, enable modules in your `package.json`:
 
@@ -62,8 +62,8 @@ import { test, expect } from '@playwright/test';
 import { username, password } from './helper.ts';
 
 test('example', async ({ page }) => {
-  await page.locator('#username').fill(username);
-  await page.locator('#password').fill(password);
+  await page.getByLabel('User Name').fill(username);
+  await page.getByLabel('Password').fill(password);
 });
 ```
 
@@ -71,9 +71,28 @@ test('example', async ({ page }) => {
 TypeScript with ESM requires Node.js 16 or higher.
 :::
 
-## TypeScript path mapping
+## tsconfig.json
 
-If you use [path mapping](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping) in your `tsconfig.json`, Playwright Test will pick it up. Make sure that `baseUrl` is also set.
+Playwright will pick up `tsconfig.json` for each source file it loads. Note that Playwright **only supports** the following tsconfig options: `paths` and `baseUrl`.
+
+We recommend setting up a separate `tsconfig.json` in the tests directory so that you can change some preferences specifically for the tests. Here is an example directory structure.
+
+```
+src/
+    source.ts
+
+tests/
+    tsconfig.json  # test-specific tsconfig
+    example.spec.ts
+
+tsconfig.json  # generic tsconfig for all typescript sources
+
+playwright.config.ts
+```
+
+### tsconfig path mapping
+
+Playwright supports [path mapping](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping) declared in the `tsconfig.json`. Make sure that `baseUrl` is also set.
 
 Here is an example `tsconfig.json` that works with Playwright Test:
 
@@ -96,8 +115,8 @@ import { test, expect } from '@playwright/test';
 import { username, password } from '@myhelper/credentials';
 
 test('example', async ({ page }) => {
-  await page.locator('#username').fill(username);
-  await page.locator('#password').fill(password);
+  await page.getByLabel('User Name').fill(username);
+  await page.getByLabel('Password').fill(password);
 });
 ```
 

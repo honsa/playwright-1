@@ -27,7 +27,7 @@ test('example test', async ({ page }) => {
 
 When you run above for the first time, test runner will say:
 ```
-Error: example.spec.ts-snapshots/example-test-1-chromium-darwin.png is missing in snapshots, writing actual.
+Error: A snapshot doesn't exist at example.spec.ts-snapshots/example-test-1-chromium-darwin.png, writing actual.
 ```
 
 That's because there was no golden file yet. This method took a bunch of screenshots until two consecutive
@@ -56,7 +56,7 @@ The snapshot name `example-test-1-chromium-darwin.png` consists of a few parts:
 If you are not on the same operating system as your CI system, you can use Docker to generate/update the screenshots:
 
 ```bash
-docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.26.0-focal /bin/bash
+docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.29.0-focal /bin/bash
 npm install
 npx playwright test --update-snapshots
 ```

@@ -635,6 +635,10 @@ export function getAriaSelected(element: Element): boolean {
 
 export const kAriaCheckedRoles = ['checkbox', 'menuitemcheckbox', 'option', 'radio', 'switch', 'menuitemradio', 'treeitem'];
 export function getAriaChecked(element: Element): boolean | 'mixed' {
+  const result = getAriaCheckedStrict(element);
+  return result === 'error' ? false : result;
+}
+export function getAriaCheckedStrict(element: Element): boolean | 'mixed' | 'error' {
   // https://www.w3.org/TR/wai-aria-1.2/#aria-checked
   // https://www.w3.org/TR/html-aam-1.0/#html-attribute-state-and-property-mappings
   if (element.tagName === 'INPUT' && (element as HTMLInputElement).indeterminate)
@@ -647,8 +651,9 @@ export function getAriaChecked(element: Element): boolean | 'mixed' {
       return true;
     if (checked === 'mixed')
       return 'mixed';
+    return false;
   }
-  return false;
+  return 'error';
 }
 
 export const kAriaPressedRoles = ['button'];
@@ -665,14 +670,20 @@ export function getAriaPressed(element: Element): boolean | 'mixed' {
 }
 
 export const kAriaExpandedRoles = ['application', 'button', 'checkbox', 'combobox', 'gridcell', 'link', 'listbox', 'menuitem', 'row', 'rowheader', 'tab', 'treeitem', 'columnheader', 'menuitemcheckbox', 'menuitemradio', 'rowheader', 'switch'];
-export function getAriaExpanded(element: Element): boolean {
+export function getAriaExpanded(element: Element): boolean | 'none' {
   // https://www.w3.org/TR/wai-aria-1.2/#aria-expanded
   // https://www.w3.org/TR/html-aam-1.0/#html-attribute-state-and-property-mappings
   if (element.tagName === 'DETAILS')
     return (element as HTMLDetailsElement).open;
-  if (kAriaExpandedRoles.includes(getAriaRole(element) || ''))
-    return getAriaBoolean(element.getAttribute('aria-expanded')) === true;
-  return false;
+  if (kAriaExpandedRoles.includes(getAriaRole(element) || '')) {
+    const expanded = element.getAttribute('aria-expanded');
+    if (expanded === null)
+      return 'none';
+    if (expanded === 'true')
+      return true;
+    return false;
+  }
+  return 'none';
 }
 
 export const kAriaLevelRoles = ['heading', 'listitem', 'row', 'treeitem'];

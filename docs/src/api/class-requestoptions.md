@@ -33,6 +33,7 @@ APIResponse response = context.request().post("https://example.com/upload_member
 ```
 
 Alternatively, you can build the file payload manually:
+
 ```java
 FilePayload filePayload = new FilePayload("members.csv", "text/csv",
   "Alice, 33\nJohn, 35\n".getBytes(StandardCharsets.UTF_8));
@@ -113,6 +114,17 @@ Header value.
 - `ignoreHTTPSErrors` <[boolean]>
 
 Whether to ignore HTTPS errors when sending network requests.
+
+## method: RequestOptions.setMaxRedirects
+* since: v1.26
+- returns: <[RequestOptions]>
+
+### param: RequestOptions.setMaxRedirects.maxRedirects
+* since: v1.26
+- `maxRedirects` <[int]>
+
+Maximum number of request redirects that will be followed automatically. An error will be thrown if the number is exceeded.
+Defaults to `20`. Pass `0` to not follow redirects.
 
 ## method: RequestOptions.setMethod
 * since: v1.18

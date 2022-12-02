@@ -89,7 +89,7 @@ it.describe('pause', () => {
       await page.pause();
     })();
     const recorderPage = await recorderPageGetter();
-    const source = await recorderPage.textContent('.source-line-paused .source-code');
+    const source = await recorderPage.textContent('.source-line-paused');
     expect(source).toContain('page.pause()');
     await recorderPage.click('[title="Resume (F8)"]');
     await scriptPromise;
@@ -194,7 +194,7 @@ it.describe('pause', () => {
     await recorderPage.waitForSelector('.source-line-paused:has-text("page.pause();  // 2")');
     expect(await sanitizeLog(recorderPage)).toEqual([
       'page.pause- XXms',
-      'page.click(button)- XXms',
+      'page.click(page.locator(\'button\'))- XXms',
       'page.pause',
     ]);
     await recorderPage.click('[title="Resume (F8)"]');
@@ -230,6 +230,7 @@ it.describe('pause', () => {
     const scriptPromise = (async () => {
       await page.pause();
       await expect(page.locator('button')).toHaveText('Submit');
+      await expect(page.locator('button')).not.toHaveText('Submit2');
       await page.pause();  // 2
     })();
     const recorderPage = await recorderPageGetter();
@@ -237,7 +238,8 @@ it.describe('pause', () => {
     await recorderPage.waitForSelector('.source-line-paused:has-text("page.pause();  // 2")');
     expect(await sanitizeLog(recorderPage)).toEqual([
       'page.pause- XXms',
-      'expect.toHaveText(button)- XXms',
+      'expect(page.locator(\'button\')).toHaveText()- XXms',
+      'expect(page.locator(\'button\')).not.toHaveText()- XXms',
       'page.pause',
     ]);
     await recorderPage.click('[title="Resume (F8)"]');
@@ -267,7 +269,7 @@ it.describe('pause', () => {
       await page.pause();
       await Promise.all([
         page.waitForEvent('console'),
-        page.click('button'),
+        page.getByRole('button', { name: 'Submit' }).click(),
       ]);
       await page.pause();  // 2
     })();
@@ -277,7 +279,7 @@ it.describe('pause', () => {
     expect(await sanitizeLog(recorderPage)).toEqual([
       'page.pause- XXms',
       'page.waitForEvent(console)',
-      'page.click(button)- XXms',
+      'page.getByRole(\'button\', { name: \'Submit\' }).click()- XXms',
       'page.pause',
     ]);
     await recorderPage.click('[title="Resume (F8)"]');
@@ -288,16 +290,16 @@ it.describe('pause', () => {
     await page.setContent('<button onclick="console.log(1)">Submit</button>');
     const scriptPromise = (async () => {
       await page.pause();
-      await page.isChecked('button');
+      await page.getByRole('button').isChecked();
     })().catch(e => e);
     const recorderPage = await recorderPageGetter();
     await recorderPage.click('[title="Resume (F8)"]');
     await recorderPage.waitForSelector('.source-line-error');
     expect(await sanitizeLog(recorderPage)).toEqual([
       'page.pause- XXms',
-      'page.isChecked(button)- XXms',
-      'waiting for selector "button"',
-      'selector resolved to <button onclick=\"console.log(1)\">Submit</button>',
+      'page.getByRole(\'button\').isChecked()- XXms',
+      'waiting for getByRole(\'button\')',
+      'locator resolved to <button onclick=\"console.log(1)\">Submit</button>',
       'error: Error: Not a checkbox or radio button',
     ]);
     const error = await scriptPromise;
@@ -359,10 +361,12 @@ it.describe('pause', () => {
       await page.pause();
     })();
     const recorderPage = await recorderPageGetter();
-    const [box1] = await Promise.all([
-      waitForTestLog<Box>(page, 'Highlight box for test: '),
-      recorderPage.fill('input[placeholder="Playwright Selector"]', 'text=Submit'),
-    ]);
+
+    const box1Promise = waitForTestLog<Box>(page, 'Highlight box for test: ');
+    await recorderPage.click('.toolbar .CodeMirror');
+    await recorderPage.keyboard.type('getByText(\'Submit\')');
+    const box1 = await box1Promise;
+
     const button = await page.$('text=Submit');
     const box2 = await button.boundingBox();
     expect(roundBox(box1)).toEqual(roundBox(box2));
@@ -408,6 +412,35 @@ it.describe('pause', () => {
       'keyup',
       'keyup',
     ]);
+  });
+
+  it('should highlight locators with custom testId', async ({ page, playwright, recorderPageGetter }) => {
+    await page.setContent('<div id=target1>click me</div><div data-custom-id=foo id=target2>and me</div>');
+    const scriptPromise = (async () => {
+      await page.pause();
+      await page.getByText('click me').click();
+      playwright.selectors.setTestIdAttribute('data-custom-id');
+      await page.getByTestId('foo').click();
+    })();
+    const recorderPage = await recorderPageGetter();
+
+    await recorderPage.click('[title="Step over (F10)"]');
+    const div1Box1 = roundBox(await page.locator('x-pw-highlight').boundingBox());
+    const div1Box2 = roundBox(await page.locator('#target1').boundingBox());
+    expect(div1Box1).toEqual(div1Box2);
+
+    await recorderPage.click('[title="Step over (F10)"]');
+    let div2Box1: Box;
+    await expect.poll(async () => {
+      div2Box1 = await page.locator('x-pw-highlight').boundingBox();
+      return div2Box1;
+    }).toBeTruthy();
+    div2Box1 = roundBox(div2Box1);
+    const div2Box2 = roundBox(await page.locator('#target2').boundingBox());
+    expect(div2Box1).toEqual(div2Box2);
+
+    await recorderPage.click('[title="Resume (F8)"]');
+    await scriptPromise;
   });
 });
 

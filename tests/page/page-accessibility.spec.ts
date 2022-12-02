@@ -141,8 +141,9 @@ it('should not report text nodes inside controls', async function({ page, browse
   expect(await page.accessibility.snapshot()).toEqual(golden);
 });
 
-it('rich text editable fields should have children', async function({ page, browserName }) {
+it('rich text editable fields should have children', async function({ page, browserName, browserVersion, channel }) {
   it.skip(browserName === 'webkit', 'WebKit rich text accessibility is iffy');
+  it.skip(channel && channel.startsWith('msedge'), 'Edge is missing a Chromium fix');
 
   await page.setContent(`
   <div contenteditable="true">
@@ -164,7 +165,7 @@ it('rich text editable fields should have children', async function({ page, brow
     value: 'Edit this image: ',
     children: [{
       role: 'text',
-      name: 'Edit this image:'
+      name: chromiumVersionLessThan(browserVersion, '108.0.5325.0') ? 'Edit this image:' : 'Edit this image: '
     }, {
       role: 'img',
       name: 'my fake image'
@@ -174,8 +175,9 @@ it('rich text editable fields should have children', async function({ page, brow
   expect(snapshot.children[0]).toEqual(golden);
 });
 
-it('rich text editable fields with role should have children', async function({ page, browserName, browserMajorVersion, browserVersion }) {
+it('rich text editable fields with role should have children', async function({ page, browserName, browserMajorVersion, browserVersion, channel }) {
   it.skip(browserName === 'webkit', 'WebKit rich text accessibility is iffy');
+  it.skip(channel && channel.startsWith('msedge'), 'Edge is missing a Chromium fix');
 
   await page.setContent(`
   <div contenteditable="true" role='textbox'>
@@ -202,7 +204,7 @@ it('rich text editable fields with role should have children', async function({ 
       name: 'my fake image'
     }] : [{
       role: 'text',
-      name: 'Edit this image:'
+      name: chromiumVersionLessThan(browserVersion, '108.0.5325.0') ? 'Edit this image:' : 'Edit this image: '
     }]
   };
   const snapshot = await page.accessibility.snapshot();

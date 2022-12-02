@@ -22,7 +22,7 @@ import type * as api from '../../types/types';
 import { isSafeCloseError } from '../common/errors';
 import { urlMatches } from '../common/netUtils';
 import { TimeoutSettings } from '../common/timeoutSettings';
-import type * as channels from '../protocol/channels';
+import type * as channels from '@protocol/channels';
 import { parseError, serializeError } from '../protocol/serializers';
 import { assert, headersObjectToArray, isObject, isRegExp, isString } from '../utils';
 import { mkdirIfNeeded } from '../utils/fileUtils';
@@ -46,6 +46,7 @@ import { HarRouter } from './harRouter';
 import { Keyboard, Mouse, Touchscreen } from './input';
 import { assertMaxArguments, JSHandle, parseResult, serializeArgument } from './jsHandle';
 import type { FrameLocator, Locator, LocatorOptions } from './locator';
+import type { ByRoleOptions } from '../utils/isomorphic/locatorUtils';
 import type { RouteHandlerCallback } from './network';
 import { Response, Route, RouteHandler, validateHeaders, WebSocket } from './network';
 import type { Request } from './network';
@@ -65,7 +66,6 @@ type PDFOptions = Omit<channels.PagePdfParams, 'width' | 'height' | 'margin'> & 
   },
   path?: string,
 };
-type Listener = (...args: any[]) => void;
 
 type ExpectScreenshotOptions = Omit<channels.PageExpectScreenshotOptions, 'screenshotOptions' | 'locator' | 'expected'> & {
   expected?: Buffer,
@@ -160,6 +160,14 @@ export class Page extends ChannelOwner<channels.PageChannel> implements api.Page
       new Promise<void>(f => this.once(Events.Page.Close, f)),
       new Promise<void>(f => this.once(Events.Page.Crash, f)),
     ]);
+
+    this._setEventToSubscriptionMapping(new Map<string, channels.PageUpdateSubscriptionParams['event']>([
+      [Events.Page.Request, 'request'],
+      [Events.Page.Response, 'response'],
+      [Events.Page.RequestFinished, 'requestFinished'],
+      [Events.Page.RequestFailed, 'requestFailed'],
+      [Events.Page.FileChooser, 'fileChooser'],
+    ]));
   }
 
   private _onFrameAttached(frame: Frame) {
@@ -424,10 +432,10 @@ export class Page extends ChannelOwner<channels.PageChannel> implements api.Page
 
   async emulateMedia(options: { media?: 'screen' | 'print' | null, colorScheme?: 'dark' | 'light' | 'no-preference' | null, reducedMotion?: 'reduce' | 'no-preference' | null, forcedColors?: 'active' | 'none' | null } = {}) {
     await this._channel.emulateMedia({
-      media: options.media === null ? 'null' : options.media,
-      colorScheme: options.colorScheme === null ? 'null' : options.colorScheme,
-      reducedMotion: options.reducedMotion === null ? 'null' : options.reducedMotion,
-      forcedColors: options.forcedColors === null ? 'null' : options.forcedColors,
+      media: options.media === null ? 'no-override' : options.media,
+      colorScheme: options.colorScheme === null ? 'no-override' : options.colorScheme,
+      reducedMotion: options.reducedMotion === null ? 'no-override' : options.reducedMotion,
+      forcedColors: options.forcedColors === null ? 'no-override' : options.forcedColors,
     });
   }
 
@@ -564,6 +572,34 @@ export class Page extends ChannelOwner<channels.PageChannel> implements api.Page
     return this.mainFrame().locator(selector, options);
   }
 
+  getByTestId(testId: string): Locator {
+    return this.mainFrame().getByTestId(testId);
+  }
+
+  getByAltText(text: string | RegExp, options?: { exact?: boolean }): Locator {
+    return this.mainFrame().getByAltText(text, options);
+  }
+
+  getByLabel(text: string | RegExp, options?: { exact?: boolean }): Locator {
+    return this.mainFrame().getByLabel(text, options);
+  }
+
+  getByPlaceholder(text: string | RegExp, options?: { exact?: boolean }): Locator {
+    return this.mainFrame().getByPlaceholder(text, options);
+  }
+
+  getByText(text: string | RegExp, options?: { exact?: boolean }): Locator {
+    return this.mainFrame().getByText(text, options);
+  }
+
+  getByTitle(text: string | RegExp, options?: { exact?: boolean }): Locator {
+    return this.mainFrame().getByTitle(text, options);
+  }
+
+  getByRole(role: string, options: ByRoleOptions = {}): Locator {
+    return this.mainFrame().getByRole(role, options);
+  }
+
   frameLocator(selector: string): FrameLocator {
     return this.mainFrame().frameLocator(selector);
   }
@@ -658,41 +694,6 @@ export class Page extends ChannelOwner<channels.PageChannel> implements api.Page
 
   workers(): Worker[] {
     return [...this._workers];
-  }
-
-  override on(event: string | symbol, listener: Listener): this {
-    if (event === Events.Page.FileChooser && !this.listenerCount(event))
-      this._channel.setFileChooserInterceptedNoReply({ intercepted: true });
-    super.on(event, listener);
-    return this;
-  }
-
-  override addListener(event: string | symbol, listener: Listener): this {
-    if (event === Events.Page.FileChooser && !this.listenerCount(event))
-      this._channel.setFileChooserInterceptedNoReply({ intercepted: true });
-    super.addListener(event, listener);
-    return this;
-  }
-
-  override prependListener(event: string | symbol, listener: Listener): this {
-    if (event === Events.Page.FileChooser && !this.listenerCount(event))
-      this._channel.setFileChooserInterceptedNoReply({ intercepted: true });
-    super.prependListener(event, listener);
-    return this;
-  }
-
-  override off(event: string | symbol, listener: Listener): this {
-    super.off(event, listener);
-    if (event === Events.Page.FileChooser && !this.listenerCount(event))
-      this._channel.setFileChooserInterceptedNoReply({ intercepted: false });
-    return this;
-  }
-
-  override removeListener(event: string | symbol, listener: Listener): this {
-    super.removeListener(event, listener);
-    if (event === Events.Page.FileChooser && !this.listenerCount(event))
-      this._channel.setFileChooserInterceptedNoReply({ intercepted: false });
-    return this;
   }
 
   async pause() {

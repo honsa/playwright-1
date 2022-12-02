@@ -307,8 +307,7 @@ A callback that is run immediately when calling [`method: Test.describe#2`]. Any
 ## method: Test.describe.configure
 * since: v1.10
 
-Set execution mode of execution for the enclosing scope. Can be executed either on the top level or inside a describe. Configuration applies to the entire scope, regardless of whether it run before or after the test
-declaration.
+Configures the enclosing scope. Can be executed either on the top level or inside a describe. Configuration applies to the entire scope, regardless of whether it run before or after the test declaration.
 
 Learn more about the execution modes [here](../test-parallel.md).
 
@@ -344,10 +343,39 @@ test('runs first', async ({ page }) => {});
 test('runs second', async ({ page }) => {});
 ```
 
+Configuring retries and timeout for each test:
+
+```js tab=js-js
+// Each test in the file will be retried twice and have a timeout of 20 seconds.
+test.describe.configure({ retries: 2, timeout: 20_000 });
+test('runs first', async ({ page }) => {});
+test('runs second', async ({ page }) => {});
+```
+
+```js tab=js-ts
+// Each test in the file will be retried twice and have a timeout of 20 seconds.
+test.describe.configure({ retries: 2, timeout: 20_000 });
+test('runs first', async ({ page }) => {});
+test('runs second', async ({ page }) => {});
+```
+
 ### option: Test.describe.configure.mode
 * since: v1.10
 - `mode` <[TestMode]<"parallel"|"serial">>
 
+Execution mode. Learn more about the execution modes [here](../test-parallel.md).
+
+### option: Test.describe.configure.retries
+* since: v1.28
+- `retries` <[int]>
+
+The number of retries for each test.
+
+### option: Test.describe.configure.timeout
+* since: v1.28
+- `timeout` <[int]>
+
+Timeout for each test in milliseconds. Overrides [`property: TestProject.timeout`] and [`property: TestConfig.timeout`].
 
 
 ## method: Test.describe.fixme
@@ -1126,7 +1154,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('group', () => {
   // Applies to all tests in this group.
-  test.setTimeout(60000);
+  test.describe.configure({ timeout: 60000 });
 
   test('test one', async () => { /* ... */ });
   test('test two', async () => { /* ... */ });
@@ -1139,7 +1167,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('group', () => {
   // Applies to all tests in this group.
-  test.setTimeout(60000);
+  test.describe.configure({ timeout: 60000 });
 
   test('test one', async () => { /* ... */ });
   test('test two', async () => { /* ... */ });
@@ -1525,7 +1553,7 @@ Step body.
 ## method: Test.use
 * since: v1.10
 
-Specifies options or fixtures to use in a single test file or a [`method: Test.describe#1`] group. Most useful to set an option, for example set `locale` to configure `context` fixture. `test.use` can be called either in the global scope or inside `test.describe`, it's is an error to call it within `beforeEach` or `beforeAll`.
+Specifies options or fixtures to use in a single test file or a [`method: Test.describe#1`] group. Most useful to set an option, for example set `locale` to configure `context` fixture. `test.use` can be called either in the global scope or inside `test.describe`. It is an error to call it within `beforeEach` or `beforeAll`.
 
 ```js tab=js-js
 const { test, expect } = require('@playwright/test');

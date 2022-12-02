@@ -76,32 +76,32 @@ await handle.ClickAsync();
 With the locator, every time the `element` is used, up-to-date DOM element is located in the page using the selector. So in the snippet below, underlying DOM element is going to be located twice.
 
 ```js
-const locator = page.locator('text=Submit');
+const locator = page.getByText('Submit');
 // ...
 await locator.hover();
 await locator.click();
 ```
 
 ```java
-Locator locator = page.locator("text=Submit");
+Locator locator = page.getByText("Submit");
 locator.hover();
 locator.click();
 ```
 
 ```python async
-locator = page.locator("text=Submit")
+locator = page.get_by_text("Submit")
 await locator.hover()
 await locator.click()
 ```
 
 ```python sync
-locator = page.locator("text=Submit")
+locator = page.get_by_text("Submit")
 locator.hover()
 locator.click()
 ```
 
 ```csharp
-var locator = page.Locator("text=Submit");
+var locator = page.GetByText("Submit");
 await locator.HoverAsync();
 await locator.ClickAsync();
 ```
@@ -126,6 +126,8 @@ Elements from child frames return the bounding box relative to the main frame, u
 
 Assuming the page is static, it is safe to use bounding box coordinates to perform input. For example, the following
 snippet should click the center of the element.
+
+**Usage**
 
 ```js
 const box = await elementHandle.boundingBox();
@@ -283,6 +285,8 @@ The snippet below dispatches the `click` event on the element. Regardless of the
 is dispatched. This is equivalent to calling
 [element.click()](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/click).
 
+**Usage**
+
 ```js
 await elementHandle.dispatchEvent('click');
 ```
@@ -381,7 +385,7 @@ details. If no elements match the selector, the method throws an error.
 If [`param: expression`] returns a [Promise], then [`method: ElementHandle.evalOnSelector`] would wait for the promise to resolve and return its
 value.
 
-Examples:
+**Usage**
 
 ```js
 const tweetHandle = await page.$('.tweet');
@@ -441,7 +445,7 @@ matched elements as a first argument to [`param: expression`]. See
 If [`param: expression`] returns a [Promise], then [`method: ElementHandle.evalOnSelectorAll`] would wait for the promise to resolve and return its
 value.
 
-Examples:
+**Usage**
 
 ```html
 <div class="feed">
@@ -504,8 +508,10 @@ Value to set for the `<input>`, `<textarea>` or `[contenteditable]` element.
 
 ### option: ElementHandle.fill.force = %%-input-force-%%
 * since: v1.13
+
 ### option: ElementHandle.fill.noWaitAfter = %%-input-no-wait-after-%%
 * since: v1.8
+
 ### option: ElementHandle.fill.timeout = %%-input-timeout-%%
 * since: v1.8
 
@@ -554,6 +560,9 @@ When all steps combined have not finished during the specified [`option: timeout
 
 ### option: ElementHandle.hover.trial = %%-input-trial-%%
 * since: v1.11
+
+### option: ElementHandle.hover.noWaitAfter = %%-input-no-wait-after-%%
+* since: v1.28
 
 ## async method: ElementHandle.innerHTML
 * since: v1.8
@@ -728,6 +737,8 @@ Returns the array of option values that have been successfully selected.
 
 Triggers a `change` and `input` event once all the provided options have been selected.
 
+**Usage**
+
 ```js
 // single selection matching the value
 handle.selectOption('blue');
@@ -782,10 +793,13 @@ await handle.SelectOptionAsync(new[] {
 
 ### param: ElementHandle.selectOption.values = %%-select-options-values-%%
 * since: v1.8
+
 ### option: ElementHandle.selectOption.force = %%-input-force-%%
 * since: v1.13
+
 ### option: ElementHandle.selectOption.noWaitAfter = %%-input-no-wait-after-%%
 * since: v1.8
+
 ### option: ElementHandle.selectOption.timeout = %%-input-timeout-%%
 * since: v1.8
 
@@ -799,6 +813,7 @@ If the element is inside the `<label>` element that has an associated [control](
 
 ### option: ElementHandle.selectText.force = %%-input-force-%%
 * since: v1.13
+
 ### option: ElementHandle.selectText.timeout = %%-input-timeout-%%
 * since: v1.8
 
@@ -820,14 +835,19 @@ When all steps combined have not finished during the specified [`option: timeout
 
 ### param: ElementHandle.setChecked.checked = %%-input-checked-%%
 * since: v1.15
+
 ### option: ElementHandle.setChecked.force = %%-input-force-%%
 * since: v1.15
+
 ### option: ElementHandle.setChecked.noWaitAfter = %%-input-no-wait-after-%%
 * since: v1.15
+
 ### option: ElementHandle.setChecked.position = %%-input-position-%%
 * since: v1.15
+
 ### option: ElementHandle.setChecked.timeout = %%-input-timeout-%%
 * since: v1.15
+
 ### option: ElementHandle.setChecked.trial = %%-input-trial-%%
 * since: v1.15
 
@@ -839,7 +859,6 @@ are resolved relative to the current working directory. For empty array, clears 
 
 This method expects [ElementHandle] to point to an
 [input element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input). However, if the element is inside the `<label>` element that has an associated [control](https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control), targets the control instead.
-
 
 ### param: ElementHandle.setInputFiles.files = %%-input-files-%%
 * since: v1.8
@@ -899,6 +918,8 @@ Focuses the element, and then sends a `keydown`, `keypress`/`input`, and `keyup`
 
 To press a special key, like `Control` or `ArrowDown`, use [`method: ElementHandle.press`].
 
+**Usage**
+
 ```js
 await elementHandle.type('Hello'); // Types instantly
 await elementHandle.type('World', {delay: 100}); // Types slower, like a user
@@ -921,7 +942,7 @@ element_handle.type("world", delay=100) # types slower, like a user
 
 ```csharp
 await elementHandle.TypeAsync("Hello"); // Types instantly
-await elementHandle.TypeAsync("World", delay: 100); // Types slower, like a user
+await elementHandle.TypeAsync("World", new() { Delay = 100 }); // Types slower, like a user
 ```
 
 An example of typing into a text field and then submitting the form:
@@ -1044,6 +1065,8 @@ Wait for the [`param: selector`] relative to the element handle to satisfy [`opt
 appear/disappear from dom, or become visible/hidden). If at the moment of calling the method [`param: selector`] already
 satisfies the condition, the method will return immediately. If the selector doesn't satisfy the condition for the
 [`option: timeout`] milliseconds, the function will throw.
+
+**Usage**
 
 ```js
 await page.setContent(`<div><span></span></div>`);

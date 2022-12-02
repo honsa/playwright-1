@@ -31,12 +31,13 @@ import { json5 } from '../utilsBundle';
 /**
  * Typing for the parts of tsconfig that we care about
  */
-export interface Tsconfig {
+interface Tsconfig {
   extends?: string;
   compilerOptions?: {
     baseUrl?: string;
     paths?: { [key: string]: Array<string> };
     strict?: boolean;
+    allowJs?: boolean;
   };
 }
 
@@ -45,41 +46,27 @@ export interface TsConfigLoaderResult {
   baseUrl: string | undefined;
   paths: { [key: string]: Array<string> } | undefined;
   serialized: string | undefined;
+  allowJs: boolean;
 }
 
 export interface TsConfigLoaderParams {
-  getEnv: (key: string) => string | undefined;
   cwd: string;
-  loadSync?(
-    cwd: string,
-    filename?: string,
-    baseUrl?: string
-  ): TsConfigLoaderResult;
 }
 
 export function tsConfigLoader({
-  getEnv,
   cwd,
-  loadSync = loadSyncDefault,
 }: TsConfigLoaderParams): TsConfigLoaderResult {
-  const TS_NODE_PROJECT = getEnv("TS_NODE_PROJECT");
-  const TS_NODE_BASEURL = getEnv("TS_NODE_BASEURL");
-
-  // tsconfig.loadSync handles if TS_NODE_PROJECT is a file or directory
-  // and also overrides baseURL if TS_NODE_BASEURL is available.
-  const loadResult = loadSync(cwd, TS_NODE_PROJECT, TS_NODE_BASEURL);
+  const loadResult = loadSyncDefault(cwd);
   loadResult.serialized = JSON.stringify(loadResult);
   return loadResult;
 }
 
 function loadSyncDefault(
   cwd: string,
-  filename?: string,
-  baseUrl?: string
 ): TsConfigLoaderResult {
   // Tsconfig.loadSync uses path.resolve. This is why we can use an absolute path as filename
 
-  const configPath = resolveConfigPath(cwd, filename);
+  const configPath = resolveConfigPath(cwd);
 
   if (!configPath) {
     return {
@@ -87,6 +74,7 @@ function loadSyncDefault(
       baseUrl: undefined,
       paths: undefined,
       serialized: undefined,
+      allowJs: false,
     };
   }
   const config = loadTsconfig(configPath);
@@ -94,22 +82,14 @@ function loadSyncDefault(
   return {
     tsConfigPath: configPath,
     baseUrl:
-      baseUrl ||
       (config && config.compilerOptions && config.compilerOptions.baseUrl),
     paths: config && config.compilerOptions && config.compilerOptions.paths,
     serialized: undefined,
+    allowJs: !!config?.compilerOptions?.allowJs,
   };
 }
 
-function resolveConfigPath(cwd: string, filename?: string): string | undefined {
-  if (filename) {
-    const absolutePath = fs.lstatSync(filename).isDirectory()
-      ? path.resolve(filename, "./tsconfig.json")
-      : path.resolve(cwd, filename);
-
-    return absolutePath;
-  }
-
+function resolveConfigPath(cwd: string): string | undefined {
   if (fs.statSync(cwd).isFile()) {
     return path.resolve(cwd);
   }
@@ -122,9 +102,13 @@ export function walkForTsConfig(
   directory: string,
   existsSync: (path: string) => boolean = fs.existsSync
 ): string | undefined {
-  const configPath = path.join(directory, "./tsconfig.json");
-  if (existsSync(configPath)) {
-    return configPath;
+  const tsconfigPath = path.join(directory, "./tsconfig.json");
+  if (existsSync(tsconfigPath)) {
+    return tsconfigPath;
+  }
+  const jsconfigPath = path.join(directory, "./jsconfig.json");
+  if (existsSync(jsconfigPath)) {
+    return jsconfigPath;
   }
 
   const parentDirectory = path.join(directory, "../");
@@ -137,7 +121,7 @@ export function walkForTsConfig(
   return walkForTsConfig(parentDirectory, existsSync);
 }
 
-export function loadTsconfig(
+function loadTsconfig(
   configFilePath: string,
   existsSync: (path: string) => boolean = fs.existsSync,
   readFileSync: (filename: string) => string = (filename: string) =>
@@ -149,7 +133,7 @@ export function loadTsconfig(
 
   const configString = readFileSync(configFilePath);
   const cleanedJson = StripBom(configString);
-  const config: Tsconfig = json5.parse(cleanedJson);
+  let config: Tsconfig = json5.parse(cleanedJson);
   let extendedConfig = config.extends;
 
   if (extendedConfig) {
@@ -186,7 +170,7 @@ export function loadTsconfig(
       );
     }
 
-    return {
+    config = {
       ...base,
       ...config,
       compilerOptions: {
@@ -195,6 +179,12 @@ export function loadTsconfig(
       },
     };
   }
+
+  if (path.basename(configFilePath) === 'jsconfig.json' && config.compilerOptions?.allowJs === undefined) {
+    config.compilerOptions = config.compilerOptions || {};
+    config.compilerOptions.allowJs = true;
+  }
+
   return config;
 }
 

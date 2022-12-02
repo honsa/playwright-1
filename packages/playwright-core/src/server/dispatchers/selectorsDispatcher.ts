@@ -16,7 +16,7 @@
 
 import type { RootDispatcher } from './dispatcher';
 import { Dispatcher } from './dispatcher';
-import type * as channels from '../../protocol/channels';
+import type * as channels from '@protocol/channels';
 import type { Selectors } from '../selectors';
 
 export class SelectorsDispatcher extends Dispatcher<Selectors, channels.SelectorsChannel, RootDispatcher> implements channels.SelectorsChannel {
@@ -28,5 +28,9 @@ export class SelectorsDispatcher extends Dispatcher<Selectors, channels.Selector
 
   async register(params: channels.SelectorsRegisterParams): Promise<void> {
     await this._object.register(params.name, params.source, params.contentScript);
+  }
+
+  async setTestIdAttributeName(params: channels.SelectorsSetTestIdAttributeNameParams, metadata?: channels.Metadata | undefined): Promise<void> {
+    this._object.setTestIdAttributeName(params.testIdAttributeName);
   }
 }

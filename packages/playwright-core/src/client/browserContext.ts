@@ -18,7 +18,7 @@
 import { Page, BindingCall } from './page';
 import { Frame } from './frame';
 import * as network from './network';
-import type * as channels from '../protocol/channels';
+import type * as channels from '@protocol/channels';
 import fs from 'fs';
 import { ChannelOwner } from './channelOwner';
 import { evaluationScript } from './clientHelper';
@@ -96,6 +96,13 @@ export class BrowserContext extends ChannelOwner<channels.BrowserContextChannel>
     this._channel.on('requestFinished', params => this._onRequestFinished(params));
     this._channel.on('response', ({ response, page }) => this._onResponse(network.Response.from(response), Page.fromNullable(page)));
     this._closedPromise = new Promise(f => this.once(Events.BrowserContext.Close, f));
+
+    this._setEventToSubscriptionMapping(new Map<string, channels.BrowserContextUpdateSubscriptionParams['event']>([
+      [Events.BrowserContext.Request, 'request'],
+      [Events.BrowserContext.Response, 'response'],
+      [Events.BrowserContext.RequestFinished, 'requestFinished'],
+      [Events.BrowserContext.RequestFailed, 'requestFailed'],
+    ]));
   }
 
   _setBrowserType(browserType: BrowserType) {
@@ -126,8 +133,7 @@ export class BrowserContext extends ChannelOwner<channels.BrowserContextChannel>
 
   private _onRequestFailed(request: network.Request, responseEndTiming: number, failureText: string | undefined, page: Page | null) {
     request._failureText = failureText || null;
-    if (request._timing)
-      request._timing.responseEnd = responseEndTiming;
+    request._setResponseEndTiming(responseEndTiming);
     this.emit(Events.BrowserContext.RequestFailed, request);
     if (page)
       page.emit(Events.Page.RequestFailed, request);
@@ -138,8 +144,7 @@ export class BrowserContext extends ChannelOwner<channels.BrowserContextChannel>
     const request = network.Request.from(params.request);
     const response = network.Response.fromNullable(params.response);
     const page = Page.fromNullable(params.page);
-    if (request._timing)
-      request._timing.responseEnd = responseEndTiming;
+    request._setResponseEndTiming(responseEndTiming);
     this.emit(Events.BrowserContext.RequestFinished, request);
     if (page)
       page.emit(Events.Page.RequestFinished, request);
@@ -418,6 +423,9 @@ export async function prepareBrowserContextParams(options: BrowserContextOptions
     storageState: await prepareStorageState(options),
     serviceWorkers: options.serviceWorkers,
     recordHar: prepareRecordHarOptions(options.recordHar),
+    colorScheme: options.colorScheme === null ? 'no-override' : options.colorScheme,
+    reducedMotion: options.reducedMotion === null ? 'no-override' : options.reducedMotion,
+    forcedColors: options.forcedColors === null ? 'no-override' : options.forcedColors,
   };
   if (!contextParams.recordVideo && options.videosPath) {
     contextParams.recordVideo = {

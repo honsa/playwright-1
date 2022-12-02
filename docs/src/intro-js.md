@@ -21,7 +21,8 @@ Get started by installing Playwright using npm or yarn. Alternatively you can al
   defaultValue="npm"
   values={[
     {label: 'npm', value: 'npm'},
-    {label: 'yarn', value: 'yarn'}
+    {label: 'yarn', value: 'yarn'},
+    {label: 'pnpm', value: 'pnpm'}
   ]
 }>
 <TabItem value="npm">
@@ -39,6 +40,14 @@ yarn create playwright
 ```
 
 </TabItem>
+  
+<TabItem value="pnpm">
+
+```bash
+pnpm dlx create-playwright
+```
+
+</TabItem>
 </Tabs>
 
 
@@ -46,6 +55,7 @@ Run the install command and select the following to get started:
  - Choose between TypeScript or JavaScript (default is TypeScript)
  - Name of your Tests folder (default is tests or e2e if you already have a tests folder in your project)
  - Add a GitHub Actions workflow to easily run tests on CI
+ - Install Playwright browsers (default is true)
 
 
 ## What's Installed
@@ -90,6 +100,6 @@ npx playwright show-report
 ## What's next
 
 - [Write tests using web first assertions, page fixtures and locators](./writing-tests.md)
-- [Run single tests, multiple tests, headed mode](./running-tests.md)
-- [Generate tests with Codegen](./codegen.md)
+- [Run single test, multiple tests, headed mode](./running-tests.md)
+- [Generate tests with Codegen](./codegen-intro.md)
 - [See a trace of your tests](./trace-viewer-intro.md)

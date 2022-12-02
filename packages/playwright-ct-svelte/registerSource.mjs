@@ -18,6 +18,8 @@
 
 // This file is injected into the registry as text, no dependencies are allowed.
 
+import { detach, insert, noop } from 'svelte/internal';
+
 /** @typedef {import('../playwright-test/types/component').Component} Component */
 /** @typedef {any} FrameworkComponent */
 /** @typedef {import('svelte').SvelteComponent} SvelteComponent */
@@ -32,6 +34,39 @@ export function register(components) {
   for (const [name, value] of Object.entries(components))
     registry.set(name, value);
 }
+
+/**
+ * TODO: remove this function when the following issue is fixed:
+ * https://github.com/sveltejs/svelte/issues/2588
+ */
+function createSlots(slots) {
+  const svelteSlots = {};
+
+  for (const slotName in slots) {
+    const template = document
+        .createRange()
+        .createContextualFragment(slots[slotName]);
+    svelteSlots[slotName] = [createSlotFn(template)];
+  }
+
+  function createSlotFn(element) {
+    return function() {
+      return {
+        c: noop,
+        m: function mount(target, anchor) {
+          insert(target, element, anchor);
+        },
+        d: function destroy(detaching) {
+          if (detaching) detach(element);
+        },
+        l: noop,
+      };
+    };
+  }
+  return svelteSlots;
+}
+
+const svelteComponentKey = Symbol('svelteComponent');
 
 window.playwrightMount = async (component, rootElement, hooksConfig) => {
   let componentCtor = registry.get(component.type);
@@ -57,15 +92,19 @@ window.playwrightMount = async (component, rootElement, hooksConfig) => {
 
   const svelteComponent = /** @type {SvelteComponent} */ (new componentCtor({
     target: rootElement,
-    props: component.options?.props,
+    props: {
+      ...component.options?.props,
+      $$slots: createSlots(component.options?.slots),
+      $$scope: {},
+    }
   }));
   rootElement[svelteComponentKey] = svelteComponent;
 
-  for (const hook of /** @type {any} */(window).__pw_hooks_after_mount || [])
-    await hook({ hooksConfig, svelteComponent });
-
   for (const [key, listener] of Object.entries(component.options?.on || {}))
     svelteComponent.$on(key, event => listener(event.detail));
+
+  for (const hook of /** @type {any} */(window).__pw_hooks_after_mount || [])
+    await hook({ hooksConfig, svelteComponent });
 };
 
 window.playwrightUnmount = async rootElement => {
@@ -75,4 +114,14 @@ window.playwrightUnmount = async rootElement => {
   svelteComponent.$destroy();
 };
 
-const svelteComponentKey = Symbol('svelteComponent');
+window.playwrightUpdate = async (rootElement, component) => {
+  const svelteComponent = /** @type {SvelteComponent} */ (rootElement[svelteComponentKey]);
+  if (!svelteComponent)
+    throw new Error('Component was not mounted');
+
+  for (const [key, listener] of Object.entries(component.options?.on || {}))
+    svelteComponent.$on(key, event => listener(event.detail));
+
+  if (component.options?.props)
+    svelteComponent.$set(component.options.props);
+};

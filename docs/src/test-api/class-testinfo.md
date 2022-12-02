@@ -104,7 +104,8 @@ after awaiting the attach call.
 * since: v1.10
 - `name` <[string]>
 
-Attachment name.
+Attachment name. The name will also be sanitized and used as the prefix of file name
+when saving to disk.
 
 ### option: TestInfo.attach.body
 * since: v1.10
@@ -258,6 +259,8 @@ Line number where the currently running test is declared.
 - type: <[string]>
 
 Absolute path to the snapshot output directory for this specific test. Each test suite gets its own directory so they cannot conflict.
+
+This property does not account for the [`property: TestProject.snapshotPathTemplate`] configuration.
 
 ## property: TestInfo.outputDir
 * since: v1.10
@@ -457,6 +460,11 @@ The name of the snapshot or the path segments to define the snapshot file path. 
 * since: v1.10
 - type: <[string]>
 
+:::note
+Use of [`property: TestInfo.snapshotSuffix`] is discouraged. Please use [`property: TestConfig.snapshotPathTemplate`] to configure
+snapshot paths.
+:::
+
 Suffix used to differentiate snapshots between multiple test configurations. For example, if snapshots depend on the platform, you can set `testInfo.snapshotSuffix` equal to `process.platform`. In this case `expect(value).toMatchSnapshot(snapshotName)` will use different snapshots depending on the platform. Learn more about [snapshots](../test-snapshots.md).
 
 ## property: TestInfo.status
@@ -496,6 +504,12 @@ Output written to `process.stderr` or `console.error` during the test execution.
 - type: <[Array]<[string]|[Buffer]>>
 
 Output written to `process.stdout` or `console.log` during the test execution.
+
+## method: TestInfo.storage
+* since: v1.28
+- returns: <[Storage]>
+
+Returns a [Storage] instance for the currently running project.
 
 ## property: TestInfo.timeout
 * since: v1.10

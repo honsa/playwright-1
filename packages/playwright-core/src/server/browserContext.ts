@@ -26,10 +26,10 @@ import { helper } from './helper';
 import * as network from './network';
 import type { PageDelegate } from './page';
 import { Page, PageBinding } from './page';
-import type { Progress } from './progress';
+import type { Progress, ProgressController } from './progress';
 import type { Selectors } from './selectors';
 import type * as types from './types';
-import type * as channels from '../protocol/channels';
+import type * as channels from '@protocol/channels';
 import path from 'path';
 import fs from 'fs';
 import type { CallMetadata } from './instrumentation';
@@ -56,6 +56,7 @@ export abstract class BrowserContext extends SdkObject {
 
   readonly _timeoutSettings = new TimeoutSettings();
   readonly _pageBindings = new Map<string, PageBinding>();
+  readonly _activeProgressControllers = new Set<ProgressController>();
   readonly _options: channels.BrowserNewContextParams;
   _requestInterceptor?: network.RouteHandler;
   private _isPersistentContext: boolean;
@@ -76,6 +77,7 @@ export abstract class BrowserContext extends SdkObject {
   private _settingStorageState = false;
   readonly initScripts: string[] = [];
   private _routesInFlight = new Set<network.Route>();
+  private _debugger!: Debugger;
 
   constructor(browser: Browser, options: channels.BrowserNewContextParams, browserContextId: string | undefined) {
     super(browser, 'browser-context');
@@ -112,16 +114,16 @@ export abstract class BrowserContext extends SdkObject {
     if (this.attribution.isInternalPlaywright)
       return;
     // Debugger will pause execution upon page.pause in headed mode.
-    const contextDebugger = new Debugger(this);
+    this._debugger = new Debugger(this);
 
     // When PWDEBUG=1, show inspector for each context.
     if (debugMode() === 'inspector')
       await Recorder.show(this, { pauseOnNextStatement: true });
 
     // When paused, show inspector.
-    if (contextDebugger.isPaused())
+    if (this._debugger.isPaused())
       Recorder.showInspector(this);
-    contextDebugger.on(Debugger.Events.PausedStateChanged, () => {
+    this._debugger.on(Debugger.Events.PausedStateChanged, () => {
       Recorder.showInspector(this);
     });
 
@@ -134,6 +136,10 @@ export abstract class BrowserContext extends SdkObject {
       await this.grantPermissions(this._options.permissions);
   }
 
+  debugger(): Debugger {
+    return this._debugger;
+  }
+
   async _ensureVideosPath() {
     if (this._options.recordVideo)
       await mkdirIfNeeded(path.join(this._options.recordVideo.dir, 'dummy'));
@@ -143,6 +149,11 @@ export abstract class BrowserContext extends SdkObject {
     if (this._closedStatus !== 'open')
       return false;
     return true;
+  }
+
+  async stopPendingOperations() {
+    for (const controller of this._activeProgressControllers)
+      controller.abort(new Error(`Context was reset for reuse.`));
   }
 
   static reusableContextHash(params: channels.BrowserNewContextForReuseParams): string {
@@ -180,11 +191,14 @@ export abstract class BrowserContext extends SdkObject {
       page = undefined;
     }
 
-    // Unless I do this early, setting extra http headers below does not respond.
+    // Unless dialogs are dismissed, setting extra http headers below does not respond.
+    page?._frameManager.setCloseAllOpeningDialogs(true);
     await page?._frameManager.closeOpenDialogs();
     // Navigate to about:blank first to ensure no page scripts are running after this point.
     await page?.mainFrame().goto(metadata, 'about:blank', { timeout: 0 });
-    await this._clearStorage();
+    page?._frameManager.setCloseAllOpeningDialogs(false);
+
+    await this._resetStorage();
     await this._removeExposedBindings();
     await this._removeInitScripts();
     // TODO: following can be optimized to not perform noops.
@@ -196,7 +210,7 @@ export abstract class BrowserContext extends SdkObject {
     await this.setGeolocation(this._options.geolocation);
     await this.setOffline(!!this._options.offline);
     await this.setUserAgent(this._options.userAgent);
-    await this.clearCookies();
+    await this._resetCookies();
 
     await page?.resetForReuse(metadata);
   }
@@ -216,7 +230,7 @@ export abstract class BrowserContext extends SdkObject {
     this._closedStatus = 'closed';
     this._deleteAllDownloads();
     this._downloads.clear();
-    this.tracing.dispose();
+    this.tracing.dispose().catch(() => {});
     if (this._isPersistentContext)
       this.onClosePersistent();
     this._closePromiseFulfill!(new Error('Context closed'));
@@ -389,7 +403,7 @@ export abstract class BrowserContext extends SdkObject {
 
       for (const harRecorder of this._harRecorders.values())
         await harRecorder.flush();
-      await this.tracing.flush();
+      await this.tracing.dispose();
 
       // Cleanup.
       const promises: Promise<void>[] = [];
@@ -401,10 +415,6 @@ export abstract class BrowserContext extends SdkObject {
 
       if (this._customCloseHandler) {
         await this._customCloseHandler();
-      } else if (this._isPersistentContext) {
-        // Close all the pages instead of the context,
-        // because we cannot close the default context.
-        await Promise.all(this.pages().map(page => page.close(metadata)));
       } else {
         // Close the context.
         await this.doClose();
@@ -417,15 +427,8 @@ export abstract class BrowserContext extends SdkObject {
       await Promise.all(promises);
 
       // Custom handler should trigger didCloseInternal itself.
-      if (this._customCloseHandler)
-        return;
-
-      // Persistent context should also close the browser.
-      if (this._isPersistentContext)
-        await this._browser.close();
-
-      // Bookkeeping.
-      this._didCloseInternal();
+      if (!this._customCloseHandler)
+        this._didCloseInternal();
     }
     await this._closePromise;
   }
@@ -474,8 +477,10 @@ export abstract class BrowserContext extends SdkObject {
     return result;
   }
 
-  async _clearStorage() {
-    if (!this._origins.size)
+  async _resetStorage() {
+    const oldOrigins = this._origins;
+    const newOrigins = new Map(this._options.storageState?.origins?.map(p => [p.origin, p]) || []);
+    if (!oldOrigins.size && !newOrigins.size)
       return;
     let page = this.pages()[0];
 
@@ -484,13 +489,23 @@ export abstract class BrowserContext extends SdkObject {
     await page._setServerRequestInterceptor(handler => {
       handler.fulfill({ body: '<html></html>' }).catch(() => {});
     });
-    for (const origin of this._origins) {
+
+    for (const origin of new Set([...oldOrigins, ...newOrigins.keys()])) {
       const frame = page.mainFrame();
       await frame.goto(internalMetadata, origin);
-      await frame.clearStorageForCurrentOriginBestEffort();
+      await frame.resetStorageForCurrentOriginBestEffort(newOrigins.get(origin));
     }
+
     await page._setServerRequestInterceptor(undefined);
+
+    this._origins = new Set([...newOrigins.keys()]);
     // It is safe to not restore the URL to about:blank since we are doing it in Page::resetForReuse.
+  }
+
+  async _resetCookies() {
+    await this.clearCookies();
+    if (this._options.storageState?.cookies)
+      await this.addCookies(this._options.storageState?.cookies);
   }
 
   isSettingStorageState(): boolean {
@@ -597,8 +612,6 @@ export function validateBrowserContextOptions(options: channels.BrowserNewContex
       throw new Error(`Browser needs to be launched with the global proxy. If all contexts override the proxy, global proxy will be never used and can be any string, for example "launch({ proxy: { server: 'http://per-context' } })"`);
     options.proxy = normalizeProxySettings(options.proxy);
   }
-  if (debugMode() === 'inspector')
-    options.bypassCSP = true;
   verifyGeolocation(options.geolocation);
 }
 
@@ -658,4 +671,5 @@ const defaultNewContextParamValues: channels.BrowserNewContextForReuseParams = {
   acceptDownloads: true,
   strictSelectors: false,
   serviceWorkers: 'allow',
+  locale: 'en-US',
 };

@@ -4,6 +4,12 @@
 
 [AndroidDevice] represents a connected device, either real hardware or emulated. Devices can be obtained using [`method: Android.devices`].
 
+## event: AndroidDevice.close
+* since: v1.28
+- argument: <[AndroidDevice]>
+
+Emitted when the device connection gets closed.
+
 ## event: AndroidDevice.webView
 * since: v1.9
 - argument: <[AndroidWebView]>
@@ -166,7 +172,6 @@ Launches a process in the shell on the device and returns a socket to communicat
 ### param: AndroidDevice.open.command
 * since: v1.9
 - `command` <[string]> Shell command to execute.
-
 
 ## async method: AndroidDevice.pinchClose
 * since: v1.9
@@ -337,7 +342,6 @@ Executes a shell command on the device and returns its output.
 - `command` <[string]>
 
 Shell command to execute.
-
 
 ## async method: AndroidDevice.swipe
 * since: v1.9

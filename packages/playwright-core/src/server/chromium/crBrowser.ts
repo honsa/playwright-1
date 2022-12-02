@@ -26,7 +26,7 @@ import { Frame } from '../frames';
 import type { Dialog } from '../dialog';
 import type { ConnectionTransport } from '../transport';
 import type * as types from '../types';
-import type * as channels from '../../protocol/channels';
+import type * as channels from '@protocol/channels';
 import type { CRSession } from './crConnection';
 import { ConnectionEvents, CRConnection } from './crConnection';
 import { CRPage } from './crPage';
@@ -196,6 +196,18 @@ export class CRBrowser extends Browser {
       context.emit(CRBrowserContext.CREvents.ServiceWorker, serviceWorker);
       return;
     }
+
+    // Detach from any targets we are not interested in, to avoid side-effects.
+    //
+    // One example of a side effect: upon shared worker restart, we receive
+    // Inspector.targetReloadedAfterCrash and backend waits for Runtime.runIfWaitingForDebugger
+    // from any attached client. If we do not resume, shared worker will stall.
+    //
+    // Ideally, detaching should resume any target, but there is a bug in the backend,
+    // so we must Runtime.runIfWaitingForDebugger first.
+    session._sendMayFail('Runtime.runIfWaitingForDebugger').then(() => {
+      this._session._sendMayFail('Target.detachFromTarget', { sessionId });
+    });
   }
 
   _onDetachedFromTarget(payload: Protocol.Target.detachFromTargetParameters) {
@@ -334,13 +346,12 @@ export class CRBrowserContext extends BrowserContext {
     await Promise.all(promises);
   }
 
+  private _crPages() {
+    return [...this._browser._crPages.values()].filter(crPage => crPage._browserContext === this);
+  }
+
   pages(): Page[] {
-    const result: Page[] = [];
-    for (const crPage of this._browser._crPages.values()) {
-      if (crPage._browserContext === this && crPage._initializedPage)
-        result.push(crPage._initializedPage);
-    }
-    return result;
+    return this._crPages().map(crPage => crPage._initializedPage).filter(Boolean) as Page[];
   }
 
   async newPageDelegate(): Promise<PageDelegate> {
@@ -489,19 +500,24 @@ export class CRBrowserContext extends BrowserContext {
   }
 
   async doClose() {
-    assert(this._browserContextId);
     // Headful chrome cannot dispose browser context with opened 'beforeunload'
     // dialogs, so we should close all that are currently opened.
     // We also won't get new ones since `Target.disposeBrowserContext` does not trigger
     // beforeunload.
     const openedBeforeUnloadDialogs: Dialog[] = [];
-    for (const crPage of this._browser._crPages.values()) {
-      if (crPage._browserContext !== this)
-        continue;
+    for (const crPage of this._crPages()) {
       const dialogs = [...crPage._page._frameManager._openedDialogs].filter(dialog => dialog.type() === 'beforeunload');
       openedBeforeUnloadDialogs.push(...dialogs);
     }
     await Promise.all(openedBeforeUnloadDialogs.map(dialog => dialog.dismiss()));
+
+    if (!this._browserContextId) {
+      await Promise.all(this._crPages().map(crPage => crPage._mainFrameSession._stopVideoRecording()));
+      // Closing persistent context should close the browser.
+      await this._browser.close();
+      return;
+    }
+
     await this._browser._session.send('Target.disposeBrowserContext', { browserContextId: this._browserContextId });
     this._browser._contexts.delete(this._browserContextId);
     for (const [targetId, serviceWorker] of this._browser._serviceWorkers) {

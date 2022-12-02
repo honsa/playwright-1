@@ -65,6 +65,8 @@ await context.Tracing.StopAsync(new()
 
 Start tracing.
 
+**Usage**
+
 ```js
 await context.tracing.start({ screenshots: true, snapshots: true });
 const page = await context.newPage();
@@ -161,13 +163,15 @@ Trace name to be shown in the Trace Viewer.
 
 Start a new trace chunk. If you'd like to record multiple traces on the same [BrowserContext], use [`method: Tracing.start`] once, and then create multiple trace chunks with [`method: Tracing.startChunk`] and [`method: Tracing.stopChunk`].
 
+**Usage**
+
 ```js
 await context.tracing.start({ screenshots: true, snapshots: true });
 const page = await context.newPage();
 await page.goto('https://playwright.dev');
 
 await context.tracing.startChunk();
-await page.locator('text=Get Started').click();
+await page.getByText('Get Started').click();
 // Everything between startChunk and stopChunk will be recorded in the trace.
 await context.tracing.stopChunk({ path: 'trace1.zip' });
 
@@ -185,7 +189,7 @@ Page page = context.newPage();
 page.navigate("https://playwright.dev");
 
 context.tracing().startChunk();
-page.locator("text=Get Started").click();
+page.getByText("Get Started").click();
 // Everything between startChunk and stopChunk will be recorded in the trace.
 context.tracing().stopChunk(new Tracing.StopChunkOptions()
   .setPath(Paths.get("trace1.zip")));
@@ -203,7 +207,7 @@ page = await context.new_page()
 await page.goto("https://playwright.dev")
 
 await context.tracing.start_chunk()
-await page.locator("text=Get Started").click()
+await page.get_by_text("Get Started").click()
 # Everything between start_chunk and stop_chunk will be recorded in the trace.
 await context.tracing.stop_chunk(path = "trace1.zip")
 
@@ -219,7 +223,7 @@ page = context.new_page()
 page.goto("https://playwright.dev")
 
 context.tracing.start_chunk()
-page.locator("text=Get Started").click()
+page.get_by_text("Get Started").click()
 # Everything between start_chunk and stop_chunk will be recorded in the trace.
 context.tracing.stop_chunk(path = "trace1.zip")
 
@@ -241,7 +245,7 @@ var page = context.NewPageAsync();
 await page.GotoAsync("https://playwright.dev");
 
 await context.Tracing.StartChunkAsync();
-await page.ClickAsync("text=Get Started");
+await page.GetByText("Get Started").ClickAsync();
 // Everything between StartChunkAsync and StopChunkAsync will be recorded in the trace.
 await context.Tracing.StopChunkAsync(new()
 {
@@ -263,7 +267,6 @@ await context.Tracing.StopChunkAsync(new()
 
 Trace name to be shown in the Trace Viewer.
 
-
 ## async method: Tracing.stop
 * since: v1.12
 
@@ -274,8 +277,6 @@ Stop tracing.
 - `path` <[path]>
 
 Export trace into the file with the given path.
-
-
 
 ## async method: Tracing.stopChunk
 * since: v1.15

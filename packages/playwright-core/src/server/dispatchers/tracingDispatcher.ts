@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type * as channels from '../../protocol/channels';
+import type * as channels from '@protocol/channels';
 import type { Tracing } from '../trace/recorder/tracing';
 import { ArtifactDispatcher } from './artifactDispatcher';
 import { Dispatcher, existingDispatcher } from './dispatcher';
@@ -43,7 +43,7 @@ export class TracingDispatcher extends Dispatcher<Tracing, channels.TracingChann
 
   async tracingStopChunk(params: channels.TracingTracingStopChunkParams): Promise<channels.TracingTracingStopChunkResult> {
     const { artifact, sourceEntries } = await this._object.stopChunk(params);
-    return { artifact: artifact ? new ArtifactDispatcher(this, artifact) : undefined, sourceEntries };
+    return { artifact: artifact ? ArtifactDispatcher.from(this, artifact) : undefined, sourceEntries };
   }
 
   async tracingStop(params: channels.TracingTracingStopParams): Promise<channels.TracingTracingStopResult> {

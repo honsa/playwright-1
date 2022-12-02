@@ -151,7 +151,7 @@ class SnapshotHelper<T extends ImageComparatorOptions> {
 
   handleMissingNegated() {
     const isWriteMissingMode = this.updateSnapshots === 'all' || this.updateSnapshots === 'missing';
-    const message = `${this.snapshotPath} is missing in snapshots${isWriteMissingMode ? ', matchers using ".not" won\'t write them automatically.' : '.'}`;
+    const message = `A snapshot doesn't exist at ${this.snapshotPath}${isWriteMissingMode ? ', matchers using ".not" won\'t write them automatically.' : '.'}`;
     return {
       // NOTE: 'isNot' matcher implies inversed value.
       pass: true,
@@ -180,7 +180,7 @@ class SnapshotHelper<T extends ImageComparatorOptions> {
       writeFileSync(this.snapshotPath, actual);
       writeFileSync(this.actualPath, actual);
     }
-    const message = `${this.snapshotPath} is missing in snapshots${isWriteMissingMode ? ', writing actual.' : '.'}`;
+    const message = `A snapshot doesn't exist at ${this.snapshotPath}${isWriteMissingMode ? ', writing actual.' : '.'}`;
     if (this.updateSnapshots === 'all') {
       /* eslint-disable no-console */
       console.log(message);
@@ -251,6 +251,10 @@ export function toMatchSnapshot(
     throw new Error(`toMatchSnapshot() must be called during the test`);
   if (received instanceof Promise)
     throw new Error('An unresolved Promise was passed to toMatchSnapshot(), make sure to resolve it by adding await to it.');
+
+  if (testInfo.config._ignoreSnapshots)
+    return { pass: !this.isNot, message: () => '' };
+
   const helper = new SnapshotHelper(
       testInfo, testInfo.snapshotPath.bind(testInfo), determineFileExtension(received),
       testInfo.project._expect?.toMatchSnapshot || {},
@@ -292,10 +296,12 @@ export async function toHaveScreenshot(
   const testInfo = currentTestInfo();
   if (!testInfo)
     throw new Error(`toHaveScreenshot() must be called during the test`);
+
+  if (testInfo.config._ignoreSnapshots)
+    return { pass: !this.isNot, message: () => '' };
+
   const config = (testInfo.project._expect as any)?.toHaveScreenshot;
-  const snapshotPathResolver = process.env.PWTEST_USE_SCREENSHOTS_DIR_FOR_TEST
-    ? testInfo._screenshotPath.bind(testInfo)
-    : testInfo.snapshotPath.bind(testInfo);
+  const snapshotPathResolver = testInfo.snapshotPath.bind(testInfo);
   const helper = new SnapshotHelper(
       testInfo, snapshotPathResolver, 'png',
       {
@@ -307,6 +313,7 @@ export async function toHaveScreenshot(
   if (!helper.snapshotPath.toLowerCase().endsWith('.png'))
     throw new Error(`Screenshot name "${path.basename(helper.snapshotPath)}" must have '.png' extension`);
   expectTypes(pageOrLocator, ['Page', 'Locator'], 'toHaveScreenshot');
+
   const [page, locator] = pageOrLocator.constructor.name === 'Page' ? [(pageOrLocator as PageEx), undefined] : [(pageOrLocator as Locator).page() as PageEx, pageOrLocator as LocatorEx];
   const screenshotOptions = {
     animations: config?.animations ?? 'disabled',
@@ -320,7 +327,7 @@ export async function toHaveScreenshot(
     maxDiffPixelRatio: undefined,
   };
 
-  const customStackTrace = captureStackTrace(`expect.toHaveScreenshot`);
+  const customStackTrace = captureStackTrace(`expect.${this.isNot ? 'not.' : ''}toHaveScreenshot`);
   const hasSnapshot = fs.existsSync(helper.snapshotPath);
   if (this.isNot) {
     if (!hasSnapshot)
@@ -342,7 +349,7 @@ export async function toHaveScreenshot(
 
   // Fast path: there's no screenshot and we don't intend to update it.
   if (helper.updateSnapshots === 'none' && !hasSnapshot)
-    return { pass: false, message: () => `${helper.snapshotPath} is missing in snapshots.` };
+    return { pass: false, message: () => `A snapshot doesn't exist at ${helper.snapshotPath}.` };
 
   if (!hasSnapshot) {
     // Regenerate a new screenshot by waiting until two screenshots are the same.

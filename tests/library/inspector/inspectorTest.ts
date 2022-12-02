@@ -15,9 +15,9 @@
  */
 
 import { contextTest } from '../../config/browserTest';
-import type { ConsoleMessage, Page } from 'playwright-core';
+import type { Page } from 'playwright-core';
 import * as path from 'path';
-import type { Source } from '../../../packages/playwright-core/src/server/recorder/recorderTypes';
+import type { Source } from '../../../packages/recorder/src/recorderTypes';
 import type { CommonFixtures, TestChildProcess } from '../../config/commonFixtures';
 export { expect } from '@playwright/test';
 
@@ -33,11 +33,11 @@ const codegenLang2Id: Map<string, string> = new Map([
   ['Java', 'java'],
   ['Python', 'python'],
   ['Python Async', 'python-async'],
-  ['Pytest', 'pytest'],
+  ['Pytest', 'python-pytest'],
   ['C#', 'csharp'],
   ['C# NUnit', 'csharp-nunit'],
   ['C# MSTest', 'csharp-mstest'],
-  ['Playwright Test', 'test'],
+  ['Playwright Test', 'playwright-test'],
 ]);
 const codegenLangId2lang = new Map([...codegenLang2Id.entries()].map(([lang, langId]) => [langId, lang]));
 
@@ -149,27 +149,12 @@ class Recorder {
   }
 
   async waitForHighlight(action: () => Promise<void>): Promise<string> {
-    // We get the last highlighted selector, because Firefox sometimes issues multiple
-    // focus events.
-    let generatedSelector: string | undefined;
-    let callback: Function | undefined;
-
-    const listener = async (msg: ConsoleMessage) => {
-      const prefix = 'Highlight updated for test: ';
-      if (msg.text().startsWith(prefix)) {
-        generatedSelector = msg.text().substr(prefix.length);
-        if (callback) {
-          this.page.off('console', listener);
-          callback(generatedSelector);
-        }
-      }
-    };
-    this.page.on('console', listener);
-
+    await this.page.$$eval('x-pw-highlight', els => els.forEach(e => e.remove()));
+    await this.page.$$eval('x-pw-tooltip', els => els.forEach(e => e.remove()));
     await action();
-    if (generatedSelector)
-      return generatedSelector;
-    return await new Promise<string>(f => callback = f);
+    await this.page.locator('x-pw-highlight').waitFor();
+    await this.page.locator('x-pw-tooltip').waitFor();
+    return this.page.locator('x-pw-tooltip').textContent();
   }
 
   async waitForActionPerformed(): Promise<{ hovered: string | null, active: string | null }> {
@@ -186,8 +171,22 @@ class Recorder {
     return new Promise(f => callback = f);
   }
 
-  async hoverOverElement(selector: string): Promise<string> {
-    return this.waitForHighlight(() => this.page.dispatchEvent(selector, 'mousemove', { detail: 1 }));
+  async hoverOverElement(selector: string, options?: { position?: { x: number, y: number }}): Promise<string> {
+    return this.waitForHighlight(async () => {
+      const box = await this.page.locator(selector).first().boundingBox();
+      const offset = options?.position || { x: box.width / 2, y: box.height / 2 };
+      await this.page.mouse.move(box.x + offset.x, box.y + offset.y);
+    });
+  }
+
+  async trustedMove(selector: string) {
+    const box = await this.page.locator(selector).first().boundingBox();
+    await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  }
+
+  async trustedClick() {
+    await this.page.mouse.down();
+    await this.page.mouse.up();
   }
 
   async focusElement(selector: string): Promise<string> {

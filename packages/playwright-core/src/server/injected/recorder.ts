@@ -18,7 +18,7 @@ import type * as actions from '../recorder/recorderActions';
 import { type InjectedScript } from '../injected/injectedScript';
 import { generateSelector, querySelector } from '../injected/selectorGenerator';
 import type { Point } from '../../common/types';
-import type { UIState } from '../recorder/recorderTypes';
+import type { UIState } from '@recorder/recorderTypes';
 import { Highlight } from '../injected/highlight';
 
 
@@ -43,6 +43,7 @@ class Recorder {
   private _actionPoint: Point | undefined;
   private _actionSelector: string | undefined;
   private _highlight: Highlight;
+  private _testIdAttributeName: string = 'data-testid';
 
   constructor(injectedScript: InjectedScript) {
     this._injectedScript = injectedScript;
@@ -74,8 +75,10 @@ class Recorder {
       addEventListener(document, 'mouseup', event => this._onMouseUp(event as MouseEvent), true),
       addEventListener(document, 'mousemove', event => this._onMouseMove(event as MouseEvent), true),
       addEventListener(document, 'mouseleave', event => this._onMouseLeave(event as MouseEvent), true),
-      addEventListener(document, 'focus', () => this._onFocus(), true),
-      addEventListener(document, 'scroll', () => {
+      addEventListener(document, 'focus', event => event.isTrusted && this._onFocus(true), true),
+      addEventListener(document, 'scroll', event => {
+        if (!event.isTrusted)
+          return;
         this._hoveredModel = null;
         this._highlight.hideActionPoint();
         this._updateHighlight();
@@ -94,7 +97,9 @@ class Recorder {
       return;
     }
 
-    const { mode, actionPoint, actionSelector } = state;
+    const { mode, actionPoint, actionSelector, language, testIdAttributeName } = state;
+    this._testIdAttributeName = testIdAttributeName;
+    this._highlight.setLanguage(language);
     if (mode !== this._mode) {
       this._mode = mode;
       this._clearHighlight();
@@ -153,6 +158,8 @@ class Recorder {
   }
 
   private _onClick(event: MouseEvent) {
+    if (!event.isTrusted)
+      return;
     if (this._mode === 'inspecting')
       globalThis.__pw_recorderSetSelector(this._hoveredModel ? this._hoveredModel.selector : '');
     if (this._shouldIgnoreMouseEvent(event))
@@ -193,7 +200,7 @@ class Recorder {
       return true;
     }
     const nodeName = target.nodeName;
-    if (nodeName === 'SELECT')
+    if (nodeName === 'SELECT' || nodeName === 'OPTION')
       return true;
     if (nodeName === 'INPUT' && ['date'].includes((target as HTMLInputElement).type))
       return true;
@@ -201,6 +208,8 @@ class Recorder {
   }
 
   private _onMouseDown(event: MouseEvent) {
+    if (!event.isTrusted)
+      return;
     if (this._shouldIgnoreMouseEvent(event))
       return;
     if (!this._performingAction)
@@ -209,6 +218,8 @@ class Recorder {
   }
 
   private _onMouseUp(event: MouseEvent) {
+    if (!event.isTrusted)
+      return;
     if (this._shouldIgnoreMouseEvent(event))
       return;
     if (!this._performingAction)
@@ -216,6 +227,8 @@ class Recorder {
   }
 
   private _onMouseMove(event: MouseEvent) {
+    if (!event.isTrusted)
+      return;
     if (this._mode === 'none')
       return;
     const target = this._deepEventTarget(event);
@@ -226,19 +239,24 @@ class Recorder {
   }
 
   private _onMouseLeave(event: MouseEvent) {
+    if (!event.isTrusted)
+      return;
     // Leaving iframe.
-    if (this._deepEventTarget(event).nodeType === Node.DOCUMENT_NODE) {
+    if (window.top !== window && this._deepEventTarget(event).nodeType === Node.DOCUMENT_NODE) {
       this._hoveredElement = null;
       this._updateModelForHoveredElement();
     }
   }
 
-  private _onFocus() {
+  private _onFocus(userGesture: boolean) {
+    if (this._mode === 'none')
+      return;
     const activeElement = this._deepActiveElement(document);
-    const result = activeElement ? generateSelector(this._injectedScript, activeElement, true) : null;
+    const result = activeElement ? generateSelector(this._injectedScript, activeElement, this._testIdAttributeName) : null;
     this._activeModel = result && result.selector ? result : null;
-    if (this._injectedScript.isUnderTest)
-      console.error('Highlight updated for test: ' + (result ? result.selector : null)); // eslint-disable-line no-console
+    if (userGesture)
+      this._hoveredElement = activeElement as HTMLElement | null;
+    this._updateModelForHoveredElement();
   }
 
   private _updateModelForHoveredElement() {
@@ -248,13 +266,11 @@ class Recorder {
       return;
     }
     const hoveredElement = this._hoveredElement;
-    const { selector, elements } = generateSelector(this._injectedScript, hoveredElement, true);
-    if ((this._hoveredModel && this._hoveredModel.selector === selector) || this._hoveredElement !== hoveredElement)
+    const { selector, elements } = generateSelector(this._injectedScript, hoveredElement, this._testIdAttributeName);
+    if ((this._hoveredModel && this._hoveredModel.selector === selector))
       return;
     this._hoveredModel = selector ? { selector, elements } : null;
     this._updateHighlight();
-    if (this._injectedScript.isUnderTest)
-      console.error('Highlight updated for test: ' + selector); // eslint-disable-line no-console
   }
 
   private _updateHighlight() {
@@ -267,21 +283,20 @@ class Recorder {
     if (this._mode !== 'recording')
       return true;
     const target = this._deepEventTarget(event);
-    if (['INPUT', 'TEXTAREA'].includes(target.nodeName)) {
-      const inputElement = target as HTMLInputElement;
-      const elementType = (inputElement.type || '').toLowerCase();
-      if (['checkbox', 'radio'].includes(elementType)) {
-        // Checkbox is handled in click, we can't let input trigger on checkbox - that would mean we dispatched click events while recording.
-        return;
-      }
 
-      if (elementType === 'file') {
-        globalThis.__pw_recorderRecordAction({
-          name: 'setInputFiles',
-          selector: this._activeModel!.selector,
-          signals: [],
-          files: [...(inputElement.files || [])].map(file => file.name),
-        });
+    if (target.nodeName === 'INPUT' && (target as HTMLInputElement).type.toLowerCase() === 'file') {
+      globalThis.__pw_recorderRecordAction({
+        name: 'setInputFiles',
+        selector: this._activeModel!.selector,
+        signals: [],
+        files: [...((target as HTMLInputElement).files || [])].map(file => file.name),
+      });
+      return;
+    }
+
+    if (['INPUT', 'TEXTAREA'].includes(target.nodeName) || target.isContentEditable) {
+      if (target.nodeName === 'INPUT' && ['checkbox', 'radio'].includes((target as HTMLInputElement).type.toLowerCase())) {
+        // Checkbox is handled in click, we can't let input trigger on checkbox - that would mean we dispatched click events while recording.
         return;
       }
 
@@ -292,7 +307,7 @@ class Recorder {
         name: 'fill',
         selector: this._activeModel!.selector,
         signals: [],
-        text: inputElement.value,
+        text: target.isContentEditable ? target.innerText : (target as HTMLInputElement).value,
       });
     }
 
@@ -335,6 +350,8 @@ class Recorder {
   }
 
   private _onKeyDown(event: KeyboardEvent) {
+    if (!event.isTrusted)
+      return;
     if (this._mode === 'inspecting') {
       consumeEvent(event);
       return;
@@ -372,6 +389,8 @@ class Recorder {
   }
 
   private _onKeyUp(event: KeyboardEvent) {
+    if (!event.isTrusted)
+      return;
     if (this._mode === 'none')
       return;
     if (!this._shouldGenerateKeyPressFor(event))
@@ -391,10 +410,8 @@ class Recorder {
     await globalThis.__pw_recorderPerformAction(action).catch(() => {});
     this._performingAction = false;
 
-    // Action could have changed DOM, update hovered model selectors.
-    this._updateModelForHoveredElement();
     // If that was a keyboard action, it similarly requires new selectors for active model.
-    this._onFocus();
+    this._onFocus(false);
 
     if (this._injectedScript.isUnderTest) {
       // Serialize all to string as we cannot attribute console message to isolated world

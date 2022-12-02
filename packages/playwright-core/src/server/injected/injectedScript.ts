@@ -18,18 +18,21 @@ import type { SelectorEngine, SelectorRoot } from './selectorEngine';
 import { XPathEngine } from './xpathSelectorEngine';
 import { ReactEngine } from './reactSelectorEngine';
 import { VueEngine } from './vueSelectorEngine';
-import { RoleEngine } from './roleSelectorEngine';
+import { createRoleEngine } from './roleSelectorEngine';
+import { parseAttributeSelector } from '../isomorphic/selectorParser';
 import type { NestedSelectorBody, ParsedSelector, ParsedSelectorPart } from '../isomorphic/selectorParser';
 import { allEngineNames, parseSelector, stringifySelector } from '../isomorphic/selectorParser';
-import { type TextMatcher, elementMatchesText, createRegexTextMatcher, createStrictTextMatcher, createLaxTextMatcher, elementText } from './selectorUtils';
+import { type TextMatcher, elementMatchesText, createRegexTextMatcher, createStrictTextMatcher, createLaxTextMatcher, elementText, createStrictFullTextMatcher } from './selectorUtils';
 import { SelectorEvaluatorImpl } from './selectorEvaluator';
-import { isElementVisible, parentElementOrShadowHost } from './domUtils';
+import { enclosingShadowRootOrDocument, isElementVisible, parentElementOrShadowHost } from './domUtils';
 import type { CSSComplexSelectorList } from '../isomorphic/cssParser';
 import { generateSelector } from './selectorGenerator';
-import type * as channels from '../../protocol/channels';
+import type * as channels from '@protocol/channels';
 import { Highlight } from './highlight';
-import { getAriaDisabled, getAriaRole, getElementAccessibleName } from './roleUtils';
+import { getAriaCheckedStrict, getAriaDisabled, getAriaRole, getElementAccessibleName } from './roleUtils';
 import { kLayoutSelectorNames, type LayoutSelectorName, layoutSelectorScore } from './layoutSelectorUtils';
+import { asLocator } from '../isomorphic/locatorGenerators';
+import type { Language } from '../isomorphic/locatorGenerators';
 
 type Predicate<T> = (progress: InjectedScriptProgress) => T | symbol;
 
@@ -78,9 +81,13 @@ export class InjectedScript {
   private _hitTargetInterceptor: undefined | ((event: MouseEvent | PointerEvent | TouchEvent) => void);
   private _highlight: Highlight | undefined;
   readonly isUnderTest: boolean;
+  private _sdkLanguage: Language;
+  private _testIdAttributeNameForStrictErrorAndConsoleCodegen: string = 'data-testid';
 
-  constructor(isUnderTest: boolean, stableRafCount: number, browserName: string, customEngines: { name: string, engine: SelectorEngine }[]) {
+  constructor(isUnderTest: boolean, sdkLanguage: Language, testIdAttributeNameForStrictErrorAndConsoleCodegen: string, stableRafCount: number, browserName: string, customEngines: { name: string, engine: SelectorEngine }[]) {
     this.isUnderTest = isUnderTest;
+    this._sdkLanguage = sdkLanguage;
+    this._testIdAttributeNameForStrictErrorAndConsoleCodegen = testIdAttributeNameForStrictErrorAndConsoleCodegen;
     this._evaluator = new SelectorEvaluatorImpl(new Map());
 
     this._engines = new Map();
@@ -88,9 +95,9 @@ export class InjectedScript {
     this._engines.set('xpath:light', XPathEngine);
     this._engines.set('_react', ReactEngine);
     this._engines.set('_vue', VueEngine);
-    this._engines.set('role', RoleEngine);
-    this._engines.set('text', this._createTextEngine(true));
-    this._engines.set('text:light', this._createTextEngine(false));
+    this._engines.set('role', createRoleEngine(false));
+    this._engines.set('text', this._createTextEngine(true, false));
+    this._engines.set('text:light', this._createTextEngine(false, false));
     this._engines.set('id', this._createAttributeEngine('id', true));
     this._engines.set('id:light', this._createAttributeEngine('id', false));
     this._engines.set('data-testid', this._createAttributeEngine('data-testid', true));
@@ -102,8 +109,14 @@ export class InjectedScript {
     this._engines.set('css', this._createCSSEngine());
     this._engines.set('nth', { queryAll: () => [] });
     this._engines.set('visible', this._createVisibleEngine());
-    this._engines.set('control', this._createControlEngine());
-    this._engines.set('has', this._createHasEngine());
+    this._engines.set('internal:control', this._createControlEngine());
+    this._engines.set('internal:has', this._createHasEngine());
+    this._engines.set('internal:label', this._createInternalLabelEngine());
+    this._engines.set('internal:text', this._createTextEngine(true, true));
+    this._engines.set('internal:has-text', this._createInternalHasTextEngine());
+    this._engines.set('internal:attr', this._createNamedAttributeEngine());
+    this._engines.set('internal:testid', this._createNamedAttributeEngine());
+    this._engines.set('internal:role', createRoleEngine(true));
 
     for (const { name, engine } of customEngines)
       this._engines.set(name, engine);
@@ -122,6 +135,10 @@ export class InjectedScript {
     return globalThis.eval(expression);
   }
 
+  testIdAttributeNameForStrictErrorAndConsoleCodegen(): string {
+    return this._testIdAttributeNameForStrictErrorAndConsoleCodegen;
+  }
+
   parseSelector(selector: string): ParsedSelector {
     const result = parseSelector(selector);
     for (const name of allEngineNames(result)) {
@@ -131,8 +148,8 @@ export class InjectedScript {
     return result;
   }
 
-  generateSelector(targetElement: Element): string {
-    return generateSelector(this, targetElement, true).selector;
+  generateSelector(targetElement: Element, testIdAttributeName: string): string {
+    return generateSelector(this, targetElement, testIdAttributeName).selector;
   }
 
   querySelector(selector: ParsedSelector, root: Node, strict: boolean): Element | undefined {
@@ -171,7 +188,7 @@ export class InjectedScript {
       const withHas: ParsedSelector = { parts: selector.parts.slice(0, selector.capture + 1) };
       if (selector.capture < selector.parts.length - 1) {
         const parsed: ParsedSelector = { parts: selector.parts.slice(selector.capture + 1) };
-        const has: ParsedSelectorPart = { name: 'has', body: { parsed }, source: stringifySelector(parsed) };
+        const has: ParsedSelectorPart = { name: 'internal:has', body: { parsed }, source: stringifySelector(parsed) };
         withHas.parts.push(has);
       }
       return this.querySelectorAll(withHas, root);
@@ -239,9 +256,9 @@ export class InjectedScript {
     };
   }
 
-  private _createTextEngine(shadow: boolean): SelectorEngine {
+  private _createTextEngine(shadow: boolean, internal: boolean): SelectorEngine {
     const queryList = (root: SelectorRoot, selector: string): Element[] => {
-      const { matcher, kind } = createTextMatcher(selector);
+      const { matcher, kind } = createTextMatcher(selector, internal);
       const result: Element[] = [];
       let lastDidNotMatchSelf: Element | null = null;
 
@@ -252,7 +269,7 @@ export class InjectedScript {
         const matches = elementMatchesText(this._evaluator._cacheText, element, matcher);
         if (matches === 'none')
           lastDidNotMatchSelf = element;
-        if (matches === 'self' || (matches === 'selfAndChildren' && kind === 'strict'))
+        if (matches === 'self' || (matches === 'selfAndChildren' && kind === 'strict' && !internal))
           result.push(element);
       };
 
@@ -271,6 +288,62 @@ export class InjectedScript {
     };
   }
 
+  private _createInternalHasTextEngine(): SelectorEngine {
+    const evaluator = this._evaluator;
+    return {
+      queryAll: (root: SelectorRoot, selector: string): Element[] => {
+        if (root.nodeType !== 1 /* Node.ELEMENT_NODE */)
+          return [];
+        const element = root as Element;
+        const text = elementText(evaluator._cacheText, element);
+        const { matcher } = createTextMatcher(selector, true);
+        return matcher(text) ? [element] : [];
+      }
+    };
+  }
+
+  private _createInternalLabelEngine(): SelectorEngine {
+    const evaluator = this._evaluator;
+    return {
+      queryAll: (root: SelectorRoot, selector: string): Element[] => {
+        const { matcher } = createTextMatcher(selector, true);
+        const result: Element[] = [];
+        const labels = this._evaluator._queryCSS({ scope: root as Document | Element, pierceShadow: true }, 'label') as HTMLLabelElement[];
+        for (const label of labels) {
+          const control = label.control;
+          if (control && matcher(elementText(evaluator._cacheText, label)))
+            result.push(control);
+        }
+        return result;
+      }
+    };
+  }
+
+  private _createNamedAttributeEngine(): SelectorEngine {
+    const queryList = (root: SelectorRoot, selector: string): Element[] => {
+      const parsed = parseAttributeSelector(selector, true);
+      if (parsed.name || parsed.attributes.length !== 1)
+        throw new Error('Malformed attribute selector: ' + selector);
+      const { name, value, caseSensitive } = parsed.attributes[0];
+      const lowerCaseValue = caseSensitive ? null : value.toLowerCase();
+      let matcher: (s: string) => boolean;
+      if (value instanceof RegExp)
+        matcher = s => !!s.match(value);
+      else if (caseSensitive)
+        matcher = s => s === value;
+      else
+        matcher = s => s.toLowerCase().includes(lowerCaseValue!);
+      const elements = this._evaluator._queryCSS({ scope: root as Document | Element, pierceShadow: true }, `[${name}]`);
+      return elements.filter(e => matcher(e.getAttribute(name)!));
+    };
+
+    return {
+      queryAll: (root: SelectorRoot, selector: string): Element[] => {
+        return queryList(root, selector);
+      }
+    };
+  }
+
   private _createControlEngine(): SelectorEngineV2 {
     return {
       queryAll(root: SelectorRoot, body: any) {
@@ -278,7 +351,14 @@ export class InjectedScript {
           return [];
         if (body === 'return-empty')
           return [];
-        throw new Error(`Internal error, unknown control selector ${body}`);
+        if (body === 'component') {
+          if (root.nodeType !== 1 /* Node.ELEMENT_NODE */)
+            return [];
+          // Usually, we return the mounted component that is a single child.
+          // However, when mounting fragments, return the root instead.
+          return [root.childElementCount === 1 ? root.firstElementChild! : root as Element];
+        }
+        throw new Error(`Internal error, unknown internal:control selector ${body}`);
       }
     };
   }
@@ -298,16 +378,6 @@ export class InjectedScript {
       if (root.nodeType !== 1 /* Node.ELEMENT_NODE */)
         return [];
       return isElementVisible(root as Element) === Boolean(body) ? [root as Element] : [];
-    };
-    return { queryAll };
-  }
-
-  private _createLayoutEngine(name: LayoutSelectorName): SelectorEngineV2 {
-    const queryAll = (root: SelectorRoot, body: ParsedSelector) => {
-      if (root.nodeType !== 1 /* Node.ELEMENT_NODE */)
-        return [];
-      const has = !!this.querySelector(body, root, false);
-      return has ? [root as Element] : [];
     };
     return { queryAll };
   }
@@ -437,6 +507,18 @@ export class InjectedScript {
     return { left: parseInt(style.borderLeftWidth || '', 10), top: parseInt(style.borderTopWidth || '', 10) };
   }
 
+  describeIFrameStyle(iframe: Element): 'error:notconnected' | 'transformed' | { borderLeft: number, borderTop: number } {
+    if (!iframe.ownerDocument || !iframe.ownerDocument.defaultView)
+      return 'error:notconnected';
+    const defaultView = iframe.ownerDocument.defaultView;
+    for (let e: Element | undefined = iframe; e; e = parentElementOrShadowHost(e)) {
+      if (defaultView.getComputedStyle(e).transform !== 'none')
+        return 'transformed';
+    }
+    const iframeStyle = defaultView.getComputedStyle(iframe);
+    return { borderLeft: parseInt(iframeStyle.borderLeftWidth || '', 10), borderTop: parseInt(iframeStyle.borderTopWidth || '', 10) };
+  }
+
   retarget(node: Node, behavior: 'none' | 'follow-label' | 'no-follow-label' | 'button-link'): Element | null {
     let element = node.nodeType === Node.ELEMENT_NODE ? node as Element : node.parentElement;
     if (!element)
@@ -546,16 +628,11 @@ export class InjectedScript {
       return !disabled && editable;
 
     if (state === 'checked' || state === 'unchecked') {
-      if (['checkbox', 'radio'].includes(element.getAttribute('role') || '')) {
-        const result = element.getAttribute('aria-checked') === 'true';
-        return state === 'checked' ? result : !result;
-      }
-      if (element.nodeName !== 'INPUT')
+      const need = state === 'checked';
+      const checked = getAriaCheckedStrict(element);
+      if (checked === 'error')
         throw this.createStacklessError('Not a checkbox or radio button');
-      if (!['radio', 'checkbox'].includes((element as HTMLInputElement).type.toLowerCase()))
-        throw this.createStacklessError('Not a checkbox or radio button');
-      const result = (element as HTMLInputElement).checked;
-      return state === 'checked' ? result : !result;
+      return need === checked;
     }
     throw this.createStacklessError(`Unexpected element state "${state}"`);
   }
@@ -703,6 +780,15 @@ export class InjectedScript {
     return 'done';
   }
 
+  blurNode(node: Node): 'error:notconnected' | 'done' {
+    if (!node.isConnected)
+      return 'error:notconnected';
+    if (node.nodeType !== Node.ELEMENT_NODE)
+      throw this.createStacklessError('Node is not an element');
+    (node as HTMLElement | SVGElement).blur();
+    return 'done';
+  }
+
   setInputFiles(node: Node, payloads: { name: string, mimeType: string, buffer: string }[]) {
     if (node.nodeType !== Node.ELEMENT_NODE)
       return 'Node is not of type HTMLElement';
@@ -726,7 +812,49 @@ export class InjectedScript {
     input.dispatchEvent(new Event('change', { 'bubbles': true }));
   }
 
-  expectHitTargetParent(hitElement: Element | undefined, targetElement: Element) {
+  expectHitTarget(hitPoint: { x: number, y: number }, targetElement: Element) {
+    const roots: (Document | ShadowRoot)[] = [];
+
+    // Get all component roots leading to the target element.
+    // Go from the bottom to the top to make it work with closed shadow roots.
+    let parentElement = targetElement;
+    while (parentElement) {
+      const root = enclosingShadowRootOrDocument(parentElement);
+      if (!root)
+        break;
+      roots.push(root);
+      if (root.nodeType === 9 /* Node.DOCUMENT_NODE */)
+        break;
+      parentElement = (root as ShadowRoot).host;
+    }
+
+    // Hit target in each component root should point to the next component root.
+    // Hit target in the last component root should point to the target or its descendant.
+    let hitElement: Element | undefined;
+    for (let index = roots.length - 1; index >= 0; index--) {
+      const root = roots[index];
+      // All browsers have different behavior around elementFromPoint and elementsFromPoint.
+      // https://github.com/w3c/csswg-drafts/issues/556
+      // http://crbug.com/1188919
+      const elements: Element[] = root.elementsFromPoint(hitPoint.x, hitPoint.y);
+      const singleElement = root.elementFromPoint(hitPoint.x, hitPoint.y);
+      if (singleElement && elements[0] && parentElementOrShadowHost(singleElement) === elements[0]) {
+        const style = document.defaultView?.getComputedStyle(singleElement);
+        if (style?.display === 'contents') {
+          // Workaround a case where elementsFromPoint misses the inner-most element with display:contents.
+          // https://bugs.chromium.org/p/chromium/issues/detail?id=1342092
+          elements.unshift(singleElement);
+        }
+      }
+      const innerElement = elements[0] as Element | undefined;
+      if (!innerElement)
+        break;
+      hitElement = innerElement;
+      if (index && innerElement !== (roots[index - 1] as ShadowRoot).host)
+        break;
+    }
+
+    // Check whether hit target is the target or its descendant.
     const hitParents: Element[] = [];
     while (hitElement && hitElement !== targetElement) {
       hitParents.push(hitElement);
@@ -734,6 +862,7 @@ export class InjectedScript {
     }
     if (hitElement === targetElement)
       return 'done';
+
     const hitTargetDescription = this.previewNode(hitParents[0] || document.documentElement);
     // Root is the topmost element in the hitTarget's chain that is not in the
     // element's chain. For example, it might be a dialog element that overlays
@@ -784,17 +913,18 @@ export class InjectedScript {
   //     2k. (injected) Event interceptor is removed.
   //     2l. All navigations triggered between 2g-2k are awaited to be either committed or canceled.
   //     2m. If failed, wait for increasing amount of time before the next retry.
-  setupHitTargetInterceptor(node: Node, action: 'hover' | 'tap' | 'mouse' | 'drag', hitPoint: { x: number, y: number }, blockAllEvents: boolean): HitTargetInterceptionResult | 'error:notconnected' | string /* hitTargetDescription */ {
+  setupHitTargetInterceptor(node: Node, action: 'hover' | 'tap' | 'mouse' | 'drag', hitPoint: { x: number, y: number } | undefined, blockAllEvents: boolean): HitTargetInterceptionResult | 'error:notconnected' | string /* hitTargetDescription */ {
     const element = this.retarget(node, 'button-link');
     if (!element || !element.isConnected)
       return 'error:notconnected';
 
-    // First do a preliminary check, to reduce the possibility of some iframe
-    // intercepting the action.
-    const preliminaryHitElement = this.deepElementFromPoint(document, hitPoint.x, hitPoint.y);
-    const preliminaryResult = this.expectHitTargetParent(preliminaryHitElement, element);
-    if (preliminaryResult !== 'done')
-      return preliminaryResult.hitTargetDescription;
+    if (hitPoint) {
+      // First do a preliminary check, to reduce the possibility of some iframe
+      // intercepting the action.
+      const preliminaryResult = this.expectHitTarget(hitPoint, element);
+      if (preliminaryResult !== 'done')
+        return preliminaryResult.hitTargetDescription;
+    }
 
     // When dropping, the "element that is being dragged" often stays under the cursor,
     // so hit target check at the moment we receive mousedown does not work -
@@ -825,10 +955,8 @@ export class InjectedScript {
 
       // Check that we hit the right element at the first event, and assume all
       // subsequent events will be fine.
-      if (result === undefined && point) {
-        const hitElement = this.deepElementFromPoint(document, point.clientX, point.clientY);
-        result = this.expectHitTargetParent(hitElement, element);
-      }
+      if (result === undefined && point)
+        result = this.expectHitTarget({ x: point.clientX, y: point.clientY }, element);
 
       if (blockAllEvents || (result !== 'done' && result !== undefined)) {
         event.preventDefault();
@@ -867,32 +995,6 @@ export class InjectedScript {
       default: event = new Event(type, eventInit); break;
     }
     node.dispatchEvent(event);
-  }
-
-  deepElementFromPoint(document: Document, x: number, y: number): Element | undefined {
-    let container: Document | ShadowRoot | null = document;
-    let element: Element | undefined;
-    while (container) {
-      // All browsers have different behavior around elementFromPoint and elementsFromPoint.
-      // https://github.com/w3c/csswg-drafts/issues/556
-      // http://crbug.com/1188919
-      const elements: Element[] = container.elementsFromPoint(x, y);
-      const singleElement = container.elementFromPoint(x, y);
-      if (singleElement && elements[0] && parentElementOrShadowHost(singleElement) === elements[0]) {
-        const style = document.defaultView?.getComputedStyle(singleElement);
-        if (style?.display === 'contents') {
-          // Workaround a case where elementsFromPoint misses the inner-most element with display:contents.
-          // https://bugs.chromium.org/p/chromium/issues/detail?id=1342092
-          elements.unshift(singleElement);
-        }
-      }
-      const innerElement = elements[0] as Element | undefined;
-      if (!innerElement || element === innerElement)
-        break;
-      element = innerElement;
-      container = element.shadowRoot;
-    }
-    return element;
   }
 
   previewNode(node: Node): string {
@@ -935,12 +1037,12 @@ export class InjectedScript {
   strictModeViolationError(selector: ParsedSelector, matches: Element[]): Error {
     const infos = matches.slice(0, 10).map(m => ({
       preview: this.previewNode(m),
-      selector: this.generateSelector(m),
+      selector: this.generateSelector(m, this._testIdAttributeNameForStrictErrorAndConsoleCodegen),
     }));
-    const lines = infos.map((info, i) => `\n    ${i + 1}) ${info.preview} aka playwright.$("${info.selector}")`);
+    const lines = infos.map((info, i) => `\n    ${i + 1}) ${info.preview} aka ${asLocator(this._sdkLanguage, info.selector)}`);
     if (infos.length < matches.length)
       lines.push('\n    ...');
-    return this.createStacklessError(`strict mode violation: "${stringifySelector(selector)}" resolved to ${matches.length} elements:${lines.join('')}\n`);
+    return this.createStacklessError(`strict mode violation: ${asLocator(this._sdkLanguage, stringifySelector(selector))} resolved to ${matches.length} elements:${lines.join('')}\n`);
   }
 
   createStacklessError(message: string): Error {
@@ -1024,9 +1126,7 @@ export class InjectedScript {
     {
       // Element state / boolean values.
       let elementState: boolean | 'error:notconnected' | 'error:notcheckbox' | undefined;
-      if (expression === 'to.have.attribute') {
-        elementState = element.hasAttribute(options.expressionArg);
-      } else if (expression === 'to.be.checked') {
+      if (expression === 'to.be.checked') {
         elementState = progress.injectedScript.elementState(element, 'checked');
       } else if (expression === 'to.be.unchecked') {
         elementState = progress.injectedScript.elementState(element, 'unchecked');
@@ -1034,6 +1134,8 @@ export class InjectedScript {
         elementState = progress.injectedScript.elementState(element, 'disabled');
       } else if (expression === 'to.be.editable') {
         elementState = progress.injectedScript.elementState(element, 'editable');
+      } else if (expression === 'to.be.readonly') {
+        elementState = !progress.injectedScript.elementState(element, 'editable');
       } else if (expression === 'to.be.empty') {
         if (element.nodeName === 'INPUT' || element.nodeName === 'TEXTAREA')
           elementState = !(element as HTMLInputElement).value;
@@ -1084,8 +1186,11 @@ export class InjectedScript {
     {
       // Single text value.
       let received: string | undefined;
-      if (expression === 'to.have.attribute.value') {
-        received = element.getAttribute(options.expressionArg) || '';
+      if (expression === 'to.have.attribute') {
+        const value = element.getAttribute(options.expressionArg);
+        if (value === null)
+          return { received: null, matches: false };
+        received = value;
       } else if (expression === 'to.have.class') {
         received = element.classList.toString();
       } else if (expression === 'to.have.css') {
@@ -1112,6 +1217,30 @@ export class InjectedScript {
     }
 
     throw this.createStacklessError('Unknown expect matcher: ' + expression);
+  }
+
+  renderUnexpectedValue(expression: string, received: any): string {
+    if (expression === 'to.be.checked')
+      return received ? 'checked' : 'unchecked';
+    if (expression === 'to.be.unchecked')
+      return received ? 'unchecked' : 'checked';
+    if (expression === 'to.be.visible')
+      return received ? 'visible' : 'hidden';
+    if (expression === 'to.be.hidden')
+      return received ? 'hidden' : 'visible';
+    if (expression === 'to.be.enabled')
+      return received ? 'enabled' : 'disabled';
+    if (expression === 'to.be.disabled')
+      return received ? 'disabled' : 'enabled';
+    if (expression === 'to.be.editable')
+      return received ? 'editable' : 'readonly';
+    if (expression === 'to.be.readonly')
+      return received ? 'readonly' : 'editable';
+    if (expression === 'to.be.empty')
+      return received ? 'empty' : 'not empty';
+    if (expression === 'to.be.focused')
+      return received ? 'focused' : 'not focused';
+    return received;
   }
 
   expectArray(elements: Element[], options: FrameExpectParams): { matches: boolean, received?: any } {
@@ -1222,7 +1351,9 @@ const kTapHitTargetInterceptorEvents = new Set(['pointerdown', 'pointerup', 'tou
 const kMouseHitTargetInterceptorEvents = new Set(['mousedown', 'mouseup', 'pointerdown', 'pointerup', 'click', 'auxclick', 'dblclick', 'contextmenu']);
 const kAllHitTargetInterceptorEvents = new Set([...kHoverHitTargetInterceptorEvents, ...kTapHitTargetInterceptorEvents, ...kMouseHitTargetInterceptorEvents]);
 
-function unescape(s: string): string {
+function cssUnquote(s: string): string {
+  // Trim quotes.
+  s = s.substring(1, s.length - 1);
   if (!s.includes('\\'))
     return s;
   const r: string[] = [];
@@ -1235,23 +1366,30 @@ function unescape(s: string): string {
   return r.join('');
 }
 
-function createTextMatcher(selector: string): { matcher: TextMatcher, kind: 'regex' | 'strict' | 'lax' } {
+function createTextMatcher(selector: string, internal: boolean): { matcher: TextMatcher, kind: 'regex' | 'strict' | 'lax' } {
   if (selector[0] === '/' && selector.lastIndexOf('/') > 0) {
     const lastSlash = selector.lastIndexOf('/');
     const matcher: TextMatcher = createRegexTextMatcher(selector.substring(1, lastSlash), selector.substring(lastSlash + 1));
     return { matcher, kind: 'regex' };
   }
+  const unquote = internal ? JSON.parse.bind(JSON) : cssUnquote;
   let strict = false;
   if (selector.length > 1 && selector[0] === '"' && selector[selector.length - 1] === '"') {
-    selector = unescape(selector.substring(1, selector.length - 1));
+    selector = unquote(selector);
+    strict = true;
+  } else if (internal && selector.length > 1 && selector[0] === '"' && selector[selector.length - 2] === '"' && selector[selector.length - 1] === 'i') {
+    selector = unquote(selector.substring(0, selector.length - 1));
+    strict = false;
+  } else if (internal && selector.length > 1 && selector[0] === '"' && selector[selector.length - 2] === '"' && selector[selector.length - 1] === 's') {
+    selector = unquote(selector.substring(0, selector.length - 1));
+    strict = true;
+  } else if (selector.length > 1 && selector[0] === "'" && selector[selector.length - 1] === "'") {
+    selector = unquote(selector);
     strict = true;
   }
-  if (selector.length > 1 && selector[0] === "'" && selector[selector.length - 1] === "'") {
-    selector = unescape(selector.substring(1, selector.length - 1));
-    strict = true;
-  }
-  const matcher = strict ? createStrictTextMatcher(selector) : createLaxTextMatcher(selector);
-  return { matcher, kind: strict ? 'strict' : 'lax' };
+  if (strict)
+    return { matcher: internal ? createStrictFullTextMatcher(selector) : createStrictTextMatcher(selector), kind: 'strict' };
+  return { matcher: createLaxTextMatcher(selector), kind: 'lax' };
 }
 
 class ExpectedTextMatcher {

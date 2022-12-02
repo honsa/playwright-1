@@ -85,6 +85,11 @@
   color: white;
 }
 
+.workbench .header .toolbar-button {
+  margin: 12px;
+  padding: 8px 4px;
+}
+
 .workbench tab-content {
   padding: 25px;
   contain: size;
@@ -113,8 +118,3 @@
 .workbench .spacer {
   flex: auto;
 }
-
-.tab-strip {
-  background-color: var(--light-background);
-}
-

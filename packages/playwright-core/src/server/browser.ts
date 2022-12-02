@@ -15,7 +15,7 @@
  */
 
 import type * as types from './types';
-import type * as channels from '../protocol/channels';
+import type * as channels from '@protocol/channels';
 import { BrowserContext, validateBrowserContextOptions } from './browserContext';
 import { Page } from './page';
 import { Download } from './download';
@@ -26,6 +26,7 @@ import type { CallMetadata } from './instrumentation';
 import { SdkObject } from './instrumentation';
 import { Artifact } from './artifact';
 import type { Selectors } from './selectors';
+import type { Language } from './isomorphic/locatorGenerators';
 
 export interface BrowserProcess {
   onclose?: ((exitCode: number | null, signal: string | null) => void);
@@ -38,7 +39,7 @@ export type PlaywrightOptions = {
   rootSdkObject: SdkObject;
   selectors: Selectors;
   socksProxyPort?: number;
-  sdkLanguage: string,
+  sdkLanguage: Language,
 };
 
 export type BrowserOptions = PlaywrightOptions & {
@@ -61,6 +62,7 @@ export type BrowserOptions = PlaywrightOptions & {
 };
 
 export abstract class Browser extends SdkObject {
+
   static Events = {
     Disconnected: 'disconnected',
   };
@@ -105,6 +107,7 @@ export abstract class Browser extends SdkObject {
       this._contextForReuse = { context: await this.newContext(metadata, params), hash };
       return { context: this._contextForReuse.context, needsReset: false };
     }
+    await this._contextForReuse.context.stopPendingOperations();
     return { context: this._contextForReuse.context, needsReset: true };
   }
 

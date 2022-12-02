@@ -57,7 +57,7 @@ This method passes this handle as the first argument to [`param: expression`].
 If [`param: expression`] returns a [Promise], then `handle.evaluate` would wait for the promise to resolve and return
 its value.
 
-Examples:
+**Usage**
 
 ```js
 const tweetHandle = await page.$('.tweet .retweets');
@@ -123,6 +123,8 @@ Optional argument to pass to [`param: expression`].
 
 The method returns a map with **own property names** as keys and JSHandle instances for the property values.
 
+**Usage**
+
 ```js
 const handle = await page.evaluateHandle(() => ({window, document}));
 const properties = await handle.getProperties();
@@ -140,7 +142,7 @@ handle.dispose();
 ```
 
 ```python async
-handle = await page.evaluate_handle("{window, document}")
+handle = await page.evaluate_handle("({window, document})")
 properties = await handle.get_properties()
 window_handle = properties.get("window")
 document_handle = properties.get("document")
@@ -148,7 +150,7 @@ await handle.dispose()
 ```
 
 ```python sync
-handle = page.evaluate_handle("{window, document}")
+handle = page.evaluate_handle("({window, document})")
 properties = handle.get_properties()
 window_handle = properties.get("window")
 document_handle = properties.get("document")

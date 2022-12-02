@@ -14,7 +14,8 @@
   limitations under the License.
 */
 
-import type { CallLog, Mode, Source } from '@playwright-core/server/recorder/recorderTypes';
+import type { CallLog, Mode, Source } from './recorderTypes';
+import { CodeMirrorWrapper } from '@web/components/codeMirrorWrapper';
 import { Source as SourceView } from '@web/components/source';
 import { SplitView } from '@web/components/splitView';
 import { Toolbar } from '@web/components/toolbar';
@@ -22,6 +23,8 @@ import { ToolbarButton } from '@web/components/toolbarButton';
 import * as React from 'react';
 import { CallLogView } from './callLog';
 import './recorder.css';
+import { asLocator } from '@isomorphic/locatorGenerators';
+import { toggleTheme } from '@web/theme';
 
 declare global {
   interface Window {
@@ -36,7 +39,6 @@ export interface RecorderProps {
   paused: boolean,
   log: Map<string, CallLog>,
   mode: Mode,
-  initialSelector?: string,
 }
 
 export const Recorder: React.FC<RecorderProps> = ({
@@ -44,15 +46,7 @@ export const Recorder: React.FC<RecorderProps> = ({
   paused,
   log,
   mode,
-  initialSelector,
 }) => {
-  const [selector, setSelector] = React.useState(initialSelector || '');
-  const [focusSelectorInput, setFocusSelectorInput] = React.useState(false);
-  window.playwrightSetSelector = (selector: string, focus?: boolean) => {
-    setSelector(selector);
-    setFocusSelectorInput(!!focus);
-  };
-
   const [fileId, setFileId] = React.useState<string | undefined>();
 
   React.useEffect(() => {
@@ -68,6 +62,13 @@ export const Recorder: React.FC<RecorderProps> = ({
     label: '',
     highlight: []
   };
+
+  const [locator, setLocator] = React.useState('');
+  window.playwrightSetSelector = (selector: string, focus?: boolean) => {
+    const language = source.language;
+    setLocator(asLocator(language, selector));
+  };
+
   window.playwrightSetFileIfNeeded = (value: string) => {
     const newSource = sources.find(s => s.id === value);
     // Do not forcefully switch between two recorded sources, because
@@ -81,14 +82,6 @@ export const Recorder: React.FC<RecorderProps> = ({
     messagesEndRef.current?.scrollIntoView({ block: 'center', inline: 'nearest' });
   }, [messagesEndRef]);
 
-  const selectorInputRef = React.createRef<HTMLInputElement>();
-  React.useLayoutEffect(() => {
-    if (focusSelectorInput && selectorInputRef.current) {
-      selectorInputRef.current.select();
-      selectorInputRef.current.focus();
-      setFocusSelectorInput(false);
-    }
-  }, [focusSelectorInput, selectorInputRef]);
 
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -132,10 +125,12 @@ export const Recorder: React.FC<RecorderProps> = ({
       <div>Target:</div>
       <select className='recorder-chooser' hidden={!sources.length} value={fileId} onChange={event => {
         setFileId(event.target.selectedOptions[0].value);
+        window.dispatch({ event: 'fileChanged', params: { file: event.target.selectedOptions[0].value } });
       }}>{renderSourceOptions(sources)}</select>
       <ToolbarButton icon='clear-all' title='Clear' disabled={!source || !source.text} onClick={() => {
         window.dispatch({ event: 'clear' });
       }}></ToolbarButton>
+      <ToolbarButton icon='color-mode' title='Toggle color mode' toggled={false} onClick={() => toggleTheme()}></ToolbarButton>
     </Toolbar>
     <SplitView sidebarSize={200} sidebarHidden={mode === 'recording'}>
       <SourceView text={source.text} language={source.language} highlight={source.highlight} revealLine={source.revealLine}></SourceView>
@@ -144,15 +139,15 @@ export const Recorder: React.FC<RecorderProps> = ({
           <ToolbarButton icon='microscope' title='Explore' toggled={mode === 'inspecting'} onClick={() => {
             window.dispatch({ event: 'setMode', params: { mode: mode === 'inspecting' ? 'none' : 'inspecting' } }).catch(() => { });
           }}>Explore</ToolbarButton>
-          <input ref={selectorInputRef} className='selector-input' placeholder='Playwright Selector' value={selector} disabled={mode !== 'none'} onChange={event => {
-            setSelector(event.target.value);
-            window.dispatch({ event: 'selectorUpdated', params: { selector: event.target.value } });
-          }} />
+          <CodeMirrorWrapper text={locator} language={source.language} readOnly={false} focusOnChange={true} wrapLines={true} onChange={text => {
+            setLocator(text);
+            window.dispatch({ event: 'selectorUpdated', params: { selector: text, language: source.language } });
+          }}></CodeMirrorWrapper>
           <ToolbarButton icon='files' title='Copy' onClick={() => {
-            copy(selectorInputRef.current?.value || '');
+            copy(locator);
           }}></ToolbarButton>
         </Toolbar>
-        <CallLogView log={Array.from(log.values())}/>
+        <CallLogView language={source.language} log={Array.from(log.values())}/>
       </div>
     </SplitView>
   </div>;
