@@ -41,15 +41,24 @@ import { Recorder } from './recorder';
 import * as consoleApiSource from '../generated/consoleApiSource';
 import { BrowserContextAPIRequestContext } from './fetch';
 import type { Artifact } from './artifact';
+import { Clock } from './clock';
 
 export abstract class BrowserContext extends SdkObject {
   static Events = {
+    Console: 'console',
     Close: 'close',
+    Dialog: 'dialog',
     Page: 'page',
+    // Can't use just 'error' due to node.js special treatment of error events.
+    // @see https://nodejs.org/api/events.html#events_error_events
+    PageError: 'pageerror',
     Request: 'request',
     Response: 'response',
     RequestFailed: 'requestfailed',
     RequestFinished: 'requestfinished',
+    RequestAborted: 'requestaborted',
+    RequestFulfilled: 'requestfulfilled',
+    RequestContinued: 'requestcontinued',
     BeforeClose: 'beforeclose',
     VideoStarted: 'videostarted',
   };
@@ -78,6 +87,8 @@ export abstract class BrowserContext extends SdkObject {
   readonly initScripts: string[] = [];
   private _routesInFlight = new Set<network.Route>();
   private _debugger!: Debugger;
+  _closeReason: string | undefined;
+  readonly clock: Clock;
 
   constructor(browser: Browser, options: channels.BrowserNewContextParams, browserContextId: string | undefined) {
     super(browser, 'browser-context');
@@ -94,6 +105,7 @@ export abstract class BrowserContext extends SdkObject {
       this._harRecorders.set('', new HarRecorder(this, null, this._options.recordHar));
 
     this.tracing = new Tracing(this, browser.options.tracesDir);
+    this.clock = new Clock(this);
   }
 
   isPersistentContext(): boolean {
@@ -102,16 +114,14 @@ export abstract class BrowserContext extends SdkObject {
 
   setSelectors(selectors: Selectors) {
     this._selectors = selectors;
-    for (const page of this.pages())
-      page.selectors = selectors;
   }
 
   selectors(): Selectors {
-    return this._selectors || this._browser.options.selectors;
+    return this._selectors || this.attribution.playwright.selectors;
   }
 
   async _initialize() {
-    if (this.attribution.isInternalPlaywright)
+    if (this.attribution.playwright.options.isInternalPlaywright)
       return;
     // Debugger will pause execution upon page.pause in headed mode.
     this._debugger = new Debugger(this);
@@ -130,7 +140,7 @@ export abstract class BrowserContext extends SdkObject {
     if (debugMode() === 'console')
       await this.extendInjectedScript(consoleApiSource.source);
     if (this._options.serviceWorkers === 'block')
-      await this.addInitScript(`\nnavigator.serviceWorker.register = () => { console.warn('Service Worker registration blocked by Playwright'); };\n`);
+      await this.addInitScript(`\nnavigator.serviceWorker.register = async () => { console.warn('Service Worker registration blocked by Playwright'); };\n`);
 
     if (this._options.permissions)
       await this.grantPermissions(this._options.permissions);
@@ -151,9 +161,13 @@ export abstract class BrowserContext extends SdkObject {
     return true;
   }
 
-  async stopPendingOperations() {
+  async stopPendingOperations(reason: string) {
+    // When using context reuse, stop pending operations to gracefully terminate all the actions
+    // with a user-friendly error message containing operation log.
     for (const controller of this._activeProgressControllers)
-      controller.abort(new Error(`Context was reset for reuse.`));
+      controller.abort(new Error(reason));
+    // Let rejections in microtask generate events before returning.
+    await new Promise(f => setTimeout(f, 0));
   }
 
   static reusableContextHash(params: channels.BrowserNewContextForReuseParams): string {
@@ -173,6 +187,7 @@ export abstract class BrowserContext extends SdkObject {
   async resetForReuse(metadata: CallMetadata, params: channels.BrowserNewContextForReuseParams | null) {
     this.setDefaultNavigationTimeout(undefined);
     this.setDefaultTimeout(undefined);
+    this.tracing.resetForReuse();
 
     if (params) {
       for (const key of paramsThatAllowContextReuse)
@@ -186,7 +201,7 @@ export abstract class BrowserContext extends SdkObject {
     const [, ...otherPages] = this.pages();
     for (const p of otherPages)
       await p.close(metadata);
-    if (page && page._crashedPromise.isDone()) {
+    if (page && page.hasCrashed()) {
       await page.close(metadata);
       page = undefined;
     }
@@ -210,6 +225,7 @@ export abstract class BrowserContext extends SdkObject {
     await this.setGeolocation(this._options.geolocation);
     await this.setOffline(!!this._options.offline);
     await this.setUserAgent(this._options.userAgent);
+    await this.clearCache();
     await this._resetCookies();
 
     await page?.resetForReuse(metadata);
@@ -227,10 +243,7 @@ export abstract class BrowserContext extends SdkObject {
       // at the same time.
       return;
     }
-    this._closedStatus = 'closed';
-    this._deleteAllDownloads();
-    this._downloads.clear();
-    this.tracing.dispose().catch(() => {});
+    this.tracing.abort();
     if (this._isPersistentContext)
       this.onClosePersistent();
     this._closePromiseFulfill!(new Error('Context closed'));
@@ -241,13 +254,14 @@ export abstract class BrowserContext extends SdkObject {
   abstract pages(): Page[];
   abstract newPageDelegate(): Promise<PageDelegate>;
   abstract addCookies(cookies: channels.SetNetworkCookie[]): Promise<void>;
-  abstract clearCookies(): Promise<void>;
   abstract setGeolocation(geolocation?: types.Geolocation): Promise<void>;
   abstract setExtraHTTPHeaders(headers: types.HeadersArray): Promise<void>;
   abstract setUserAgent(userAgent: string | undefined): Promise<void>;
   abstract setOffline(offline: boolean): Promise<void>;
   abstract cancelDownload(uuid: string): Promise<void>;
+  abstract clearCache(): Promise<void>;
   protected abstract doGetCookies(urls: string[]): Promise<channels.NetworkCookie[]>;
+  protected abstract doClearCookies(): Promise<void>;
   protected abstract doGrantPermissions(origin: string, permissions: string[]): Promise<void>;
   protected abstract doClearPermissions(): Promise<void>;
   protected abstract doSetHTTPCredentials(httpCredentials?: types.Credentials): Promise<void>;
@@ -256,13 +270,36 @@ export abstract class BrowserContext extends SdkObject {
   protected abstract doExposeBinding(binding: PageBinding): Promise<void>;
   protected abstract doRemoveExposedBindings(): Promise<void>;
   protected abstract doUpdateRequestInterception(): Promise<void>;
-  protected abstract doClose(): Promise<void>;
+  protected abstract doClose(reason: string | undefined): Promise<void>;
   protected abstract onClosePersistent(): void;
 
   async cookies(urls: string | string[] | undefined = []): Promise<channels.NetworkCookie[]> {
     if (urls && !Array.isArray(urls))
       urls = [urls];
     return await this.doGetCookies(urls as string[]);
+  }
+
+  async clearCookies(options: {name?: string | RegExp, domain?: string | RegExp, path?: string | RegExp}): Promise<void> {
+    const currentCookies = await this.cookies();
+    await this.doClearCookies();
+
+    const matches = (cookie: channels.NetworkCookie, prop: 'name' | 'domain' | 'path', value: string | RegExp | undefined) => {
+      if (!value)
+        return true;
+      if (value instanceof RegExp) {
+        value.lastIndex = 0;
+        return value.test(cookie[prop]);
+      }
+      return cookie[prop] === value;
+    };
+
+    const cookiesToReadd = currentCookies.filter(cookie => {
+      return !matches(cookie, 'name', options.name)
+        || !matches(cookie, 'domain', options.domain)
+        || !matches(cookie, 'path', options.path);
+    });
+
+    await this.addCookies(cookiesToReadd);
   }
 
   setHTTPCredentials(httpCredentials?: types.Credentials): Promise<void> {
@@ -396,14 +433,16 @@ export abstract class BrowserContext extends SdkObject {
     this._customCloseHandler = handler;
   }
 
-  async close(metadata: CallMetadata) {
+  async close(options: { reason?: string }) {
     if (this._closedStatus === 'open') {
+      if (options.reason)
+        this._closeReason = options.reason;
       this.emit(BrowserContext.Events.BeforeClose);
       this._closedStatus = 'closing';
 
       for (const harRecorder of this._harRecorders.values())
         await harRecorder.flush();
-      await this.tracing.dispose();
+      await this.tracing.flush();
 
       // Cleanup.
       const promises: Promise<void>[] = [];
@@ -417,7 +456,7 @@ export abstract class BrowserContext extends SdkObject {
         await this._customCloseHandler();
       } else {
         // Close the context.
-        await this.doClose();
+        await this.doClose(options.reason);
       }
 
       // We delete downloads after context closure
@@ -455,19 +494,40 @@ export abstract class BrowserContext extends SdkObject {
       cookies: await this.cookies(),
       origins: []
     };
-    if (this._origins.size)  {
+    const originsToSave = new Set(this._origins);
+
+    // First try collecting storage stage from existing pages.
+    for (const page of this.pages()) {
+      const origin = page.mainFrame().origin();
+      if (!origin || !originsToSave.has(origin))
+        continue;
+      try {
+        const storage = await page.mainFrame().nonStallingEvaluateInExistingContext(`({
+          localStorage: Object.keys(localStorage).map(name => ({ name, value: localStorage.getItem(name) })),
+        })`, false, 'utility');
+        if (storage.localStorage.length)
+          result.origins.push({ origin, localStorage: storage.localStorage } as channels.OriginStorage);
+        originsToSave.delete(origin);
+      } catch {
+        // When failed on the live page, we'll retry on the blank page below.
+      }
+    }
+
+    // If there are still origins to save, create a blank page to iterate over origins.
+    if (originsToSave.size)  {
       const internalMetadata = serverSideCallMetadata();
       const page = await this.newPage(internalMetadata);
       await page._setServerRequestInterceptor(handler => {
-        handler.fulfill({ body: '<html></html>' }).catch(() => {});
+        handler.fulfill({ body: '<html></html>', requestUrl: handler.request().url() }).catch(() => {});
+        return true;
       });
-      for (const origin of this._origins) {
+      for (const origin of originsToSave) {
         const originStorage: channels.OriginStorage = { origin, localStorage: [] };
         const frame = page.mainFrame();
         await frame.goto(internalMetadata, origin);
         const storage = await frame.evaluateExpression(`({
           localStorage: Object.keys(localStorage).map(name => ({ name, value: localStorage.getItem(name) })),
-        })`, false, undefined, 'utility');
+        })`, { world: 'utility' });
         originStorage.localStorage = storage.localStorage;
         if (storage.localStorage.length)
           result.origins.push(originStorage);
@@ -485,9 +545,15 @@ export abstract class BrowserContext extends SdkObject {
     let page = this.pages()[0];
 
     const internalMetadata = serverSideCallMetadata();
-    page = page || await this.newPage(internalMetadata);
+    page = page || await this.newPage({
+      ...internalMetadata,
+      // Do not mark this page as internal, because we will leave it for later reuse
+      // as a user-visible page.
+      isServerSide: false,
+    });
     await page._setServerRequestInterceptor(handler => {
-      handler.fulfill({ body: '<html></html>' }).catch(() => {});
+      handler.fulfill({ body: '<html></html>', requestUrl: handler.request().url() }).catch(() => {});
+      return true;
     });
 
     for (const origin of new Set([...oldOrigins, ...newOrigins.keys()])) {
@@ -503,7 +569,7 @@ export abstract class BrowserContext extends SdkObject {
   }
 
   async _resetCookies() {
-    await this.clearCookies();
+    await this.doClearCookies();
     if (this._options.storageState?.cookies)
       await this.addCookies(this._options.storageState?.cookies);
   }
@@ -521,7 +587,8 @@ export abstract class BrowserContext extends SdkObject {
         const internalMetadata = serverSideCallMetadata();
         const page = await this.newPage(internalMetadata);
         await page._setServerRequestInterceptor(handler => {
-          handler.fulfill({ body: '<html></html>' }).catch(() => {});
+          handler.fulfill({ body: '<html></html>', requestUrl: handler.request().url() }).catch(() => {});
+          return true;
         });
         for (const originState of state.origins) {
           const frame = page.mainFrame();
@@ -530,7 +597,7 @@ export abstract class BrowserContext extends SdkObject {
             originState => {
               for (const { name, value } of (originState.localStorage || []))
                 localStorage.setItem(name, value);
-            }`, true, originState, 'utility');
+            }`, { isFunction: true, world: 'utility' }, originState);
         }
         await page.close(internalMetadata);
       }
@@ -584,10 +651,10 @@ export function assertBrowserContextIsNotOwned(context: BrowserContext) {
 export function validateBrowserContextOptions(options: channels.BrowserNewContextParams, browserOptions: BrowserOptions) {
   if (options.noDefaultViewport && options.deviceScaleFactor !== undefined)
     throw new Error(`"deviceScaleFactor" option is not supported with null "viewport"`);
-  if (options.noDefaultViewport && options.isMobile !== undefined)
+  if (options.noDefaultViewport && !!options.isMobile)
     throw new Error(`"isMobile" option is not supported with null "viewport"`);
   if (options.acceptDownloads === undefined)
-    options.acceptDownloads = true;
+    options.acceptDownloads = 'accept';
   if (!options.viewport && !options.noDefaultViewport)
     options.viewport = { width: 1280, height: 720 };
   if (options.recordVideo) {
@@ -668,7 +735,7 @@ const defaultNewContextParamValues: channels.BrowserNewContextForReuseParams = {
   offline: false,
   isMobile: false,
   hasTouch: false,
-  acceptDownloads: true,
+  acceptDownloads: 'accept',
   strictSelectors: false,
   serviceWorkers: 'allow',
   locale: 'en-US',

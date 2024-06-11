@@ -253,7 +253,7 @@ it('should not click iframe overlaying the target', async ({ page, server }) => 
   `);
   const error = await page.click('text=click-me', { timeout: 1000 }).catch(e => e);
   expect(await page.evaluate('window._clicked')).toBe(undefined);
-  expect(error.message).toContain(`<iframe srcdoc="<body onclick='window.top._clicked=2' st…></iframe> from <div>…</div> subtree intercepts pointer events`);
+  expect(error.message).toContain(`<iframe srcdoc=\"<body onclick='window.top._clicked=2' style='background-color:red;height:40px;'></body>\"></iframe> from <div>…</div> subtree intercepts pointer events`);
 });
 
 it('should not click an element overlaying iframe with the target', async ({ page, server }) => {
@@ -265,7 +265,7 @@ it('should not click an element overlaying iframe with the target', async ({ pag
   `);
 
   const target = page.frameLocator('iframe').frameLocator('iframe').locator('text=inner');
-  const error = await target.click({ timeout: 1000 }).catch(e => e);
+  const error = await target.click({ timeout: 3000 }).catch(e => e);
   expect(await page.evaluate('window._clicked')).toBe(undefined);
   expect(error.message).toContain(`<div onclick="window.top._clicked=5">PINK OVERLAY</div> intercepts pointer events`);
 
@@ -363,7 +363,7 @@ it('should detect overlay from another shadow root', async ({ page, server }) =>
   expect(error.message).toContain(`<div id="container2"></div> intercepts pointer events`);
 });
 
-it('should detect overlayed element in a transformed iframe', async ({ page }) => {
+it('should detect overlaid element in a transformed iframe', async ({ page }) => {
   await page.setContent(`
     <style>
       body, html, iframe { margin: 0; padding: 0; border: none; }
@@ -393,4 +393,74 @@ it('should detect overlayed element in a transformed iframe', async ({ page }) =
   const locator = page.frameLocator('iframe').locator('div');
   const error = await locator.click({ timeout: 2000 }).catch(e => e);
   expect(error.message).toContain('<section>Overlay</section> intercepts pointer events');
+});
+
+it('should click in iframe with padding', async ({ page }) => {
+  await page.setContent(`
+    <style>
+      body, html, iframe { margin: 0; padding: 0; border: none; box-sizing: border-box; }
+      iframe { background: gray; width: 200px; height: 200px; padding-top: 100px; }
+    </style>
+    <iframe srcdoc="
+      <style>
+        body, html { margin: 0; padding: 0; }
+        div { height: 100px; }
+      </style>
+      <div>Non-target</div>
+      <div id=target>Target</div>
+      <div>Non-target</div>
+      <script>
+        document.querySelector('#target').addEventListener('click', () => window.top._clicked = true);
+      </script>
+    "></iframe>
+  `);
+  const locator = page.frameLocator('iframe').locator('#target');
+  await locator.click();
+  expect(await page.evaluate('window._clicked')).toBe(true);
+});
+
+it('should click in iframe with padding 2', async ({ page }) => {
+  await page.setContent(`
+    <style>
+      body, html, iframe { margin: 0; padding: 0; border: none; box-sizing: content-box; }
+      iframe { background: gray; width: 200px; height: 200px; padding-top: 100px; }
+    </style>
+    <iframe srcdoc="
+      <style>
+        body, html { margin: 0; padding: 0; }
+        div { height: 100px; }
+      </style>
+      <div>Non-target</div>
+      <div id=target>Target</div>
+      <div>Non-target</div>
+      <script>
+        document.querySelector('#target').addEventListener('click', () => window.top._clicked = true);
+      </script>
+    "></iframe>
+  `);
+  const locator = page.frameLocator('iframe').locator('#target');
+  await locator.click();
+  expect(await page.evaluate('window._clicked')).toBe(true);
+});
+
+it('should click in custom element', async ({ page }) => {
+  await page.setContent(`
+    <html>
+      <body>
+        <my-input></my-input>
+        <script>
+          class MyInput extends HTMLElement {
+            connectedCallback() {
+              this.attachShadow({mode:'open'});
+              this.shadowRoot.innerHTML = '<div><span><input type="text" /></span></div>';
+              this.shadowRoot.querySelector('input').addEventListener('click', () => window.__clicked = true);
+            }
+          }
+          customElements.define('my-input', MyInput);
+        </script>
+      </body>
+    </html>
+  `);
+  await page.locator('input').click();
+  expect(await page.evaluate('window.__clicked')).toBe(true);
 });

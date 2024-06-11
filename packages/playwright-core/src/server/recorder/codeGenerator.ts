@@ -130,7 +130,8 @@ export class CodeGenerator extends EventEmitter {
       this._currentAction.action.signals.push(signal);
       return;
     }
-    if (this._lastAction && !this._lastAction.committed) {
+
+    if (this._lastAction && (!this._lastAction.committed || signal.name !== 'navigation')) {
       const signals = this._lastAction.action.signals;
       if (signal.name === 'navigation' && signals.length && signals[signals.length - 1].name === 'download')
         return;
@@ -141,12 +142,11 @@ export class CodeGenerator extends EventEmitter {
       return;
     }
 
-    if (signal.name === 'navigation') {
+    if (signal.name === 'navigation' && frame._page.mainFrame() === frame) {
       this.addAction({
         frame: {
           pageAlias,
-          isMainFrame: frame._page.mainFrame() === frame,
-          url: frame.url(),
+          isMainFrame: true,
         },
         committed: true,
         action: {

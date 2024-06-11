@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { getComparator } from 'playwright-core/lib/utils/comparators';
+import { getComparator } from '../../packages/playwright-core/lib/utils/comparators';
 
 const pngComparator = getComparator('image/png');
 type ComparatorResult = { diff?: Buffer; errorMessage: string; } | null;
@@ -22,5 +22,5 @@ type ImageComparatorOptions = { threshold?: number, maxDiffPixels?: number, maxD
 
 export function comparePNGs(actual: Buffer, expected: Buffer, options: ImageComparatorOptions = {}): ComparatorResult {
   // Strict threshold by default in our tests.
-  return pngComparator(actual, expected, { threshold: 0, ...options });
+  return pngComparator(actual, expected, { comparator: 'ssim-cie94', threshold: 0, ...options });
 }

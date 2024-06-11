@@ -17,7 +17,7 @@
 import { start } from '../../packages/playwright-core/lib/outofprocess';
 import type { Playwright } from '../../packages/playwright-core/lib/client/playwright';
 
-export type TestModeName = 'default' | 'driver' | 'service' | 'service2' | 'docker';
+export type TestModeName = 'default' | 'driver' | 'service' | 'service2';
 
 interface TestMode {
   setup(): Promise<Playwright>;
@@ -30,6 +30,7 @@ export class DriverTestMode implements TestMode {
   async setup() {
     this._impl = await start({
       NODE_OPTIONS: undefined,  // Hide driver process while debugging.
+      PWTEST_UNDER_TEST: 1,
     });
     return this._impl.playwright;
   }

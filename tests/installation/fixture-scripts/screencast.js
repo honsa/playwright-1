@@ -15,16 +15,7 @@
  */
 
 const requireName = process.argv[2];
-let success = {
-  'playwright': ['chromium', 'firefox', 'webkit'],
-  'playwright-chromium': ['chromium'],
-  'playwright-firefox': ['firefox'],
-  'playwright-webkit': ['webkit'],
-}[requireName];
-if (process.argv[3] === 'none')
-  success = [];
-if (process.argv[3] === 'all')
-  success = ['chromium', 'firefox', 'webkit'];
+const success = process.argv.slice(3);
 
 const playwright = require(requireName);
 const fs = require('fs');
@@ -37,7 +28,7 @@ const fs = require('fs');
         recordVideo: { dir: __dirname, size: {width: 320, height: 240} },
       });
       await context.newPage();
-      // Wait fo 1 second to actually record something.
+      // Wait for 1 second to actually record something.
       await new Promise(x => setTimeout(x, 1000));
       await context.close();
       await browser.close();

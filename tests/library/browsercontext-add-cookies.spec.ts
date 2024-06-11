@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import type { IncomingHttpHeaders } from 'http';
+import type { Cookie } from '@playwright/test';
 import { contextTest as it, playwrightTest, expect } from '../config/browserTest';
 
 it('should work @smoke', async ({ context, page, server }) => {
@@ -22,7 +24,7 @@ it('should work @smoke', async ({ context, page, server }) => {
   await context.addCookies([{
     url: server.EMPTY_PAGE,
     name: 'password',
-    value: '123456'
+    value: '123456',
   }]);
   expect(await page.evaluate(() => document.cookie)).toEqual('password=123456');
 });
@@ -77,13 +79,15 @@ it('should roundtrip cookie', async ({ context, page, server }) => {
   await context.clearCookies();
   expect(await context.cookies()).toEqual([]);
   await context.addCookies(cookies);
-  expect(await context.cookies()).toEqual(cookies);
+  // Slightly different rounding on chromium win.
+  const normalizedExpires = (cookies: Cookie[]) => cookies.map(c => ({ ...c, expires: Math.floor(c.expires) }));
+  expect(normalizedExpires(await context.cookies())).toEqual(normalizedExpires(cookies));
 });
 
 it('should send cookie header', async ({ server, context }) => {
   let cookie = '';
   server.setRoute('/empty.html', (req, res) => {
-    cookie = req.headers.cookie;
+    cookie = req.headers.cookie!;
     res.end();
   });
   await context.addCookies([{ url: server.EMPTY_PAGE, name: 'cookie', value: 'value' }]);
@@ -220,7 +224,7 @@ it('should have |expires| set to |-1| for session cookies', async ({ context, se
   expect(cookies[0].expires).toBe(-1);
 });
 
-it('should set cookie with reasonable defaults', async ({ context, server, browserName }) => {
+it('should set cookie with reasonable defaults', async ({ context, server, defaultSameSiteCookieValue }) => {
   await context.addCookies([{
     url: server.EMPTY_PAGE,
     name: 'defaults',
@@ -235,7 +239,7 @@ it('should set cookie with reasonable defaults', async ({ context, server, brows
     expires: -1,
     httpOnly: false,
     secure: false,
-    sameSite: browserName === 'chromium' ? 'Lax' : 'None',
+    sameSite: defaultSameSiteCookieValue,
   }]);
 });
 
@@ -341,7 +345,7 @@ it('should set cookies for a frame', async ({ context, page, server }) => {
     { url: server.PREFIX, name: 'frame-cookie', value: 'value' }
   ]);
   await page.evaluate(src => {
-    let fulfill;
+    let fulfill!: (value: unknown) => void;
     const promise = new Promise(x => fulfill = x);
     const iframe = document.createElement('iframe');
     document.body.appendChild(iframe);
@@ -356,7 +360,7 @@ it('should set cookies for a frame', async ({ context, page, server }) => {
 it('should(not) block third party cookies', async ({ context, page, server, browserName, allowsThirdParty }) => {
   await page.goto(server.EMPTY_PAGE);
   await page.evaluate(src => {
-    let fulfill;
+    let fulfill!: (value: unknown) => void;
     const promise = new Promise(x => fulfill = x);
     const iframe = document.createElement('iframe');
     document.body.appendChild(iframe);
@@ -387,6 +391,7 @@ it('should(not) block third party cookies', async ({ context, page, server, brow
 
 it('should not block third party SameSite=None cookies', async ({ contextFactory, httpsServer, browserName }) => {
   it.skip(browserName === 'webkit', 'No third party cookies in WebKit');
+  it.skip(!!process.env.PW_FREEZE_TIME);
   const context = await contextFactory({
     ignoreHTTPSErrors: true,
   });
@@ -434,10 +439,10 @@ it('should allow unnamed cookies', async ({ page, context, server, browserName, 
   // Round-trip behavior
   const resp = await page.goto(server.PREFIX + '/cookies');
   if (browserName === 'webkit' && platform === 'darwin') {
-    expect.soft(await resp.text()).toBe('undefined-on-server');
+    expect.soft(await resp!.text()).toBe('undefined-on-server');
     expect.soft(await page.evaluate('document.cookie')).toBe('');
   } else {
-    expect.soft(await resp.text()).toBe('unnamed-via-add-cookies');
+    expect.soft(await resp!.text()).toBe('unnamed-via-add-cookies');
     expect.soft(await page.evaluate('document.cookie')).toBe('unnamed-via-add-cookies');
   }
   // Within PW behavior
@@ -448,4 +453,17 @@ it('should allow unnamed cookies', async ({ page, context, server, browserName, 
     expect.soft(await page.evaluate('document.cookie')).toBe('');
   else
     expect.soft(await page.evaluate('document.cookie')).toBe('unnamed-via-js');
+});
+
+it('should set secure cookies on secure WebSocket', async ({ contextFactory, httpsServer }) => {
+  let resolveReceivedWebSocketHeaders = (headers: IncomingHttpHeaders) => { };
+  const receivedWebSocketHeaders = new Promise<IncomingHttpHeaders>(resolve => resolveReceivedWebSocketHeaders = resolve);
+  httpsServer.onceWebSocketConnection((ws, req) => resolveReceivedWebSocketHeaders(req.headers));
+  const context = await contextFactory({ ignoreHTTPSErrors: true });
+  const page = await context.newPage();
+  await page.goto(httpsServer.EMPTY_PAGE);
+  await context.addCookies([{ domain: 'localhost', path: '/', name: 'foo', value: 'bar', secure: true }]);
+  await page.evaluate(port => new WebSocket(`wss://localhost:${port}/ws`), httpsServer.PORT);
+  const headers = await receivedWebSocketHeaders;
+  expect(headers.cookie).toBe('foo=bar');
 });

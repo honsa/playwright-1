@@ -32,7 +32,6 @@ const config: Config<ServerWorkerOptions & PlaywrightWorkerOptions & PlaywrightT
   globalTimeout: 7200000,
   workers: 1,
   forbidOnly: !!process.env.CI,
-  preserveOutput: process.env.CI ? 'failures-only' : 'always',
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [
     ['dot'],
@@ -50,22 +49,24 @@ const metadata = {
   video: false,
 };
 
-config.projects.push({
-  name: 'android',
+config.projects!.push({
+  name: 'android-native',
   use: {
     loopback: '10.0.2.2',
     browserName: 'chromium',
   },
+  snapshotPathTemplate: '{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}-android{ext}',
   testDir: path.join(testDir, 'android'),
   metadata,
 });
 
-config.projects.push({
-  name: 'android',
+config.projects!.push({
+  name: 'android-page',
   use: {
     loopback: '10.0.2.2',
     browserName: 'chromium',
   },
+  snapshotPathTemplate: '{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}-android{ext}',
   testDir: path.join(testDir, 'page'),
   metadata,
 });

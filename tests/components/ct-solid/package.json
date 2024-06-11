@@ -10,16 +10,13 @@
     "typecheck": "tsc --noEmit"
   },
   "license": "MIT",
-  "devDependencies": {
-    "typescript": "^4.7.4",
-    "vite": "^3.2.1",
-    "vite-plugin-solid": "^2.3.10"
-  },
   "dependencies": {
-    "solid-js": "^1.4.7"
+    "@solidjs/router": "^0.8.2",
+    "solid-js": "^1.7.3"
   },
-  "@standaloneDevDependencies": {
-    "@playwright/experimental-ct-solid": "^1.22.2",
-    "@playwright/test": "^1.22.2"
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "vite": "^5.2.8",
+    "vite-plugin-solid": "^2.6.1"
   }
 }

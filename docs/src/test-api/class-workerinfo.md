@@ -2,27 +2,11 @@
 * since: v1.10
 * langs: js
 
-`WorkerInfo` contains information about the worker that is running tests. It is available to [`method: Test.beforeAll`] and [`method: Test.afterAll`] hooks and worker-scoped fixtures.
-
-```js tab=js-js
-const { test, expect } = require('@playwright/test');
-
-test.beforeAll(async ({ browserName }, workerInfo) => {
-  console.log(`Running ${browserName} in worker #${workerInfo.workerIndex}`);
-});
-```
-
-```js tab=js-ts
-import { test, expect } from '@playwright/test';
-
-test.beforeAll(async ({ browserName }, workerInfo) => {
-  console.log(`Running ${browserName} in worker #${workerInfo.workerIndex}`);
-});
-```
+`WorkerInfo` contains information about the worker that is running tests and is available to worker-scoped fixtures. `WorkerInfo` is a subset of [TestInfo] that is available in many other places.
 
 ## property: WorkerInfo.config
 * since: v1.10
-- type: <[TestConfig]>
+- type: <[FullConfig]>
 
 Processed configuration from the [configuration file](../test-configuration.md).
 
@@ -38,7 +22,7 @@ Also available as `process.env.TEST_PARALLEL_INDEX`. Learn more about [paralleli
 
 ## property: WorkerInfo.project
 * since: v1.10
-- type: <[TestProject]>
+- type: <[FullProject]>
 
 Processed project configuration from the [configuration file](../test-configuration.md).
 

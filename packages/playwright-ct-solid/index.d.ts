@@ -14,50 +14,24 @@
  * limitations under the License.
  */
 
-import type {
-  TestType,
-  PlaywrightTestArgs,
-  PlaywrightTestConfig as BasePlaywrightTestConfig,
-  PlaywrightTestOptions,
-  PlaywrightWorkerArgs,
-  PlaywrightWorkerOptions,
-  Locator,
-} from '@playwright/test';
-import type { InlineConfig } from 'vite';
+import type { Locator } from 'playwright/test';
+import type { TestType } from '@playwright/experimental-ct-core';
 
-export type PlaywrightTestConfig = Omit<BasePlaywrightTestConfig, 'use'> & {
-  use?: BasePlaywrightTestConfig['use'] & {
-    ctPort?: number;
-    ctTemplateDir?: string;
-    ctCacheDir?: string;
-    ctViteConfig?: InlineConfig;
-  };
-};
-
-type JsonPrimitive = string | number | boolean | null;
-type JsonValue = JsonPrimitive | JsonObject | JsonArray;
-type JsonArray = JsonValue[];
-type JsonObject = { [Key in string]?: JsonValue };
-
-export interface MountOptions<HooksConfig extends JsonObject> {
+export interface MountOptions<HooksConfig> {
   hooksConfig?: HooksConfig;
 }
 
-interface MountResult extends Locator {
+export interface MountResult extends Locator {
   unmount(): Promise<void>;
   update(component: JSX.Element): Promise<void>;
 }
 
-export interface ComponentFixtures {
-  mount<HooksConfig extends JsonObject>(
+export const test: TestType<{
+  mount<HooksConfig>(
     component: JSX.Element,
     options?: MountOptions<HooksConfig>
   ): Promise<MountResult>;
-}
+}>;
 
-export const test: TestType<
-  PlaywrightTestArgs & PlaywrightTestOptions & ComponentFixtures,
-  PlaywrightWorkerArgs & PlaywrightWorkerOptions
->;
-
-export { expect, devices } from '@playwright/test';
+export { defineConfig, PlaywrightTestConfig } from '@playwright/experimental-ct-core';
+export { expect, devices } from 'playwright/test';

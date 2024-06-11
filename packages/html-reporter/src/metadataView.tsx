@@ -34,16 +34,16 @@ export type Metainfo = {
 };
 
 class ErrorBoundary extends React.Component<React.PropsWithChildren<{}>, { error: Error | null, errorInfo: React.ErrorInfo | null }> {
-  state: { error: Error | null, errorInfo: React.ErrorInfo | null } = {
+  override state: { error: Error | null, errorInfo: React.ErrorInfo | null } = {
     error: null,
     errorInfo: null,
   };
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     this.setState({ error, errorInfo });
   }
 
-  render() {
+  override render() {
     if (this.state.error || this.state.errorInfo) {
       return (
         <AutoChip header={'Commit Metainfo Error'} dataTestId='metadata-error'>
@@ -74,13 +74,13 @@ const InnerMetadataView: React.FC<Metainfo> = metadata => {
         {metadata['revision.subject'] || 'Commit Metainfo'}
       </span>} initialExpanded={false} dataTestId='metadata-chip'>
       {metadata['revision.subject'] &&
-        <MetadatViewItem
+        <MetadataViewItem
           testId='revision.subject'
           content={<span>{metadata['revision.subject']}</span>}
         />
       }
       {metadata['revision.id'] &&
-        <MetadatViewItem
+        <MetadataViewItem
           testId='revision.id'
           content={<span>{metadata['revision.id']}</span>}
           href={metadata['revision.link']}
@@ -88,13 +88,13 @@ const InnerMetadataView: React.FC<Metainfo> = metadata => {
         />
       }
       {(metadata['revision.author'] || metadata['revision.email']) &&
-        <MetadatViewItem
+        <MetadataViewItem
           content={`${metadata['revision.author']} ${metadata['revision.email']}`}
           icon='person'
         />
       }
       {metadata['revision.timestamp'] &&
-        <MetadatViewItem
+        <MetadataViewItem
           testId='revision.timestamp'
           content={
             <>
@@ -107,25 +107,25 @@ const InnerMetadataView: React.FC<Metainfo> = metadata => {
         />
       }
       {metadata['ci.link'] &&
-        <MetadatViewItem
+        <MetadataViewItem
           content='CI/CD Logs'
           href={metadata['ci.link']}
           icon='externalLink'
         />
       }
       {metadata['timestamp'] &&
-        <MetadatViewItem
+        <MetadataViewItem
           content={<span style={{ color: 'var(--color-fg-subtle)' }}>
             Report generated on {Intl.DateTimeFormat(undefined, { dateStyle: 'full', timeStyle: 'long' }).format(metadata['timestamp'])}
-          </span>}></MetadatViewItem>
+          </span>}></MetadataViewItem>
       }
     </AutoChip>
   );
 };
 
-const MetadatViewItem: React.FC<{ content: JSX.Element | string; icon?: keyof typeof icons, href?: string, testId?: string }> = ({ content, icon, href, testId }) => {
+const MetadataViewItem: React.FC<{ content: JSX.Element | string; icon?: keyof typeof icons, href?: string, testId?: string }> = ({ content, icon, href, testId }) => {
   return (
-    <div className='my-1 hbox' data-test-id={testId} >
+    <div className='my-1 hbox' data-testid={testId} >
       <div className='mr-2'>
         {icons[icon || 'blank']()}
       </div>

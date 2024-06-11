@@ -1,7 +1,0 @@
-[*]
-../types.ts
-./utilsBundle.ts
-matchers/
-reporters/
-third_party/
-plugins/

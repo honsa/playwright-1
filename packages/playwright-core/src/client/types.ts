@@ -32,7 +32,7 @@ export type Env = { [key: string]: string | number | boolean | undefined };
 export type WaitForEventOptions = Function | { predicate?: Function, timeout?: number };
 export type WaitForFunctionOptions = { timeout?: number, polling?: 'raf' | number };
 
-export type SelectOption = { value?: string, label?: string, index?: number };
+export type SelectOption = { value?: string, label?: string, index?: number, valueOrLabel?: string };
 export type SelectOptionOptions = { force?: boolean, timeout?: number, noWaitAfter?: boolean };
 export type FilePayload = { name: string, mimeType: string, buffer: Buffer };
 export type StorageState = {
@@ -47,7 +47,7 @@ export type SetStorageState = {
 export type LifecycleEvent = channels.LifecycleEvent;
 export const kLifecycleEvents: Set<LifecycleEvent> = new Set(['load', 'domcontentloaded', 'networkidle', 'commit']);
 
-export type BrowserContextOptions = Omit<channels.BrowserNewContextOptions, 'viewport' | 'noDefaultViewport' | 'extraHTTPHeaders' | 'storageState' | 'recordHar' | 'colorScheme' | 'reducedMotion' | 'forcedColors'> & {
+export type BrowserContextOptions = Omit<channels.BrowserNewContextOptions, 'viewport' | 'noDefaultViewport' | 'extraHTTPHeaders' | 'storageState' | 'recordHar' | 'colorScheme' | 'reducedMotion' | 'forcedColors' | 'acceptDownloads'> & {
   viewport?: Size | null;
   extraHTTPHeaders?: Headers;
   logger?: Logger;
@@ -69,24 +69,24 @@ export type BrowserContextOptions = Omit<channels.BrowserNewContextOptions, 'vie
   colorScheme?: 'dark' | 'light' | 'no-preference' | null;
   reducedMotion?: 'reduce' | 'no-preference' | null;
   forcedColors?: 'active' | 'none' | null;
+  acceptDownloads?: boolean;
 };
 
 type LaunchOverrides = {
   ignoreDefaultArgs?: boolean | string[];
   env?: Env;
   logger?: Logger;
+  firefoxUserPrefs?: { [key: string]: string | number | boolean };
 };
 
-type FirefoxUserPrefs = {
-  firefoxUserPrefs?: { [key: string]: string | number | boolean },
-};
-type LaunchOptionsBase = Omit<channels.BrowserTypeLaunchOptions, 'ignoreAllDefaultArgs' | 'ignoreDefaultArgs' | 'env' | 'firefoxUserPrefs'> & LaunchOverrides;
-export type LaunchOptions = LaunchOptionsBase & FirefoxUserPrefs;
-export type LaunchPersistentContextOptions = Omit<LaunchOptionsBase & BrowserContextOptions, 'storageState'>;
+export type LaunchOptions = Omit<channels.BrowserTypeLaunchOptions, 'ignoreAllDefaultArgs' | 'ignoreDefaultArgs' | 'env' | 'firefoxUserPrefs'> & LaunchOverrides;
+export type LaunchPersistentContextOptions = Omit<LaunchOptions & BrowserContextOptions, 'storageState'>;
 
 export type ConnectOptions = {
   wsEndpoint: string,
   headers?: { [key: string]: string; };
+  exposeNetwork?: string,
+  _exposeNetwork?: string,
   slowMo?: number,
   timeout?: number,
   logger?: Logger,
@@ -111,16 +111,19 @@ export type LaunchServerOptions = {
   },
   downloadsPath?: string,
   chromiumSandbox?: boolean,
+  host?: string,
   port?: number,
   wsPath?: string,
   logger?: Logger,
-} & FirefoxUserPrefs;
+  firefoxUserPrefs?: { [key: string]: string | number | boolean };
+};
 
 export type LaunchAndroidServerOptions = {
   deviceSerialNumber?: string,
   adbHost?: string,
   adbPort?: number,
   omitDriverInstall?: boolean,
+  host?: string,
   port?: number,
   wsPath?: string,
 };

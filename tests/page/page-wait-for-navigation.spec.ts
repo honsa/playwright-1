@@ -61,18 +61,14 @@ it('should work with both domcontentloaded and load', async ({ page, server }) =
 });
 
 it('should work with commit', async ({ page, server }) => {
+  server.setRoute('/script.js', (req, res) => {});
   server.setRoute('/empty.html', (req, res) => {
-    res.writeHead(200, {
-      'content-type': 'text/html',
-      'content-length': '8192'
-    });
-    // Write enought bytes of the body to trigge response received event.
-    res.write('<title>' + 'A'.repeat(4100));
-    res.uncork();
+    res.setHeader('content-type', 'text/html');
+    res.end('<title>Hello</title><script src="script.js"></script>');
   });
-
   page.goto(server.EMPTY_PAGE).catch(e => {});
   await page.waitForNavigation({ waitUntil: 'commit' });
+  expect(await page.title()).toBe('Hello');
 });
 
 it('should work with clicking on anchor links', async ({ page, server }) => {
@@ -86,14 +82,14 @@ it('should work with clicking on anchor links', async ({ page, server }) => {
   expect(page.url()).toBe(server.EMPTY_PAGE + '#foobar');
 });
 
-it('should work with clicking on links which do not commit navigation', async ({ page, server, httpsServer, browserName }) => {
+it('should work with clicking on links which do not commit navigation', async ({ page, server, httpsServer, browserName, platform }) => {
   await page.goto(server.EMPTY_PAGE);
   await page.setContent(`<a href='${httpsServer.EMPTY_PAGE}'>foobar</a>`);
   const [error] = await Promise.all([
     page.waitForNavigation().catch(e => e),
     page.click('a'),
   ]);
-  expect(error.message).toContain(expectedSSLError(browserName));
+  expect(error.message).toMatch(expectedSSLError(browserName, platform));
 });
 
 it('should work with history.pushState()', async ({ page, server }) => {
@@ -254,11 +250,12 @@ it('should fail when frame detaches', async ({ page, server }) => {
   await page.goto(server.PREFIX + '/frames/one-frame.html');
   const frame = page.frames()[1];
   server.setRoute('/empty.html', () => {});
+  server.setRoute('/one-style.css', () => {});
   const [error] = await Promise.all([
     frame.waitForNavigation().catch(e => e),
-    page.$eval('iframe', frame => { frame.contentWindow.location.href = '/empty.html'; }),
+    page.$eval('iframe', frame => { frame.contentWindow.location.href = '/one-style.html'; }),
     // Make sure policy checks pass and navigation actually begins before removing the frame to avoid other errors
-    server.waitForRequest('/empty.html').then(() => page.$eval('iframe', frame => setTimeout(() => frame.remove(), 0)))
+    server.waitForRequest('/one-style.css').then(() => page.$eval('iframe', frame => window.builtinSetTimeout(() => frame.remove(), 0)))
   ]);
   expect(error.message).toContain('waiting for navigation until "load"');
   expect(error.message).toContain('frame was detached');

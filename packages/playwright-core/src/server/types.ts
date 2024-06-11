@@ -25,7 +25,7 @@ export type StrictOptions = {
 
 export type QueryOnSelectorOptions = StrictOptions & TimeoutOptions;
 
-export type WaitForElementOptions = TimeoutOptions & StrictOptions & { state?: 'attached' | 'detached' | 'visible' | 'hidden' };
+export type WaitForElementOptions = TimeoutOptions & StrictOptions & { state?: 'attached' | 'detached' | 'visible' | 'hidden' } & { omitReturnValue?: boolean };
 
 export type WaitForFunctionOptions = TimeoutOptions & { pollingInterval?: number };
 
@@ -57,6 +57,8 @@ export type PageScreencastOptions = {
 export type Credentials = {
   username: string;
   password: string;
+  origin?: string;
+  sendImmediately?: boolean;
 };
 
 export type Geolocation = {
@@ -75,6 +77,7 @@ export type FilePayload = {
   name: string,
   mimeType: string,
   buffer: string,
+  lastModifiedMs?: number,
 };
 
 export type MediaType = 'screen' | 'print' | 'no-override';
@@ -103,10 +106,11 @@ export type ProxySettings = {
 };
 
 export type KeyboardModifier = 'Alt' | 'Control' | 'Meta' | 'Shift';
+export type SmartKeyboardModifier = KeyboardModifier |  'ControlOrMeta';
 export type MouseButton = 'left' | 'right' | 'middle';
 
 export type PointerActionOptions = {
-  modifiers?: KeyboardModifier[];
+  modifiers?: SmartKeyboardModifier[];
   position?: Point;
 };
 
@@ -145,6 +149,7 @@ export type NormalizedContinueOverrides = {
   method?: string,
   headers?: HeadersArray,
   postData?: Buffer,
+  isFallback: boolean,
 };
 
 export type EmulatedSize = { viewport: Size, screen: Size };

@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-const { test: baseTest, expect, devices, _addRunnerPlugin } = require('@playwright/test');
-const { fixtures } = require('@playwright/test/lib/mount');
+const { test, expect, devices, defineConfig: originalDefineConfig } = require('@playwright/experimental-ct-core');
 const path = require('path');
 
-_addRunnerPlugin(() => {
-  // Only fetch upon request to avoid resolution in workers.
-  const { createPlugin } = require('@playwright/test/lib/plugins/vitePlugin');
-  return createPlugin(
-    path.join(__dirname, 'registerSource.mjs'),
-    () => require('vite-plugin-solid')());
-});
+const defineConfig = (config, ...configs) => {
+  return originalDefineConfig({
+    ...config,
+    '@playwright/test': {
+      packageJSON: require.resolve('./package.json'),
+    },
+    '@playwright/experimental-ct-core': {
+      registerSourceFile: path.join(__dirname, 'registerSource.mjs'),
+      frameworkPluginFactory: () => import('vite-plugin-solid').then(plugin => plugin.default()),
+    },
+  }, ...configs);
+};
 
-const test = baseTest.extend(fixtures);
-
-module.exports = { test, expect, devices };
+module.exports = { test, expect, devices, defineConfig };

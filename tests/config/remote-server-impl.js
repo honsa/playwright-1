@@ -2,18 +2,29 @@ const fs = require('fs');
 const cluster = require('cluster');
 
 async function start() {
-  const { browserTypeName, launchOptions, stallOnClose, disconnectOnSIGHUP, exitOnFile } = JSON.parse(process.argv[2]);
+  const { browserTypeName, launchOptions, stallOnClose, disconnectOnSIGHUP, exitOnFile, exitOnWarning, startStopAndRunHttp } = JSON.parse(process.argv[2]);
   if (stallOnClose) {
     launchOptions.__testHookGracefullyClose = () => {
       console.log(`(stalled=>true)`);
       return new Promise(() => { });
     };
   }
+  if (exitOnWarning)
+    process.on('warning', () => process.exit(43));
+  if (disconnectOnSIGHUP)
+    launchOptions.handleSIGHUP = false;
 
   const playwright = require('playwright-core');
 
-  if (disconnectOnSIGHUP)
-    launchOptions.handleSIGHUP = false;
+  if (startStopAndRunHttp) {
+    const browser = await playwright[browserTypeName].launch(launchOptions);
+    await browser.close();
+    console.log(`(wsEndpoint=>none)`);
+    console.log(`(closed=>success)`);
+    require('http').createServer(() => {}).listen();
+    return;
+  }
+
   const browserServer = await playwright[browserTypeName].launchServer(launchOptions);
   if (disconnectOnSIGHUP)
     process.on('SIGHUP', () => browserServer._disconnectForTest());

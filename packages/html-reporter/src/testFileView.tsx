@@ -18,11 +18,12 @@ import type { HTMLReport, TestCaseSummary, TestFileSummary } from './types';
 import * as React from 'react';
 import { msToString } from './uiUtils';
 import { Chip } from './chip';
-import type { Filter } from './filter';
-import { generateTraceUrl, Link, ProjectLink } from './links';
+import { filterWithToken, type Filter } from './filter';
+import { generateTraceUrl, Link, navigate, ProjectLink } from './links';
 import { statusIcon } from './statusIcon';
 import './testFileView.css';
 import { video, image, trace } from './icons';
+import { hashStringToInt } from './labelUtils';
 
 export const TestFileView: React.FC<React.PropsWithChildren<{
   report: HTMLReport;
@@ -36,19 +37,25 @@ export const TestFileView: React.FC<React.PropsWithChildren<{
     noInsets={true}
     setExpanded={(expanded => setFileExpanded(file.fileId, expanded))}
     header={<span>
-      <span style={{ float: 'right' }}>{msToString(file.stats.duration)}</span>
       {file.fileName}
     </span>}>
     {file.tests.filter(t => filter.matches(t)).map(test =>
       <div key={`test-${test.testId}`} className={'test-file-test test-file-test-outcome-' + test.outcome}>
-        <div style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>
-          <span style={{ float: 'right', minWidth: '50px', textAlign: 'right' }}>{msToString(test.duration)}</span>
-          {report.projectNames.length > 1 && !!test.projectName &&
-              <span style={{ float: 'right' }}><ProjectLink projectNames={report.projectNames} projectName={test.projectName}></ProjectLink></span>}
-          {statusIcon(test.outcome)}
-          <Link href={`#?testId=${test.testId}`} title={[...test.path, test.title].join(' › ')}>
-            <span className='test-file-title'>{[...test.path, test.title].join(' › ')}</span>
-          </Link>
+        <div className='hbox' style={{ alignItems: 'flex-start' }}>
+          <div className="hbox">
+            <span className="test-file-test-status-icon">
+              {statusIcon(test.outcome)}
+            </span>
+            <span>
+              <Link href={`#?testId=${test.testId}`} title={[...test.path, test.title].join(' › ')}>
+                <span className='test-file-title'>{[...test.path, test.title].join(' › ')}</span>
+              </Link>
+              {report.projectNames.length > 1 && !!test.projectName &&
+              <ProjectLink projectNames={report.projectNames} projectName={test.projectName} />}
+              <LabelsClickView labels={test.tags} />
+            </span>
+          </div>
+          <span data-testid='test-duration' style={{ minWidth: '50px', textAlign: 'right' }}>{msToString(test.duration)}</span>
         </div>
         <div className='test-file-details-row'>
           <Link href={`#?testId=${test.testId}`} title={[...test.path, test.title].join(' › ')} className='test-file-path-link'>
@@ -79,3 +86,26 @@ function traceBadge(test: TestCaseSummary): JSX.Element | undefined {
   const firstTraces = test.results.map(result => result.attachments.filter(attachment => attachment.name === 'trace')).filter(traces => traces.length > 0)[0];
   return firstTraces ? <Link href={generateTraceUrl(firstTraces)} title='View trace' className='test-file-badge'>{trace()}</Link> : undefined;
 }
+
+const LabelsClickView: React.FC<React.PropsWithChildren<{
+  labels: string[],
+}>> = ({ labels }) => {
+
+  const onClickHandle = (e: React.MouseEvent, label: string) => {
+    e.preventDefault();
+    const searchParams = new URLSearchParams(window.location.hash.slice(1));
+    const q = searchParams.get('q')?.toString() || '';
+    const tokens = q.split(' ');
+    navigate(filterWithToken(tokens, label, e.metaKey || e.ctrlKey));
+  };
+
+  return labels.length > 0 ? (
+    <>
+      {labels.map(label => (
+        <span key={label} style={{ margin: '6px 0 0 6px', cursor: 'pointer' }} className={'label label-color-' + (hashStringToInt(label))} onClick={e => onClickHandle(e, label)}>
+          {label.slice(1)}
+        </span>
+      ))}
+    </>
+  ) : null;
+};

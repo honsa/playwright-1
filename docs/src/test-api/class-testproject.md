@@ -2,19 +2,16 @@
 * since: v1.10
 * langs: js
 
-Playwright Test supports running multiple test projects at the same time. This is useful for running tests in multiple configurations. For example, consider running tests against multiple browsers.
+Playwright Test supports running multiple test projects at the same time. This is useful for running tests in multiple configurations. For example, consider running tests against multiple browsers. This type describes format of a project in the configuration file, to access resolved configuration parameters at run time use [FullProject].
 
 `TestProject` encapsulates configuration specific to a single project. Projects are configured in [`property: TestConfig.projects`] specified in the [configuration file](../test-configuration.md). Note that all properties of [TestProject] are available in the top-level [TestConfig], in which case they are shared between all projects.
 
 Here is an example configuration that runs every test in Chromium, Firefox and WebKit, both Desktop and Mobile versions.
 
-```js tab=js-js
-// playwright.config.js
-// @ts-check
-const { devices } = require('@playwright/test');
+```js title="playwright.config.ts"
+import { defineConfig, devices } from '@playwright/test';
 
-/** @type {import('@playwright/test').PlaywrightTestConfig} */
-const config = {
+export default defineConfig({
   // Options shared for all projects.
   timeout: 30000,
   use: {
@@ -24,25 +21,16 @@ const config = {
   // Options specific to each project.
   projects: [
     {
-      name: 'Desktop Chromium',
-      use: {
-        browserName: 'chromium',
-        viewport: { width: 1280, height: 720 },
-      },
+      name: 'chromium',
+      use: devices['Desktop Chrome'],
     },
     {
-      name: 'Desktop Safari',
-      use: {
-        browserName: 'webkit',
-        viewport: { width: 1280, height: 720 },
-      }
+      name: 'firefox',
+      use: devices['Desktop Firefox'],
     },
     {
-      name: 'Desktop Firefox',
-      use: {
-        browserName: 'firefox',
-        viewport: { width: 1280, height: 720 },
-      }
+      name: 'webkit',
+      use: devices['Desktop Safari'],
     },
     {
       name: 'Mobile Chrome',
@@ -53,56 +41,49 @@ const config = {
       use: devices['iPhone 12'],
     },
   ],
-};
-
-module.exports = config;
+});
 ```
 
-```js tab=js-ts
-// playwright.config.ts
-import { type PlaywrightTestConfig, devices } from '@playwright/test';
+## property: TestProject.dependencies
+* since: v1.31
+- type: ?<[Array]<[string]>>
 
-const config: PlaywrightTestConfig = {
-  // Options shared for all projects.
-  timeout: 30000,
-  use: {
-    ignoreHTTPSErrors: true,
-  },
+List of projects that need to run before any test in this project runs. Dependencies can
+be useful for configuring the global setup actions in a way that every action is
+in a form of a test. Passing `--no-deps` argument ignores the dependencies and
+behaves as if they were not specified.
 
-  // Options specific to each project.
+Using dependencies allows global setup to produce traces and other artifacts,
+see the setup steps in the test report, etc.
+
+**Usage**
+
+```js title="playwright.config.ts"
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
   projects: [
     {
-      name: 'Desktop Chromium',
-      use: {
-        browserName: 'chromium',
-        viewport: { width: 1280, height: 720 },
-      },
+      name: 'setup',
+      testMatch: /global.setup\.ts/,
     },
     {
-      name: 'Desktop Safari',
-      use: {
-        browserName: 'webkit',
-        viewport: { width: 1280, height: 720 },
-      }
+      name: 'chromium',
+      use: devices['Desktop Chrome'],
+      dependencies: ['setup'],
     },
     {
-      name: 'Desktop Firefox',
-      use: {
-        browserName: 'firefox',
-        viewport: { width: 1280, height: 720 },
-      }
+      name: 'firefox',
+      use: devices['Desktop Firefox'],
+      dependencies: ['setup'],
     },
     {
-      name: 'Mobile Chrome',
-      use: devices['Pixel 5'],
-    },
-    {
-      name: 'Mobile Safari',
-      use: devices['iPhone 12'],
+      name: 'webkit',
+      use: devices['Desktop Safari'],
+      dependencies: ['setup'],
     },
   ],
-};
-export default config;
+});
 ```
 
 ## property: TestProject.expect
@@ -110,16 +91,20 @@ export default config;
 - type: ?<[Object]>
   - `timeout` ?<[int]> Default timeout for async expect matchers in milliseconds, defaults to 5000ms.
   - `toHaveScreenshot` ?<[Object]> Configuration for the [`method: PageAssertions.toHaveScreenshot#1`] method.
-    - `threshold` ?<[float]> an acceptable perceived color difference in the [YIQ color space](https://en.wikipedia.org/wiki/YIQ) between the same pixel in compared images, between zero (strict) and one (lax). Defaults to `0.2`.
+    - `threshold` ?<[float]> an acceptable perceived color difference between the same pixel in compared images, ranging from `0` (strict) and `1` (lax). `"pixelmatch"` comparator computes color difference in [YIQ color space](https://en.wikipedia.org/wiki/YIQ) and defaults `threshold` value to `0.2`.
     - `maxDiffPixels` ?<[int]> an acceptable amount of pixels that could be different, unset by default.
     - `maxDiffPixelRatio` ?<[float]> an acceptable ratio of pixels that are different to the total amount of pixels, between `0` and `1` , unset by default.
     - `animations` ?<[ScreenshotAnimations]<"allow"|"disabled">> See [`option: animations`] in [`method: Page.screenshot`]. Defaults to `"disabled"`.
     - `caret` ?<[ScreenshotCaret]<"hide"|"initial">> See [`option: caret`] in [`method: Page.screenshot`]. Defaults to `"hide"`.
     - `scale` ?<[ScreenshotScale]<"css"|"device">> See [`option: scale`] in [`method: Page.screenshot`]. Defaults to `"css"`.
+    - `stylePath` ?<[string]|[Array]<[string]>> See [`option: style`] in [`method: Page.screenshot`].
   - `toMatchSnapshot` ?<[Object]> Configuration for the [`method: SnapshotAssertions.toMatchSnapshot#1`] method.
-    - `threshold` ?<[float]> an acceptable perceived color difference in the [YIQ color space](https://en.wikipedia.org/wiki/YIQ) between the same pixel in compared images, between zero (strict) and one (lax). Defaults to `0.2`.
+    - `threshold` ?<[float]> an acceptable perceived color difference between the same pixel in compared images, ranging from `0` (strict) and `1` (lax). `"pixelmatch"` comparator computes color difference in [YIQ color space](https://en.wikipedia.org/wiki/YIQ) and defaults `threshold` value to `0.2`.
     - `maxDiffPixels` ?<[int]> an acceptable amount of pixels that could be different, unset by default.
     - `maxDiffPixelRatio` ?<[float]> an acceptable ratio of pixels that are different to the total amount of pixels, between `0` and `1` , unset by default.
+  - `toPass` ?<[Object]> Configuration for the [expect(value).toPass()](../test-assertions.md) method.
+    - `timeout` ?<[int]> timeout for toPass method in milliseconds.
+    - `intervals` ?<[Array]<[int]>> probe intervals for toPass method in milliseconds.
 
 Configuration for the `expect` assertion library.
 
@@ -138,7 +123,7 @@ You can configure entire test project to concurrently run all tests in all files
 * since: v1.10
 - type: ?<[RegExp]|[Array]<[RegExp]>>
 
-Filter to only run tests with a title matching one of the patterns. For example, passing `grep: /cart/` should only run tests with "cart" in the title. Also available globally and in the [command line](../test-cli.md) with the `-g` option. The regular expression will be tested against the string that consists of the test file name, `test.describe` name (if any) and the test name divided by spaces, e.g. `my-test.spec.ts my suite my test`.
+Filter to only run tests with a title matching one of the patterns. For example, passing `grep: /cart/` should only run tests with "cart" in the title. Also available globally and in the [command line](../test-cli.md) with the `-g` option. The regular expression will be tested against the string that consists of the project name, the test file name, the `test.describe` name (if any), the test name and the test tags divided by spaces, e.g. `chromium my-test.spec.ts my-suite my-test`.
 
 `grep` option is also useful for [tagging tests](../test-annotations.md#tag-tests).
 
@@ -146,9 +131,42 @@ Filter to only run tests with a title matching one of the patterns. For example,
 * since: v1.10
 - type: ?<[RegExp]|[Array]<[RegExp]>>
 
-Filter to only run tests with a title **not** matching one of the patterns. This is the opposite of [`property: TestProject.grep`]. Also available globally and in the [command line](../test-cli.md) with the `--grep-invert` option. This filter and its command line counterpart also applies to the setup files. If all [`property: TestProject.setup`] tests match the filter Playwright **will** run all setup files before running the matching tests.
+Filter to only run tests with a title **not** matching one of the patterns. This is the opposite of [`property: TestProject.grep`]. Also available globally and in the [command line](../test-cli.md) with the `--grep-invert` option.
 
 `grepInvert` option is also useful for [tagging tests](../test-annotations.md#tag-tests).
+
+## property: TestProject.ignoreSnapshots
+* since: v1.44
+- type: ?<[boolean]>
+
+Whether to skip snapshot expectations, such as `expect(value).toMatchSnapshot()` and `await expect(page).toHaveScreenshot()`.
+
+**Usage**
+
+The following example will only perform screenshot assertions on Chromium.
+
+```js title="playwright.config.ts"
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  projects: [
+    {
+      name: 'chromium',
+      use: devices['Desktop Chrome'],
+    },
+    {
+      name: 'firefox',
+      use: devices['Desktop Firefox'],
+      ignoreSnapshots: true,
+    },
+    {
+      name: 'webkit',
+      use: devices['Desktop Safari'],
+      ignoreSnapshots: true,
+    },
+  ],
+});
+```
 
 ## property: TestProject.metadata
 * since: v1.10
@@ -161,14 +179,6 @@ Metadata that will be put directly to the test report serialized as JSON.
 - type: ?<[string]>
 
 Project name is visible in the report and during test execution.
-
-## property: TestProject.setup
-* since: v1.28
-- type: ?<[string]|[RegExp]|[Array]<[string]|[RegExp]>>
-
-Project setup files that would be executed before all tests in the project. If project setup fails the tests in this project will be skipped. All project setup files will run in every shard if the project is sharded. [`property: TestProject.grep`] and [`property: TestProject.grepInvert`] and their command line counterparts also apply to the setup files. If such filters match only tests in the project Playwright will run all setup files before running the matching tests.
-
-If there is a file that matches both [`property: TestProject.setup`] and [`property: TestProject.testMatch`] filters an error will be thrown.
 
 ## property: TestProject.snapshotDir
 * since: v1.10
@@ -193,17 +203,7 @@ This directory is cleaned at the start. When running a test, a unique subdirecto
 
 Here is an example that uses [`method: TestInfo.outputPath`] to create a temporary file.
 
-```js tab=js-js
-const { test, expect } = require('@playwright/test');
-const fs = require('fs');
-
-test('example test', async ({}, testInfo) => {
-  const file = testInfo.outputPath('temporary-file.txt');
-  await fs.promises.writeFile(file, 'Put some data to the file', 'utf8');
-});
-```
-
-```js tab=js-ts
+```js
 import { test, expect } from '@playwright/test';
 import fs from 'fs';
 
@@ -223,6 +223,12 @@ The number of times to repeat each test, useful for debugging flaky tests.
 
 Use [`property: TestConfig.repeatEach`] to change this option for all projects.
 
+## property: TestProject.respectGitIgnore
+* since: v1.45
+- type: ?<[boolean]>
+
+Whether to skip entries from `.gitignore` when searching for test files. By default, if neither [`property: TestConfig.testDir`] nor [`property: TestProject.testDir`] are explicitely specified, Playwright will ignore any test files matching `.gitignore` entries. This option allows to override that behavior.
+
 ## property: TestProject.retries
 * since: v1.10
 - type: ?<[int]>
@@ -233,6 +239,52 @@ Use [`method: Test.describe.configure`] to change the number of retries for a sp
 
 Use [`property: TestConfig.retries`] to change this option for all projects.
 
+
+## property: TestProject.teardown
+* since: v1.34
+- type: ?<[string]>
+
+Name of a project that needs to run after this and all dependent projects have finished. Teardown is useful to cleanup any resources acquired by this project.
+
+Passing `--no-deps` argument ignores [`property: TestProject.teardown`] and behaves as if it was not specified.
+
+**Usage**
+
+A common pattern is a "setup" dependency that has a corresponding "teardown":
+
+```js title="playwright.config.ts"
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  projects: [
+    {
+      name: 'setup',
+      testMatch: /global.setup\.ts/,
+      teardown: 'teardown',
+    },
+    {
+      name: 'teardown',
+      testMatch: /global.teardown\.ts/,
+    },
+    {
+      name: 'chromium',
+      use: devices['Desktop Chrome'],
+      dependencies: ['setup'],
+    },
+    {
+      name: 'firefox',
+      use: devices['Desktop Firefox'],
+      dependencies: ['setup'],
+    },
+    {
+      name: 'webkit',
+      use: devices['Desktop Safari'],
+      dependencies: ['setup'],
+    },
+  ],
+});
+```
+
 ## property: TestProject.testDir
 * since: v1.10
 - type: ?<[string]>
@@ -241,12 +293,10 @@ Directory that will be recursively scanned for test files. Defaults to the direc
 
 Each project can use a different directory. Here is an example that runs smoke tests in three browsers and all other tests in stable Chrome browser.
 
-```js tab=js-js
-// playwright.config.js
-// @ts-check
+```js title="playwright.config.ts"
+import { defineConfig } from '@playwright/test';
 
-/** @type {import('@playwright/test').PlaywrightTestConfig} */
-const config = {
+export default defineConfig({
   projects: [
     {
       name: 'Smoke Chromium',
@@ -278,49 +328,7 @@ const config = {
       }
     },
   ],
-};
-
-module.exports = config;
-```
-
-```js tab=js-ts
-// playwright.config.ts
-import type { PlaywrightTestConfig } from '@playwright/test';
-
-const config: PlaywrightTestConfig = {
-  projects: [
-    {
-      name: 'Smoke Chromium',
-      testDir: './smoke-tests',
-      use: {
-        browserName: 'chromium',
-      }
-    },
-    {
-      name: 'Smoke WebKit',
-      testDir: './smoke-tests',
-      use: {
-        browserName: 'webkit',
-      }
-    },
-    {
-      name: 'Smoke Firefox',
-      testDir: './smoke-tests',
-      use: {
-        browserName: 'firefox',
-      }
-    },
-    {
-      name: 'Chrome Stable',
-      testDir: './',
-      use: {
-        browserName: 'chromium',
-        channel: 'chrome',
-      }
-    },
-  ],
-};
-export default config;
+});
 ```
 
 Use [`property: TestConfig.testDir`] to change this option for all projects.
@@ -341,7 +349,7 @@ Use [`property: TestConfig.testIgnore`] to change this option for all projects.
 
 Only the files matching one of these patterns are executed as test files. Matching is performed against the absolute file path. Strings are treated as glob patterns.
 
-By default, Playwright Test looks for files matching `.*(test|spec)\.(js|ts|mjs)`.
+By default, Playwright looks for files matching the following glob pattern: `**/*.@(spec|test).?(c|m)[jt]s?(x)`. This means JavaScript or TypeScript files with `".test"` or `".spec"` suffix, for example `login-screen.wrong-credentials.spec.ts`.
 
 Use [`property: TestConfig.testMatch`] to change this option for all projects.
 
@@ -357,16 +365,14 @@ Use [`property: TestConfig.timeout`] to change this option for all projects.
 
 ## property: TestProject.use
 * since: v1.10
-- type: <[Fixtures]>
+- type: ?<[TestOptions]>
 
 Options for all tests in this project, for example [`property: TestOptions.browserName`]. Learn more about [configuration](../test-configuration.md) and see [available options][TestOptions].
 
-```js tab=js-js
-// playwright.config.js
-// @ts-check
+```js title="playwright.config.ts"
+import { defineConfig } from '@playwright/test';
 
-/** @type {import('@playwright/test').PlaywrightTestConfig} */
-const config = {
+export default defineConfig({
   projects: [
     {
       name: 'Chromium',
@@ -375,26 +381,7 @@ const config = {
       },
     },
   ],
-};
-
-module.exports = config;
-```
-
-```js tab=js-ts
-// playwright.config.ts
-import type { PlaywrightTestConfig } from '@playwright/test';
-
-const config: PlaywrightTestConfig = {
-  projects: [
-    {
-      name: 'Chromium',
-      use: {
-        browserName: 'chromium',
-      },
-    },
-  ],
-};
-export default config;
+});
 ```
 
 Use [`property: TestConfig.use`] to change this option for all projects.

@@ -25,6 +25,7 @@ import { SdkObject } from './instrumentation';
 import type { HeadersArray, NameValue } from '../common/types';
 import { APIRequestContext } from './fetch';
 import type { NormalizedContinueOverrides } from './types';
+import { BrowserContext } from './browserContext';
 
 export function filterCookies(cookies: channels.NetworkCookie[], urls: string[]): channels.NetworkCookie[] {
   const parsedURLs = urls.map(s => new URL(s));
@@ -51,7 +52,7 @@ export function filterCookies(cookies: channels.NetworkCookie[], urls: string[])
 // Rollover to 5-digit year:
 // 253402300799 == Fri, 31 Dec 9999 23:59:59 +0000 (UTC)
 // 253402300800 == Sat,  1 Jan 1000 00:00:00 +0000 (UTC)
-const kMaxCookieExpiresDateInSeconds = 253402300799;
+export const kMaxCookieExpiresDateInSeconds = 253402300799;
 
 export function rewriteCookies(cookies: channels.SetNetworkCookie[]): channels.SetNetworkCookie[] {
   return cookies.map(c => {
@@ -256,6 +257,7 @@ export class Route extends SdkObject {
 
   async abort(errorCode: string = 'failed') {
     this._startHandling();
+    this._request._context.emit(BrowserContext.Events.RequestAborted, this._request);
     await this._delegate.abort(errorCode);
     this._endHandling();
   }
@@ -283,10 +285,11 @@ export class Route extends SdkObject {
     }
     const headers = [...(overrides.headers || [])];
     this._maybeAddCorsHeaders(headers);
+    this._request._context.emit(BrowserContext.Events.RequestFulfilled, this._request);
     await this._delegate.fulfill({
       status: overrides.status || 200,
       headers,
-      body,
+      body: body!,
       isBase64,
     });
     this._endHandling();
@@ -310,7 +313,7 @@ export class Route extends SdkObject {
     headers.push({ name: 'vary', value: 'Origin' });
   }
 
-  async continue(overrides: types.NormalizedContinueOverrides = {}) {
+  async continue(overrides: types.NormalizedContinueOverrides) {
     this._startHandling();
     if (overrides.url) {
       const newUrl = new URL(overrides.url);
@@ -319,6 +322,8 @@ export class Route extends SdkObject {
         throw new Error('New URL must have same protocol as overridden URL');
     }
     this._request._setOverrides(overrides);
+    if (!overrides.isFallback)
+      this._request._context.emit(BrowserContext.Events.RequestContinued, this._request);
     await this._delegate.continue(this._request, overrides);
     this._endHandling();
   }
@@ -333,7 +338,7 @@ export class Route extends SdkObject {
   }
 }
 
-export type RouteHandler = (route: Route, request: Request) => void;
+export type RouteHandler = (route: Route, request: Request) => boolean;
 
 type GetResponseBodyCallback = () => Promise<Buffer>;
 
@@ -611,7 +616,7 @@ export interface RouteDelegate {
 }
 
 // List taken from https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml with extra 306 and 418 codes.
-export const STATUS_TEXTS: { [status: string]: string } = {
+const STATUS_TEXTS: { [status: string]: string } = {
   '100': 'Continue',
   '101': 'Switching Protocols',
   '102': 'Processing',
@@ -676,6 +681,10 @@ export const STATUS_TEXTS: { [status: string]: string } = {
   '510': 'Not Extended',
   '511': 'Network Authentication Required',
 };
+
+export function statusText(status: number): string {
+  return STATUS_TEXTS[String(status)] || 'Unknown';
+}
 
 export function singleHeader(name: string, value: string): HeadersArray {
   return [{ name, value }];

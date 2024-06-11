@@ -26,6 +26,7 @@ import { createPlaywright } from './server/playwright';
 import { PlaywrightServer } from './remote/playwrightServer';
 import { helper } from './server/helper';
 import { rewriteErrorMessage } from './utils/stackTrace';
+import { SocksProxy } from './common/socksProxy';
 
 export class BrowserServerLauncherImpl implements BrowserServerLauncher {
   private _browserName: 'chromium' | 'firefox' | 'webkit';
@@ -35,7 +36,11 @@ export class BrowserServerLauncherImpl implements BrowserServerLauncher {
   }
 
   async launchServer(options: LaunchServerOptions = {}): Promise<BrowserServer> {
-    const playwright = createPlaywright('javascript');
+    const playwright = createPlaywright({ sdkLanguage: 'javascript', isServer: true });
+    // TODO: enable socks proxy once ipv6 is supported.
+    const socksProxy = false ? new SocksProxy() : undefined;
+    playwright.options.socksProxyPort = await socksProxy?.listen(0);
+
     // 1. Pre-launch the browser
     const metadata = serverSideCallMetadata();
     const browser = await playwright[this._browserName].launch(metadata, {
@@ -52,18 +57,20 @@ export class BrowserServerLauncherImpl implements BrowserServerLauncher {
     const path = options.wsPath ? (options.wsPath.startsWith('/') ? options.wsPath : `/${options.wsPath}`) : `/${createGuid()}`;
 
     // 2. Start the server
-    const server = new PlaywrightServer({ path, maxConnections: Infinity, browserProxyMode: 'disabled', preLaunchedBrowser: browser });
-    const wsEndpoint = await server.listen(options.port);
+    const server = new PlaywrightServer({ mode: 'launchServer', path, maxConnections: Infinity, preLaunchedBrowser: browser, preLaunchedSocksProxy: socksProxy });
+    const wsEndpoint = await server.listen(options.port, options.host);
 
     // 3. Return the BrowserServer interface
     const browserServer = new ws.EventEmitter() as (BrowserServer & WebSocketEventEmitter);
     browserServer.process = () => browser.options.browserProcess.process!;
     browserServer.wsEndpoint = () => wsEndpoint;
     browserServer.close = () => browser.options.browserProcess.close();
+    browserServer[Symbol.asyncDispose] = browserServer.close;
     browserServer.kill = () => browser.options.browserProcess.kill();
     (browserServer as any)._disconnectForTest = () => server.close();
     (browserServer as any)._userDataDirForTest = (browser as any)._userDataDirForTest;
-    browser.options.browserProcess.onclose = async (exitCode, signal) => {
+    browser.options.browserProcess.onclose = (exitCode, signal) => {
+      socksProxy?.close().catch(() => {});
       server.close();
       browserServer.emit('close', exitCode, signal);
     };

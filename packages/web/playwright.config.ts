@@ -14,14 +14,24 @@
  * limitations under the License.
  */
 
-import type { PlaywrightTestConfig } from '@playwright/experimental-ct-react';
-import { devices } from '@playwright/experimental-ct-react';
+import { devices, defineConfig } from '@playwright/experimental-ct-react';
+import type { ReporterDescription } from '@playwright/test';
 
-const config: PlaywrightTestConfig = {
+const reporters = () => {
+  const result: ReporterDescription[] = process.env.CI ? [
+    ['html'],
+    ['blob'],
+  ] : [
+    ['html']
+  ];
+  return result;
+};
+
+export default defineConfig({
   testDir: 'src',
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  reporter: 'html',
+  reporter: reporters(),
   use: {
     ctPort: 3102,
     trace: 'on-first-retry',
@@ -32,6 +42,4 @@ const config: PlaywrightTestConfig = {
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-};
-
-export default config;
+});

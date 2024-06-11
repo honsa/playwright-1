@@ -1,30 +1,34 @@
 <script>
-  export let name;
+import { onMount, onDestroy } from 'svelte';
+import LoginPage from './pages/LoginPage.svelte';
+import DashboardPage from './pages/DashboardPage.svelte';
+
+let path = '';
+function updatePath() {
+  path = window.location.pathname;
+}
+onMount(() => {
+  updatePath();
+  window.addEventListener('popstate', updatePath);
+});
+onDestroy(() => {
+  window.removeEventListener('popstate', updatePath);
+});
+/**
+ * @param newPath {string}
+ */
+function navigate(newPath) {
+  history.pushState({}, '', newPath);
+  updatePath();
+}
 </script>
 
-<main>
-  <h1>Hello {name}!</h1>
-  <p>Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn how to build Svelte apps.</p>
-</main>
-
-<style>
-  main {
-    text-align: center;
-    padding: 1em;
-    max-width: 240px;
-    margin: 0 auto;
-  }
-
-  h1 {
-    color: #ff3e00;
-    text-transform: uppercase;
-    font-size: 4em;
-    font-weight: 100;
-  }
-
-  @media (min-width: 640px) {
-    main {
-      max-width: none;
-    }
-  }
-</style>
+<header>
+  <a on:click={(e) => { e.preventDefault(); navigate('/'); }} href='/login'>Login</a>
+  <a on:click={(e) => { e.preventDefault(); navigate('/dashboard'); }} href='/dashboard'>Dashboard</a>
+</header>
+{#if path === '/'}
+  <LoginPage />
+{:else if path === '/dashboard'}
+  <DashboardPage />
+{/if}

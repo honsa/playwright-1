@@ -55,9 +55,8 @@ const md = require('../markdown');
  * @typedef {{
  *   langs: Langs,
  *   since: string,
- *   deprecated: string | undefined,
- *   discouraged: string | undefined,
- *   experimental: boolean
+ *   deprecated?: string | undefined,
+ *   discouraged?: string | undefined,
  * }} Metainfo
  */
 
@@ -97,7 +96,7 @@ class Documentation {
    */
   copyDocsFromSuperclasses(errors) {
     for (const [name, clazz] of this.classes.entries()) {
-      clazz.validateOrder(errors, clazz);
+      clazz.sortMembers();
 
       if (!clazz.extends || ['EventEmitter', 'Error', 'Exception', 'RuntimeException'].includes(clazz.extends))
         continue;
@@ -126,18 +125,6 @@ class Documentation {
       if (clazz.langs.only && !clazz.langs.only.includes(lang))
         continue;
       clazz.filterForLanguage(lang, options);
-      classesArray.push(clazz);
-    }
-    this.classesArray = classesArray;
-    this.index();
-  }
-
-  filterOutExperimental() {
-    const classesArray = [];
-    for (const clazz of this.classesArray) {
-      if (clazz.experimental)
-        continue;
-      clazz.filterOutExperimental();
       classesArray.push(clazz);
     }
     this.classesArray = classesArray;
@@ -178,6 +165,10 @@ class Documentation {
    * @param {Class|Member=} classOrMember
    */
   renderLinksInNodes(nodes, classOrMember) {
+    if (classOrMember instanceof Member) {
+      classOrMember.discouraged = classOrMember.discouraged ? this.renderLinksInText(classOrMember.discouraged, classOrMember) : undefined;
+      classOrMember.deprecated = classOrMember.deprecated ? this.renderLinksInText(classOrMember.deprecated, classOrMember) : undefined
+    }
     md.visitAll(nodes, node => {
       if (!node.text)
         return;
@@ -227,7 +218,6 @@ class Documentation {
    */
   constructor(metainfo, name, membersArray, extendsName = null, spec = undefined) {
     this.langs = metainfo.langs;
-    this.experimental = metainfo.experimental;
     this.since = metainfo.since;
     this.deprecated = metainfo.deprecated;
     this.discouraged = metainfo.discouraged;
@@ -282,7 +272,7 @@ class Documentation {
   }
 
   clone() {
-    const cls = new Class({ langs: this.langs, experimental: this.experimental, since: this.since, deprecated: this.deprecated, discouraged: this.discouraged }, this.name, this.membersArray.map(m => m.clone()), this.extends, this.spec);
+    const cls = new Class({ langs: this.langs, since: this.since, deprecated: this.deprecated, discouraged: this.discouraged }, this.name, this.membersArray.map(m => m.clone()), this.extends, this.spec);
     cls.comment = this.comment;
     return cls;
   }
@@ -302,59 +292,22 @@ class Documentation {
     this.membersArray = membersArray;
   }
 
-  filterOutExperimental()  {
-    const membersArray = [];
-    for (const member of this.membersArray) {
-      if (member.experimental)
-        continue;
-      member.filterOutExperimental();
-      membersArray.push(member);
-    }
-    this.membersArray = membersArray;
-  }
-
-  validateOrder(errors, cls) {
-    const members = this.membersArray;
-    // Events should go first.
-    let eventIndex = 0;
-    for (; eventIndex < members.length && members[eventIndex].kind === 'event'; ++eventIndex);
-    for (; eventIndex < members.length && members[eventIndex].kind !== 'event'; ++eventIndex);
-    if (eventIndex < members.length)
-      errors.push(`Events should go first. Event '${members[eventIndex].name}' in class ${cls.name} breaks order`);
-
-    // Constructor should be right after events and before all other members.
-    const constructorIndex = members.findIndex(member => member.kind === 'method' && member.name === 'constructor');
-    if (constructorIndex > 0 && members[constructorIndex - 1].kind !== 'event')
-      errors.push(`Constructor of ${cls.name} should go before other methods`);
-
-    // Events should be sorted alphabetically.
-    for (let i = 0; i < members.length - 1; ++i) {
-      const member1 = this.membersArray[i];
-      const member2 = this.membersArray[i + 1];
-      if (member1.kind !== 'event' || member2.kind !== 'event')
-        continue;
-      if (member1.name.localeCompare(member2.name, 'en', { sensitivity: 'base' }) > 0)
-        errors.push(`Event '${member1.name}' in class ${this.name} breaks alphabetic ordering of events`);
+  sortMembers() {
+    /**
+     * @param {Member} member
+     */
+    function sortKey(member) {
+      return { 'event': 'a', 'method': 'b', 'property': 'c' }[member.kind] + member.alias;
     }
 
-    // All other members should be sorted alphabetically.
-    for (let i = 0; i < members.length - 1; ++i) {
-      const member1 = this.membersArray[i];
-      const member2 = this.membersArray[i + 1];
-      if (member1.kind === 'event' || member2.kind === 'event')
-        continue;
-      if (member1.kind === 'method' && member1.name === 'constructor')
-        continue;
-      if (member1.name.replace(/^\$+/, '$').localeCompare(member2.name.replace(/^\$+/, '$'), 'en', { sensitivity: 'base' }) > 0) {
-        let memberName1 = `${this.name}.${member1.name}`;
-        if (member1.kind === 'method')
-          memberName1 += '()';
-        let memberName2 = `${this.name}.${member2.name}`;
-        if (member2.kind === 'method')
-          memberName2 += '()';
-        errors.push(`Bad alphabetic ordering of ${this.name} members: ${memberName1} should go after ${memberName2}`);
-      }
-    }
+    this.membersArray.sort((m1, m2) => {
+      return sortKey(m1).localeCompare(sortKey(m2), 'en', { sensitivity: 'base' });
+    });
+
+    // Ideally, we would automatically make options the last argument.
+    // However, that breaks Java, since options are not always last in Java, for example
+    // in page.waitForFileChooser(options, callback).
+    // So, the order must be carefully setup in the md file!
   }
 
   /**
@@ -384,7 +337,6 @@ class Member {
   constructor(kind, metainfo, name, type, argsArray, spec = undefined, required = true) {
     this.kind = kind;
     this.langs = metainfo.langs;
-    this.experimental = metainfo.experimental;
     this.since = metainfo.since;
     this.deprecated = metainfo.deprecated;
     this.discouraged = metainfo.discouraged;
@@ -469,22 +421,8 @@ class Member {
     }
   }
 
-  filterOutExperimental() {
-    if (!this.type)
-      return;
-    this.type.filterOutExperimental();
-    const argsArray = [];
-    for (const arg of this.argsArray) {
-      if (arg.experimental || !arg.type)
-        continue;
-      arg.type.filterOutExperimental();
-      argsArray.push(arg);
-    }
-    this.argsArray = argsArray;
-  }
-
   clone() {
-    const result = new Member(this.kind, { langs: this.langs, experimental: this.experimental, since: this.since, deprecated: this.deprecated, discouraged: this.discouraged }, this.name, this.type?.clone(), this.argsArray.map(arg => arg.clone()), this.spec, this.required);
+    const result = new Member(this.kind, { langs: this.langs, since: this.since, deprecated: this.deprecated, discouraged: this.discouraged }, this.name, this.type?.clone(), this.argsArray.map(arg => arg.clone()), this.spec, this.required);
     result.alias = this.alias;
     result.async = this.async;
     result.paramOrOption = this.paramOrOption;
@@ -588,7 +526,7 @@ class Type {
       return type;
     }
 
-    if (parsedType.args) {
+    if (parsedType.args || parsedType.retType) {
       const type = new Type('function');
       type.args = [];
       // @ts-ignore
@@ -693,19 +631,6 @@ class Type {
     this.properties = properties;
   }
 
-  filterOutExperimental() {
-    if (!this.properties)
-      return;
-    const properties = [];
-    for (const prop of this.properties) {
-      if (prop.experimental)
-        continue;
-      prop.filterOutExperimental();
-      properties.push(prop);
-    }
-    this.properties = properties;
-  }
-
   /**
    * @param {Type[]} result
    */
@@ -759,7 +684,8 @@ function parseTypeExpression(type) {
     if (type[i] === '(') {
       name = type.substring(0, i);
       const matching = matchingBracket(type.substring(i), '(', ')');
-      args = parseTypeExpression(type.substring(i + 1, i + matching - 1));
+      const argsString = type.substring(i + 1, i + matching - 1);
+      args = argsString ? parseTypeExpression(argsString) : null;
       i = i + matching;
       if (type[i] === ':') {
         retType = parseTypeExpression(type.substring(i + 1));
@@ -939,6 +865,8 @@ function csharpOptionOverloadSuffix(option, type) {
     case 'function': return 'Func';
     case 'Buffer': return 'Byte';
     case 'Serializable': return 'Object';
+    case 'int': return 'Int';
+    case 'Date': return 'Date';
   }
   throw new Error(`CSharp option "${option}" has unsupported type overload "${type}"`);
 }

@@ -31,9 +31,9 @@ type ElementHandleWaitForSelectorOptionsNotHidden = ElementHandleWaitForSelector
 /**
  * - extends: [EventEmitter]
  *
- * Page provides methods to interact with a single tab in a [Browser], or an
- * [extension background page](https://developer.chrome.com/extensions/background_pages) in Chromium. One [Browser]
- * instance might have multiple [Page] instances.
+ * Page provides methods to interact with a single tab in a {@link Browser}, or an
+ * [extension background page](https://developer.chrome.com/extensions/background_pages) in Chromium. One {@link
+ * Browser} instance might have multiple {@link Page} instances.
  *
  * This example creates a page, navigates it to a URL, and then saves a screenshot:
  *
@@ -45,7 +45,7 @@ type ElementHandleWaitForSelectorOptionsNotHidden = ElementHandleWaitForSelector
  *   const context = await browser.newContext();
  *   const page = await context.newPage();
  *   await page.goto('https://example.com');
- *   await page.screenshot({path: 'screenshot.png'});
+ *   await page.screenshot({ path: 'screenshot.png' });
  *   await browser.close();
  * })();
  * ```
@@ -107,12 +107,14 @@ export interface Page {
    * console.log(await page.evaluate(`1 + ${x}`)); // prints "11"
    * ```
    *
-   * [ElementHandle] instances can be passed as an argument to the
+   * {@link ElementHandle} instances can be passed as an argument to the
    * [page.evaluate(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate):
    *
    * ```js
    * const bodyHandle = await page.evaluate('document.body');
-   * const html = await page.evaluate(([body, suffix]) => body.innerHTML + suffix, [bodyHandle, 'hello']);
+   * const html = await page.evaluate<string, HTMLElement>(([body, suffix]) =>
+   *   body.innerHTML + suffix, [bodyHandle, 'hello']
+   * );
    * await bodyHandle.dispose();
    * ```
    *
@@ -154,12 +156,14 @@ export interface Page {
    * console.log(await page.evaluate(`1 + ${x}`)); // prints "11"
    * ```
    *
-   * [ElementHandle] instances can be passed as an argument to the
+   * {@link ElementHandle} instances can be passed as an argument to the
    * [page.evaluate(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate):
    *
    * ```js
    * const bodyHandle = await page.evaluate('document.body');
-   * const html = await page.evaluate(([body, suffix]) => body.innerHTML + suffix, [bodyHandle, 'hello']);
+   * const html = await page.evaluate<string, HTMLElement>(([body, suffix]) =>
+   *   body.innerHTML + suffix, [bodyHandle, 'hello']
+   * );
    * await bodyHandle.dispose();
    * ```
    *
@@ -169,13 +173,13 @@ export interface Page {
   evaluate<R>(pageFunction: PageFunction<void, R>, arg?: any): Promise<R>;
 
   /**
-   * Returns the value of the `pageFunction` invocation as a [JSHandle].
+   * Returns the value of the `pageFunction` invocation as a {@link JSHandle}.
    *
    * The only difference between
    * [page.evaluate(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate) and
    * [page.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate-handle) is that
    * [page.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate-handle) returns
-   * [JSHandle].
+   * {@link JSHandle}.
    *
    * If the function passed to the
    * [page.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate-handle) returns
@@ -186,8 +190,8 @@ export interface Page {
    * **Usage**
    *
    * ```js
+   * // Handle for the window object.
    * const aWindowHandle = await page.evaluateHandle(() => Promise.resolve(window));
-   * aWindowHandle; // Handle for the window object.
    * ```
    *
    * A string can also be passed in instead of a function:
@@ -196,7 +200,7 @@ export interface Page {
    * const aHandle = await page.evaluateHandle('document'); // Handle for the 'document'
    * ```
    *
-   * [JSHandle] instances can be passed as an argument to the
+   * {@link JSHandle} instances can be passed as an argument to the
    * [page.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate-handle):
    *
    * ```js
@@ -211,13 +215,13 @@ export interface Page {
    */
   evaluateHandle<R, Arg>(pageFunction: PageFunction<Arg, R>, arg: Arg): Promise<SmartHandle<R>>;
   /**
-   * Returns the value of the `pageFunction` invocation as a [JSHandle].
+   * Returns the value of the `pageFunction` invocation as a {@link JSHandle}.
    *
    * The only difference between
    * [page.evaluate(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate) and
    * [page.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate-handle) is that
    * [page.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate-handle) returns
-   * [JSHandle].
+   * {@link JSHandle}.
    *
    * If the function passed to the
    * [page.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate-handle) returns
@@ -228,8 +232,8 @@ export interface Page {
    * **Usage**
    *
    * ```js
+   * // Handle for the window object.
    * const aWindowHandle = await page.evaluateHandle(() => Promise.resolve(window));
-   * aWindowHandle; // Handle for the window object.
    * ```
    *
    * A string can also be passed in instead of a function:
@@ -238,7 +242,7 @@ export interface Page {
    * const aHandle = await page.evaluateHandle('document'); // Handle for the 'document'
    * ```
    *
-   * [JSHandle] instances can be passed as an argument to the
+   * {@link JSHandle} instances can be passed as an argument to the
    * [page.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate-handle):
    *
    * ```js
@@ -276,6 +280,12 @@ export interface Page {
    * await page.addInitScript({ path: './preload.js' });
    * ```
    *
+   * ```js
+   * await page.addInitScript(mock => {
+   *   window.mock = mock;
+   * }, mock);
+   * ```
+   *
    * **NOTE** The order of evaluation of multiple scripts installed via
    * [browserContext.addInitScript(script[, arg])](https://playwright.dev/docs/api/class-browsercontext#browser-context-add-init-script)
    * and [page.addInitScript(script[, arg])](https://playwright.dev/docs/api/class-page#page-add-init-script) is not
@@ -286,46 +296,52 @@ export interface Page {
   addInitScript<Arg>(script: PageFunction<Arg, any> | { path?: string, content?: string }, arg?: Arg): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Page.locator`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [page.locator(selector[, options])](https://playwright.dev/docs/api/class-page#page-locator)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * The method finds an element matching the specified selector within the page. If no elements match the selector, the
    * return value resolves to `null`. To wait for an element on the page, use
    * [locator.waitFor([options])](https://playwright.dev/docs/api/class-locator#locator-wait-for).
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param options
    */
   $<K extends keyof HTMLElementTagNameMap>(selector: K, options?: { strict: boolean }): Promise<ElementHandleForTag<K> | null>;
   /**
-   * **NOTE** Use locator-based [`method: Page.locator`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [page.locator(selector[, options])](https://playwright.dev/docs/api/class-page#page-locator)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * The method finds an element matching the specified selector within the page. If no elements match the selector, the
    * return value resolves to `null`. To wait for an element on the page, use
    * [locator.waitFor([options])](https://playwright.dev/docs/api/class-locator#locator-wait-for).
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param options
    */
   $(selector: string, options?: { strict: boolean }): Promise<ElementHandle<SVGElement | HTMLElement> | null>;
 
   /**
-   * **NOTE** Use locator-based [`method: Page.locator`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [page.locator(selector[, options])](https://playwright.dev/docs/api/class-page#page-locator)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * The method finds all elements matching the specified selector within the page. If no elements match the selector,
    * the return value resolves to `[]`.
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    */
   $$<K extends keyof HTMLElementTagNameMap>(selector: K): Promise<ElementHandleForTag<K>[]>;
   /**
-   * **NOTE** Use locator-based [`method: Page.locator`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [page.locator(selector[, options])](https://playwright.dev/docs/api/class-page#page-locator)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * The method finds all elements matching the specified selector within the page. If no elements match the selector,
    * the return value resolves to `[]`.
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    */
   $$(selector: string): Promise<ElementHandle<SVGElement | HTMLElement>[]>;
 
   /**
    * **NOTE** This method does not wait for the element to pass actionability checks and therefore can lead to the flaky tests.
-   * Use [`method: Locator.evaluate`], other [Locator] helper methods or web-first assertions instead.
+   * Use
+   * [locator.evaluate(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate),
+   * other {@link Locator} helper methods or web-first assertions instead.
    *
    * The method finds an element matching the specified selector within the page and passes it as a first argument to
    * `pageFunction`. If no elements match the selector, the method throws an error. Returns the value of `pageFunction`.
@@ -344,7 +360,7 @@ export interface Page {
    * const preloadHrefTS = await page.$eval('link[rel=preload]', (el: HTMLLinkElement) => el.href);
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    * @param options
@@ -352,7 +368,9 @@ export interface Page {
   $eval<K extends keyof HTMLElementTagNameMap, R, Arg>(selector: K, pageFunction: PageFunctionOn<HTMLElementTagNameMap[K], Arg, R>, arg: Arg): Promise<R>;
   /**
    * **NOTE** This method does not wait for the element to pass actionability checks and therefore can lead to the flaky tests.
-   * Use [`method: Locator.evaluate`], other [Locator] helper methods or web-first assertions instead.
+   * Use
+   * [locator.evaluate(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate),
+   * other {@link Locator} helper methods or web-first assertions instead.
    *
    * The method finds an element matching the specified selector within the page and passes it as a first argument to
    * `pageFunction`. If no elements match the selector, the method throws an error. Returns the value of `pageFunction`.
@@ -371,7 +389,7 @@ export interface Page {
    * const preloadHrefTS = await page.$eval('link[rel=preload]', (el: HTMLLinkElement) => el.href);
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    * @param options
@@ -379,7 +397,9 @@ export interface Page {
   $eval<R, Arg, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(selector: string, pageFunction: PageFunctionOn<E, Arg, R>, arg: Arg): Promise<R>;
   /**
    * **NOTE** This method does not wait for the element to pass actionability checks and therefore can lead to the flaky tests.
-   * Use [`method: Locator.evaluate`], other [Locator] helper methods or web-first assertions instead.
+   * Use
+   * [locator.evaluate(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate),
+   * other {@link Locator} helper methods or web-first assertions instead.
    *
    * The method finds an element matching the specified selector within the page and passes it as a first argument to
    * `pageFunction`. If no elements match the selector, the method throws an error. Returns the value of `pageFunction`.
@@ -398,7 +418,7 @@ export interface Page {
    * const preloadHrefTS = await page.$eval('link[rel=preload]', (el: HTMLLinkElement) => el.href);
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    * @param options
@@ -406,7 +426,9 @@ export interface Page {
   $eval<K extends keyof HTMLElementTagNameMap, R>(selector: K, pageFunction: PageFunctionOn<HTMLElementTagNameMap[K], void, R>, arg?: any): Promise<R>;
   /**
    * **NOTE** This method does not wait for the element to pass actionability checks and therefore can lead to the flaky tests.
-   * Use [`method: Locator.evaluate`], other [Locator] helper methods or web-first assertions instead.
+   * Use
+   * [locator.evaluate(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate),
+   * other {@link Locator} helper methods or web-first assertions instead.
    *
    * The method finds an element matching the specified selector within the page and passes it as a first argument to
    * `pageFunction`. If no elements match the selector, the method throws an error. Returns the value of `pageFunction`.
@@ -425,7 +447,7 @@ export interface Page {
    * const preloadHrefTS = await page.$eval('link[rel=preload]', (el: HTMLLinkElement) => el.href);
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    * @param options
@@ -433,8 +455,9 @@ export interface Page {
   $eval<R, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(selector: string, pageFunction: PageFunctionOn<E, void, R>, arg?: any): Promise<R>;
 
   /**
-   * **NOTE** In most cases, [`method: Locator.evaluateAll`], other [Locator] helper methods and web-first assertions do a better
-   * job.
+   * **NOTE** In most cases,
+   * [locator.evaluateAll(pageFunction[, arg])](https://playwright.dev/docs/api/class-locator#locator-evaluate-all),
+   * other {@link Locator} helper methods and web-first assertions do a better job.
    *
    * The method finds all elements matching the specified selector within the page and passes an array of matched
    * elements as a first argument to `pageFunction`. Returns the result of `pageFunction` invocation.
@@ -449,14 +472,15 @@ export interface Page {
    * const divCounts = await page.$$eval('div', (divs, min) => divs.length >= min, 10);
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   $$eval<K extends keyof HTMLElementTagNameMap, R, Arg>(selector: K, pageFunction: PageFunctionOn<HTMLElementTagNameMap[K][], Arg, R>, arg: Arg): Promise<R>;
   /**
-   * **NOTE** In most cases, [`method: Locator.evaluateAll`], other [Locator] helper methods and web-first assertions do a better
-   * job.
+   * **NOTE** In most cases,
+   * [locator.evaluateAll(pageFunction[, arg])](https://playwright.dev/docs/api/class-locator#locator-evaluate-all),
+   * other {@link Locator} helper methods and web-first assertions do a better job.
    *
    * The method finds all elements matching the specified selector within the page and passes an array of matched
    * elements as a first argument to `pageFunction`. Returns the result of `pageFunction` invocation.
@@ -471,14 +495,15 @@ export interface Page {
    * const divCounts = await page.$$eval('div', (divs, min) => divs.length >= min, 10);
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   $$eval<R, Arg, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(selector: string, pageFunction: PageFunctionOn<E[], Arg, R>, arg: Arg): Promise<R>;
   /**
-   * **NOTE** In most cases, [`method: Locator.evaluateAll`], other [Locator] helper methods and web-first assertions do a better
-   * job.
+   * **NOTE** In most cases,
+   * [locator.evaluateAll(pageFunction[, arg])](https://playwright.dev/docs/api/class-locator#locator-evaluate-all),
+   * other {@link Locator} helper methods and web-first assertions do a better job.
    *
    * The method finds all elements matching the specified selector within the page and passes an array of matched
    * elements as a first argument to `pageFunction`. Returns the result of `pageFunction` invocation.
@@ -493,14 +518,15 @@ export interface Page {
    * const divCounts = await page.$$eval('div', (divs, min) => divs.length >= min, 10);
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   $$eval<K extends keyof HTMLElementTagNameMap, R>(selector: K, pageFunction: PageFunctionOn<HTMLElementTagNameMap[K][], void, R>, arg?: any): Promise<R>;
   /**
-   * **NOTE** In most cases, [`method: Locator.evaluateAll`], other [Locator] helper methods and web-first assertions do a better
-   * job.
+   * **NOTE** In most cases,
+   * [locator.evaluateAll(pageFunction[, arg])](https://playwright.dev/docs/api/class-locator#locator-evaluate-all),
+   * other {@link Locator} helper methods and web-first assertions do a better job.
    *
    * The method finds all elements matching the specified selector within the page and passes an array of matched
    * elements as a first argument to `pageFunction`. Returns the result of `pageFunction` invocation.
@@ -515,7 +541,7 @@ export interface Page {
    * const divCounts = await page.$$eval('div', (divs, min) => divs.length >= min, 10);
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
@@ -537,7 +563,7 @@ export interface Page {
    *   const browser = await webkit.launch();
    *   const page = await browser.newPage();
    *   const watchDog = page.waitForFunction(() => window.innerWidth < 100);
-   *   await page.setViewportSize({width: 50, height: 50});
+   *   await page.setViewportSize({ width: 50, height: 50 });
    *   await watchDog;
    *   await browser.close();
    * })();
@@ -573,7 +599,7 @@ export interface Page {
    *   const browser = await webkit.launch();
    *   const page = await browser.newPage();
    *   const watchDog = page.waitForFunction(() => window.innerWidth < 100);
-   *   await page.setViewportSize({width: 50, height: 50});
+   *   await page.setViewportSize({ width: 50, height: 50 });
    *   await watchDog;
    *   await browser.close();
    * })();
@@ -595,10 +621,14 @@ export interface Page {
   waitForFunction<R>(pageFunction: PageFunction<void, R>, arg?: any, options?: PageWaitForFunctionOptions): Promise<SmartHandle<R>>;
 
   /**
+   * **NOTE** Use web assertions that assert visibility or a locator-based
+   * [locator.waitFor([options])](https://playwright.dev/docs/api/class-locator#locator-wait-for) instead. Read more
+   * about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns when element specified by selector satisfies `state` option. Returns `null` if waiting for `hidden` or
    * `detached`.
    *
-   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using [Locator]
+   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using {@link Locator}
    * objects and web-first assertions makes the code wait-for-selector-free.
    *
    * Wait for the `selector` to satisfy `state` option (either appear/disappear from dom, or become visible/hidden). If
@@ -615,7 +645,7 @@ export interface Page {
    * (async () => {
    *   const browser = await chromium.launch();
    *   const page = await browser.newPage();
-   *   for (let currentURL of ['https://google.com', 'https://bbc.com']) {
+   *   for (const currentURL of ['https://google.com', 'https://bbc.com']) {
    *     await page.goto(currentURL);
    *     const element = await page.waitForSelector('img');
    *     console.log('Loaded image: ' + await element.getAttribute('src'));
@@ -624,15 +654,19 @@ export interface Page {
    * })();
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param options
    */
   waitForSelector<K extends keyof HTMLElementTagNameMap>(selector: K, options?: PageWaitForSelectorOptionsNotHidden): Promise<ElementHandleForTag<K>>;
   /**
+   * **NOTE** Use web assertions that assert visibility or a locator-based
+   * [locator.waitFor([options])](https://playwright.dev/docs/api/class-locator#locator-wait-for) instead. Read more
+   * about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns when element specified by selector satisfies `state` option. Returns `null` if waiting for `hidden` or
    * `detached`.
    *
-   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using [Locator]
+   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using {@link Locator}
    * objects and web-first assertions makes the code wait-for-selector-free.
    *
    * Wait for the `selector` to satisfy `state` option (either appear/disappear from dom, or become visible/hidden). If
@@ -649,7 +683,7 @@ export interface Page {
    * (async () => {
    *   const browser = await chromium.launch();
    *   const page = await browser.newPage();
-   *   for (let currentURL of ['https://google.com', 'https://bbc.com']) {
+   *   for (const currentURL of ['https://google.com', 'https://bbc.com']) {
    *     await page.goto(currentURL);
    *     const element = await page.waitForSelector('img');
    *     console.log('Loaded image: ' + await element.getAttribute('src'));
@@ -658,15 +692,19 @@ export interface Page {
    * })();
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param options
    */
   waitForSelector(selector: string, options?: PageWaitForSelectorOptionsNotHidden): Promise<ElementHandle<SVGElement | HTMLElement>>;
   /**
+   * **NOTE** Use web assertions that assert visibility or a locator-based
+   * [locator.waitFor([options])](https://playwright.dev/docs/api/class-locator#locator-wait-for) instead. Read more
+   * about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns when element specified by selector satisfies `state` option. Returns `null` if waiting for `hidden` or
    * `detached`.
    *
-   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using [Locator]
+   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using {@link Locator}
    * objects and web-first assertions makes the code wait-for-selector-free.
    *
    * Wait for the `selector` to satisfy `state` option (either appear/disappear from dom, or become visible/hidden). If
@@ -683,7 +721,7 @@ export interface Page {
    * (async () => {
    *   const browser = await chromium.launch();
    *   const page = await browser.newPage();
-   *   for (let currentURL of ['https://google.com', 'https://bbc.com']) {
+   *   for (const currentURL of ['https://google.com', 'https://bbc.com']) {
    *     await page.goto(currentURL);
    *     const element = await page.waitForSelector('img');
    *     console.log('Loaded image: ' + await element.getAttribute('src'));
@@ -692,15 +730,19 @@ export interface Page {
    * })();
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param options
    */
   waitForSelector<K extends keyof HTMLElementTagNameMap>(selector: K, options: PageWaitForSelectorOptions): Promise<ElementHandleForTag<K> | null>;
   /**
+   * **NOTE** Use web assertions that assert visibility or a locator-based
+   * [locator.waitFor([options])](https://playwright.dev/docs/api/class-locator#locator-wait-for) instead. Read more
+   * about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns when element specified by selector satisfies `state` option. Returns `null` if waiting for `hidden` or
    * `detached`.
    *
-   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using [Locator]
+   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using {@link Locator}
    * objects and web-first assertions makes the code wait-for-selector-free.
    *
    * Wait for the `selector` to satisfy `state` option (either appear/disappear from dom, or become visible/hidden). If
@@ -717,7 +759,7 @@ export interface Page {
    * (async () => {
    *   const browser = await chromium.launch();
    *   const page = await browser.newPage();
-   *   for (let currentURL of ['https://google.com', 'https://bbc.com']) {
+   *   for (const currentURL of ['https://google.com', 'https://bbc.com']) {
    *     await page.goto(currentURL);
    *     const element = await page.waitForSelector('img');
    *     console.log('Loaded image: ' + await element.getAttribute('src'));
@@ -726,7 +768,7 @@ export interface Page {
    * })();
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param options
    */
   waitForSelector(selector: string, options: PageWaitForSelectorOptions): Promise<null|ElementHandle<SVGElement | HTMLElement>>;
@@ -856,15 +898,14 @@ export interface Page {
   /**
    * Emitted when the page closes.
    */
-  on(event: 'close', listener: (page: Page) => void): this;
+  on(event: 'close', listener: (page: Page) => any): this;
 
   /**
-   * Emitted when JavaScript within the page calls one of console API methods, e.g. `console.log` or `console.dir`. Also
-   * emitted if the page throws an error or a warning.
+   * Emitted when JavaScript within the page calls one of console API methods, e.g. `console.log` or `console.dir`.
    *
-   * The arguments passed into `console.log` appear as arguments on the event handler.
+   * The arguments passed into `console.log` are available on the {@link ConsoleMessage} event handler argument.
    *
-   * An example of handling `console` event:
+   * **Usage**
    *
    * ```js
    * page.on('console', async msg => {
@@ -873,11 +914,11 @@ export interface Page {
    *     values.push(await arg.jsonValue());
    *   console.log(...values);
    * });
-   * await page.evaluate(() => console.log('hello', 5, {foo: 'bar'}));
+   * await page.evaluate(() => console.log('hello', 5, { foo: 'bar' }));
    * ```
    *
    */
-  on(event: 'console', listener: (consoleMessage: ConsoleMessage) => void): this;
+  on(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
 
   /**
    * Emitted when the page crashes. Browser pages might crash if they try to allocate too much memory. When the page
@@ -897,7 +938,7 @@ export interface Page {
    * ```
    *
    */
-  on(event: 'crash', listener: (page: Page) => void): this;
+  on(event: 'crash', listener: (page: Page) => any): this;
 
   /**
    * Emitted when a JavaScript dialog appears, such as `alert`, `prompt`, `confirm` or `beforeunload`. Listener **must**
@@ -906,28 +947,29 @@ export interface Page {
    * will [freeze](https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop#never_blocking) waiting for the
    * dialog, and actions like click will never finish.
    *
+   * **Usage**
+   *
    * ```js
-   * page.on('dialog', dialog => {
-   *   dialog.accept();
-   * });
+   * page.on('dialog', dialog => dialog.accept());
    * ```
    *
-   * **NOTE** When no [page.on('dialog')](https://playwright.dev/docs/api/class-page#page-event-dialog) listeners are
-   * present, all dialogs are automatically dismissed.
+   * **NOTE** When no [page.on('dialog')](https://playwright.dev/docs/api/class-page#page-event-dialog) or
+   * [browserContext.on('dialog')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-dialog)
+   * listeners are present, all dialogs are automatically dismissed.
    */
-  on(event: 'dialog', listener: (dialog: Dialog) => void): this;
+  on(event: 'dialog', listener: (dialog: Dialog) => any): this;
 
   /**
    * Emitted when the JavaScript
    * [`DOMContentLoaded`](https://developer.mozilla.org/en-US/docs/Web/Events/DOMContentLoaded) event is dispatched.
    */
-  on(event: 'domcontentloaded', listener: (page: Page) => void): this;
+  on(event: 'domcontentloaded', listener: (page: Page) => any): this;
 
   /**
    * Emitted when attachment download started. User can access basic file operations on downloaded content via the
-   * passed [Download] instance.
+   * passed {@link Download} instance.
    */
-  on(event: 'download', listener: (download: Download) => void): this;
+  on(event: 'download', listener: (download: Download) => any): this;
 
   /**
    * Emitted when a file chooser is supposed to appear, such as after clicking the  `<input type=file>`. Playwright can
@@ -936,33 +978,33 @@ export interface Page {
    * that can be uploaded after that.
    *
    * ```js
-   * page.on('filechooser', async (fileChooser) => {
-   *   await fileChooser.setFiles('/tmp/myfile.pdf');
+   * page.on('filechooser', async fileChooser => {
+   *   await fileChooser.setFiles(path.join(__dirname, '/tmp/myfile.pdf'));
    * });
    * ```
    *
    */
-  on(event: 'filechooser', listener: (fileChooser: FileChooser) => void): this;
+  on(event: 'filechooser', listener: (fileChooser: FileChooser) => any): this;
 
   /**
    * Emitted when a frame is attached.
    */
-  on(event: 'frameattached', listener: (frame: Frame) => void): this;
+  on(event: 'frameattached', listener: (frame: Frame) => any): this;
 
   /**
    * Emitted when a frame is detached.
    */
-  on(event: 'framedetached', listener: (frame: Frame) => void): this;
+  on(event: 'framedetached', listener: (frame: Frame) => any): this;
 
   /**
    * Emitted when a frame is navigated to a new url.
    */
-  on(event: 'framenavigated', listener: (frame: Frame) => void): this;
+  on(event: 'framenavigated', listener: (frame: Frame) => any): this;
 
   /**
    * Emitted when the JavaScript [`load`](https://developer.mozilla.org/en-US/docs/Web/Events/load) event is dispatched.
    */
-  on(event: 'load', listener: (page: Page) => void): this;
+  on(event: 'load', listener: (page: Page) => any): this;
 
   /**
    * Emitted when an uncaught exception happens within the page.
@@ -978,7 +1020,7 @@ export interface Page {
    * ```
    *
    */
-  on(event: 'pageerror', listener: (error: Error) => void): this;
+  on(event: 'pageerror', listener: (error: Error) => any): this;
 
   /**
    * Emitted when the page opens a new tab or window. This event is emitted in addition to the
@@ -987,7 +1029,12 @@ export interface Page {
    *
    * The earliest moment that page is available is when it has navigated to the initial url. For example, when opening a
    * popup with `window.open('http://example.com')`, this event will fire when the network request to
-   * "http://example.com" is done and its response has started loading in the popup.
+   * "http://example.com" is done and its response has started loading in the popup. If you would like to route/listen
+   * to this network request, use
+   * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)
+   * and
+   * [browserContext.on('request')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-request)
+   * respectively instead of similar methods on the {@link Page}.
    *
    * ```js
    * // Start waiting for popup before clicking. Note no await.
@@ -1001,14 +1048,14 @@ export interface Page {
    * [page.waitForLoadState([state, options])](https://playwright.dev/docs/api/class-page#page-wait-for-load-state) to
    * wait until the page gets to a particular state (you should not need it in most cases).
    */
-  on(event: 'popup', listener: (page: Page) => void): this;
+  on(event: 'popup', listener: (page: Page) => any): this;
 
   /**
    * Emitted when a page issues a request. The [request] object is read-only. In order to intercept and mutate requests,
    * see [page.route(url, handler[, options])](https://playwright.dev/docs/api/class-page#page-route) or
    * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route).
    */
-  on(event: 'request', listener: (request: Request) => void): this;
+  on(event: 'request', listener: (request: Request) => any): this;
 
   /**
    * Emitted when a request fails, for example by timing out.
@@ -1026,138 +1073,137 @@ export interface Page {
    * will only be considered failed when the client cannot get an HTTP response from the server, e.g. due to network
    * error net::ERR_FAILED.
    */
-  on(event: 'requestfailed', listener: (request: Request) => void): this;
+  on(event: 'requestfailed', listener: (request: Request) => any): this;
 
   /**
    * Emitted when a request finishes successfully after downloading the response body. For a successful response, the
    * sequence of events is `request`, `response` and `requestfinished`.
    */
-  on(event: 'requestfinished', listener: (request: Request) => void): this;
+  on(event: 'requestfinished', listener: (request: Request) => any): this;
 
   /**
    * Emitted when [response] status and headers are received for a request. For a successful response, the sequence of
    * events is `request`, `response` and `requestfinished`.
    */
-  on(event: 'response', listener: (response: Response) => void): this;
+  on(event: 'response', listener: (response: Response) => any): this;
 
   /**
-   * Emitted when [WebSocket] request is sent.
+   * Emitted when {@link WebSocket} request is sent.
    */
-  on(event: 'websocket', listener: (webSocket: WebSocket) => void): this;
+  on(event: 'websocket', listener: (webSocket: WebSocket) => any): this;
 
   /**
    * Emitted when a dedicated [WebWorker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) is spawned
    * by the page.
    */
-  on(event: 'worker', listener: (worker: Worker) => void): this;
+  on(event: 'worker', listener: (worker: Worker) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'close', listener: (page: Page) => void): this;
+  once(event: 'close', listener: (page: Page) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'console', listener: (consoleMessage: ConsoleMessage) => void): this;
+  once(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'crash', listener: (page: Page) => void): this;
+  once(event: 'crash', listener: (page: Page) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'dialog', listener: (dialog: Dialog) => void): this;
+  once(event: 'dialog', listener: (dialog: Dialog) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'domcontentloaded', listener: (page: Page) => void): this;
+  once(event: 'domcontentloaded', listener: (page: Page) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'download', listener: (download: Download) => void): this;
+  once(event: 'download', listener: (download: Download) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'filechooser', listener: (fileChooser: FileChooser) => void): this;
+  once(event: 'filechooser', listener: (fileChooser: FileChooser) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'frameattached', listener: (frame: Frame) => void): this;
+  once(event: 'frameattached', listener: (frame: Frame) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'framedetached', listener: (frame: Frame) => void): this;
+  once(event: 'framedetached', listener: (frame: Frame) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'framenavigated', listener: (frame: Frame) => void): this;
+  once(event: 'framenavigated', listener: (frame: Frame) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'load', listener: (page: Page) => void): this;
+  once(event: 'load', listener: (page: Page) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'pageerror', listener: (error: Error) => void): this;
+  once(event: 'pageerror', listener: (error: Error) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'popup', listener: (page: Page) => void): this;
+  once(event: 'popup', listener: (page: Page) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'request', listener: (request: Request) => void): this;
+  once(event: 'request', listener: (request: Request) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'requestfailed', listener: (request: Request) => void): this;
+  once(event: 'requestfailed', listener: (request: Request) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'requestfinished', listener: (request: Request) => void): this;
+  once(event: 'requestfinished', listener: (request: Request) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'response', listener: (response: Response) => void): this;
+  once(event: 'response', listener: (response: Response) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'websocket', listener: (webSocket: WebSocket) => void): this;
+  once(event: 'websocket', listener: (webSocket: WebSocket) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'worker', listener: (worker: Worker) => void): this;
+  once(event: 'worker', listener: (worker: Worker) => any): this;
 
   /**
    * Emitted when the page closes.
    */
-  addListener(event: 'close', listener: (page: Page) => void): this;
+  addListener(event: 'close', listener: (page: Page) => any): this;
 
   /**
-   * Emitted when JavaScript within the page calls one of console API methods, e.g. `console.log` or `console.dir`. Also
-   * emitted if the page throws an error or a warning.
+   * Emitted when JavaScript within the page calls one of console API methods, e.g. `console.log` or `console.dir`.
    *
-   * The arguments passed into `console.log` appear as arguments on the event handler.
+   * The arguments passed into `console.log` are available on the {@link ConsoleMessage} event handler argument.
    *
-   * An example of handling `console` event:
+   * **Usage**
    *
    * ```js
    * page.on('console', async msg => {
@@ -1166,11 +1212,11 @@ export interface Page {
    *     values.push(await arg.jsonValue());
    *   console.log(...values);
    * });
-   * await page.evaluate(() => console.log('hello', 5, {foo: 'bar'}));
+   * await page.evaluate(() => console.log('hello', 5, { foo: 'bar' }));
    * ```
    *
    */
-  addListener(event: 'console', listener: (consoleMessage: ConsoleMessage) => void): this;
+  addListener(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
 
   /**
    * Emitted when the page crashes. Browser pages might crash if they try to allocate too much memory. When the page
@@ -1190,7 +1236,7 @@ export interface Page {
    * ```
    *
    */
-  addListener(event: 'crash', listener: (page: Page) => void): this;
+  addListener(event: 'crash', listener: (page: Page) => any): this;
 
   /**
    * Emitted when a JavaScript dialog appears, such as `alert`, `prompt`, `confirm` or `beforeunload`. Listener **must**
@@ -1199,28 +1245,29 @@ export interface Page {
    * will [freeze](https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop#never_blocking) waiting for the
    * dialog, and actions like click will never finish.
    *
+   * **Usage**
+   *
    * ```js
-   * page.on('dialog', dialog => {
-   *   dialog.accept();
-   * });
+   * page.on('dialog', dialog => dialog.accept());
    * ```
    *
-   * **NOTE** When no [page.on('dialog')](https://playwright.dev/docs/api/class-page#page-event-dialog) listeners are
-   * present, all dialogs are automatically dismissed.
+   * **NOTE** When no [page.on('dialog')](https://playwright.dev/docs/api/class-page#page-event-dialog) or
+   * [browserContext.on('dialog')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-dialog)
+   * listeners are present, all dialogs are automatically dismissed.
    */
-  addListener(event: 'dialog', listener: (dialog: Dialog) => void): this;
+  addListener(event: 'dialog', listener: (dialog: Dialog) => any): this;
 
   /**
    * Emitted when the JavaScript
    * [`DOMContentLoaded`](https://developer.mozilla.org/en-US/docs/Web/Events/DOMContentLoaded) event is dispatched.
    */
-  addListener(event: 'domcontentloaded', listener: (page: Page) => void): this;
+  addListener(event: 'domcontentloaded', listener: (page: Page) => any): this;
 
   /**
    * Emitted when attachment download started. User can access basic file operations on downloaded content via the
-   * passed [Download] instance.
+   * passed {@link Download} instance.
    */
-  addListener(event: 'download', listener: (download: Download) => void): this;
+  addListener(event: 'download', listener: (download: Download) => any): this;
 
   /**
    * Emitted when a file chooser is supposed to appear, such as after clicking the  `<input type=file>`. Playwright can
@@ -1229,33 +1276,33 @@ export interface Page {
    * that can be uploaded after that.
    *
    * ```js
-   * page.on('filechooser', async (fileChooser) => {
-   *   await fileChooser.setFiles('/tmp/myfile.pdf');
+   * page.on('filechooser', async fileChooser => {
+   *   await fileChooser.setFiles(path.join(__dirname, '/tmp/myfile.pdf'));
    * });
    * ```
    *
    */
-  addListener(event: 'filechooser', listener: (fileChooser: FileChooser) => void): this;
+  addListener(event: 'filechooser', listener: (fileChooser: FileChooser) => any): this;
 
   /**
    * Emitted when a frame is attached.
    */
-  addListener(event: 'frameattached', listener: (frame: Frame) => void): this;
+  addListener(event: 'frameattached', listener: (frame: Frame) => any): this;
 
   /**
    * Emitted when a frame is detached.
    */
-  addListener(event: 'framedetached', listener: (frame: Frame) => void): this;
+  addListener(event: 'framedetached', listener: (frame: Frame) => any): this;
 
   /**
    * Emitted when a frame is navigated to a new url.
    */
-  addListener(event: 'framenavigated', listener: (frame: Frame) => void): this;
+  addListener(event: 'framenavigated', listener: (frame: Frame) => any): this;
 
   /**
    * Emitted when the JavaScript [`load`](https://developer.mozilla.org/en-US/docs/Web/Events/load) event is dispatched.
    */
-  addListener(event: 'load', listener: (page: Page) => void): this;
+  addListener(event: 'load', listener: (page: Page) => any): this;
 
   /**
    * Emitted when an uncaught exception happens within the page.
@@ -1271,7 +1318,7 @@ export interface Page {
    * ```
    *
    */
-  addListener(event: 'pageerror', listener: (error: Error) => void): this;
+  addListener(event: 'pageerror', listener: (error: Error) => any): this;
 
   /**
    * Emitted when the page opens a new tab or window. This event is emitted in addition to the
@@ -1280,7 +1327,12 @@ export interface Page {
    *
    * The earliest moment that page is available is when it has navigated to the initial url. For example, when opening a
    * popup with `window.open('http://example.com')`, this event will fire when the network request to
-   * "http://example.com" is done and its response has started loading in the popup.
+   * "http://example.com" is done and its response has started loading in the popup. If you would like to route/listen
+   * to this network request, use
+   * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)
+   * and
+   * [browserContext.on('request')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-request)
+   * respectively instead of similar methods on the {@link Page}.
    *
    * ```js
    * // Start waiting for popup before clicking. Note no await.
@@ -1294,14 +1346,14 @@ export interface Page {
    * [page.waitForLoadState([state, options])](https://playwright.dev/docs/api/class-page#page-wait-for-load-state) to
    * wait until the page gets to a particular state (you should not need it in most cases).
    */
-  addListener(event: 'popup', listener: (page: Page) => void): this;
+  addListener(event: 'popup', listener: (page: Page) => any): this;
 
   /**
    * Emitted when a page issues a request. The [request] object is read-only. In order to intercept and mutate requests,
    * see [page.route(url, handler[, options])](https://playwright.dev/docs/api/class-page#page-route) or
    * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route).
    */
-  addListener(event: 'request', listener: (request: Request) => void): this;
+  addListener(event: 'request', listener: (request: Request) => any): this;
 
   /**
    * Emitted when a request fails, for example by timing out.
@@ -1319,233 +1371,232 @@ export interface Page {
    * will only be considered failed when the client cannot get an HTTP response from the server, e.g. due to network
    * error net::ERR_FAILED.
    */
-  addListener(event: 'requestfailed', listener: (request: Request) => void): this;
+  addListener(event: 'requestfailed', listener: (request: Request) => any): this;
 
   /**
    * Emitted when a request finishes successfully after downloading the response body. For a successful response, the
    * sequence of events is `request`, `response` and `requestfinished`.
    */
-  addListener(event: 'requestfinished', listener: (request: Request) => void): this;
+  addListener(event: 'requestfinished', listener: (request: Request) => any): this;
 
   /**
    * Emitted when [response] status and headers are received for a request. For a successful response, the sequence of
    * events is `request`, `response` and `requestfinished`.
    */
-  addListener(event: 'response', listener: (response: Response) => void): this;
+  addListener(event: 'response', listener: (response: Response) => any): this;
 
   /**
-   * Emitted when [WebSocket] request is sent.
+   * Emitted when {@link WebSocket} request is sent.
    */
-  addListener(event: 'websocket', listener: (webSocket: WebSocket) => void): this;
+  addListener(event: 'websocket', listener: (webSocket: WebSocket) => any): this;
 
   /**
    * Emitted when a dedicated [WebWorker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) is spawned
    * by the page.
    */
-  addListener(event: 'worker', listener: (worker: Worker) => void): this;
+  addListener(event: 'worker', listener: (worker: Worker) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'close', listener: (page: Page) => void): this;
+  removeListener(event: 'close', listener: (page: Page) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'console', listener: (consoleMessage: ConsoleMessage) => void): this;
+  removeListener(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'crash', listener: (page: Page) => void): this;
+  removeListener(event: 'crash', listener: (page: Page) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'dialog', listener: (dialog: Dialog) => void): this;
+  removeListener(event: 'dialog', listener: (dialog: Dialog) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'domcontentloaded', listener: (page: Page) => void): this;
+  removeListener(event: 'domcontentloaded', listener: (page: Page) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'download', listener: (download: Download) => void): this;
+  removeListener(event: 'download', listener: (download: Download) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'filechooser', listener: (fileChooser: FileChooser) => void): this;
+  removeListener(event: 'filechooser', listener: (fileChooser: FileChooser) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'frameattached', listener: (frame: Frame) => void): this;
+  removeListener(event: 'frameattached', listener: (frame: Frame) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'framedetached', listener: (frame: Frame) => void): this;
+  removeListener(event: 'framedetached', listener: (frame: Frame) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'framenavigated', listener: (frame: Frame) => void): this;
+  removeListener(event: 'framenavigated', listener: (frame: Frame) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'load', listener: (page: Page) => void): this;
+  removeListener(event: 'load', listener: (page: Page) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'pageerror', listener: (error: Error) => void): this;
+  removeListener(event: 'pageerror', listener: (error: Error) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'popup', listener: (page: Page) => void): this;
+  removeListener(event: 'popup', listener: (page: Page) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'request', listener: (request: Request) => void): this;
+  removeListener(event: 'request', listener: (request: Request) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'requestfailed', listener: (request: Request) => void): this;
+  removeListener(event: 'requestfailed', listener: (request: Request) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'requestfinished', listener: (request: Request) => void): this;
+  removeListener(event: 'requestfinished', listener: (request: Request) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'response', listener: (response: Response) => void): this;
+  removeListener(event: 'response', listener: (response: Response) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'websocket', listener: (webSocket: WebSocket) => void): this;
+  removeListener(event: 'websocket', listener: (webSocket: WebSocket) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'worker', listener: (worker: Worker) => void): this;
+  removeListener(event: 'worker', listener: (worker: Worker) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'close', listener: (page: Page) => void): this;
+  off(event: 'close', listener: (page: Page) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'console', listener: (consoleMessage: ConsoleMessage) => void): this;
+  off(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'crash', listener: (page: Page) => void): this;
+  off(event: 'crash', listener: (page: Page) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'dialog', listener: (dialog: Dialog) => void): this;
+  off(event: 'dialog', listener: (dialog: Dialog) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'domcontentloaded', listener: (page: Page) => void): this;
+  off(event: 'domcontentloaded', listener: (page: Page) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'download', listener: (download: Download) => void): this;
+  off(event: 'download', listener: (download: Download) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'filechooser', listener: (fileChooser: FileChooser) => void): this;
+  off(event: 'filechooser', listener: (fileChooser: FileChooser) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'frameattached', listener: (frame: Frame) => void): this;
+  off(event: 'frameattached', listener: (frame: Frame) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'framedetached', listener: (frame: Frame) => void): this;
+  off(event: 'framedetached', listener: (frame: Frame) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'framenavigated', listener: (frame: Frame) => void): this;
+  off(event: 'framenavigated', listener: (frame: Frame) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'load', listener: (page: Page) => void): this;
+  off(event: 'load', listener: (page: Page) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'pageerror', listener: (error: Error) => void): this;
+  off(event: 'pageerror', listener: (error: Error) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'popup', listener: (page: Page) => void): this;
+  off(event: 'popup', listener: (page: Page) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'request', listener: (request: Request) => void): this;
+  off(event: 'request', listener: (request: Request) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'requestfailed', listener: (request: Request) => void): this;
+  off(event: 'requestfailed', listener: (request: Request) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'requestfinished', listener: (request: Request) => void): this;
+  off(event: 'requestfinished', listener: (request: Request) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'response', listener: (response: Response) => void): this;
+  off(event: 'response', listener: (response: Response) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'websocket', listener: (webSocket: WebSocket) => void): this;
+  off(event: 'websocket', listener: (webSocket: WebSocket) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'worker', listener: (worker: Worker) => void): this;
+  off(event: 'worker', listener: (worker: Worker) => any): this;
 
   /**
    * Emitted when the page closes.
    */
-  prependListener(event: 'close', listener: (page: Page) => void): this;
+  prependListener(event: 'close', listener: (page: Page) => any): this;
 
   /**
-   * Emitted when JavaScript within the page calls one of console API methods, e.g. `console.log` or `console.dir`. Also
-   * emitted if the page throws an error or a warning.
+   * Emitted when JavaScript within the page calls one of console API methods, e.g. `console.log` or `console.dir`.
    *
-   * The arguments passed into `console.log` appear as arguments on the event handler.
+   * The arguments passed into `console.log` are available on the {@link ConsoleMessage} event handler argument.
    *
-   * An example of handling `console` event:
+   * **Usage**
    *
    * ```js
    * page.on('console', async msg => {
@@ -1554,11 +1605,11 @@ export interface Page {
    *     values.push(await arg.jsonValue());
    *   console.log(...values);
    * });
-   * await page.evaluate(() => console.log('hello', 5, {foo: 'bar'}));
+   * await page.evaluate(() => console.log('hello', 5, { foo: 'bar' }));
    * ```
    *
    */
-  prependListener(event: 'console', listener: (consoleMessage: ConsoleMessage) => void): this;
+  prependListener(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
 
   /**
    * Emitted when the page crashes. Browser pages might crash if they try to allocate too much memory. When the page
@@ -1578,7 +1629,7 @@ export interface Page {
    * ```
    *
    */
-  prependListener(event: 'crash', listener: (page: Page) => void): this;
+  prependListener(event: 'crash', listener: (page: Page) => any): this;
 
   /**
    * Emitted when a JavaScript dialog appears, such as `alert`, `prompt`, `confirm` or `beforeunload`. Listener **must**
@@ -1587,28 +1638,29 @@ export interface Page {
    * will [freeze](https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop#never_blocking) waiting for the
    * dialog, and actions like click will never finish.
    *
+   * **Usage**
+   *
    * ```js
-   * page.on('dialog', dialog => {
-   *   dialog.accept();
-   * });
+   * page.on('dialog', dialog => dialog.accept());
    * ```
    *
-   * **NOTE** When no [page.on('dialog')](https://playwright.dev/docs/api/class-page#page-event-dialog) listeners are
-   * present, all dialogs are automatically dismissed.
+   * **NOTE** When no [page.on('dialog')](https://playwright.dev/docs/api/class-page#page-event-dialog) or
+   * [browserContext.on('dialog')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-dialog)
+   * listeners are present, all dialogs are automatically dismissed.
    */
-  prependListener(event: 'dialog', listener: (dialog: Dialog) => void): this;
+  prependListener(event: 'dialog', listener: (dialog: Dialog) => any): this;
 
   /**
    * Emitted when the JavaScript
    * [`DOMContentLoaded`](https://developer.mozilla.org/en-US/docs/Web/Events/DOMContentLoaded) event is dispatched.
    */
-  prependListener(event: 'domcontentloaded', listener: (page: Page) => void): this;
+  prependListener(event: 'domcontentloaded', listener: (page: Page) => any): this;
 
   /**
    * Emitted when attachment download started. User can access basic file operations on downloaded content via the
-   * passed [Download] instance.
+   * passed {@link Download} instance.
    */
-  prependListener(event: 'download', listener: (download: Download) => void): this;
+  prependListener(event: 'download', listener: (download: Download) => any): this;
 
   /**
    * Emitted when a file chooser is supposed to appear, such as after clicking the  `<input type=file>`. Playwright can
@@ -1617,33 +1669,33 @@ export interface Page {
    * that can be uploaded after that.
    *
    * ```js
-   * page.on('filechooser', async (fileChooser) => {
-   *   await fileChooser.setFiles('/tmp/myfile.pdf');
+   * page.on('filechooser', async fileChooser => {
+   *   await fileChooser.setFiles(path.join(__dirname, '/tmp/myfile.pdf'));
    * });
    * ```
    *
    */
-  prependListener(event: 'filechooser', listener: (fileChooser: FileChooser) => void): this;
+  prependListener(event: 'filechooser', listener: (fileChooser: FileChooser) => any): this;
 
   /**
    * Emitted when a frame is attached.
    */
-  prependListener(event: 'frameattached', listener: (frame: Frame) => void): this;
+  prependListener(event: 'frameattached', listener: (frame: Frame) => any): this;
 
   /**
    * Emitted when a frame is detached.
    */
-  prependListener(event: 'framedetached', listener: (frame: Frame) => void): this;
+  prependListener(event: 'framedetached', listener: (frame: Frame) => any): this;
 
   /**
    * Emitted when a frame is navigated to a new url.
    */
-  prependListener(event: 'framenavigated', listener: (frame: Frame) => void): this;
+  prependListener(event: 'framenavigated', listener: (frame: Frame) => any): this;
 
   /**
    * Emitted when the JavaScript [`load`](https://developer.mozilla.org/en-US/docs/Web/Events/load) event is dispatched.
    */
-  prependListener(event: 'load', listener: (page: Page) => void): this;
+  prependListener(event: 'load', listener: (page: Page) => any): this;
 
   /**
    * Emitted when an uncaught exception happens within the page.
@@ -1659,7 +1711,7 @@ export interface Page {
    * ```
    *
    */
-  prependListener(event: 'pageerror', listener: (error: Error) => void): this;
+  prependListener(event: 'pageerror', listener: (error: Error) => any): this;
 
   /**
    * Emitted when the page opens a new tab or window. This event is emitted in addition to the
@@ -1668,7 +1720,12 @@ export interface Page {
    *
    * The earliest moment that page is available is when it has navigated to the initial url. For example, when opening a
    * popup with `window.open('http://example.com')`, this event will fire when the network request to
-   * "http://example.com" is done and its response has started loading in the popup.
+   * "http://example.com" is done and its response has started loading in the popup. If you would like to route/listen
+   * to this network request, use
+   * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)
+   * and
+   * [browserContext.on('request')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-request)
+   * respectively instead of similar methods on the {@link Page}.
    *
    * ```js
    * // Start waiting for popup before clicking. Note no await.
@@ -1682,14 +1739,14 @@ export interface Page {
    * [page.waitForLoadState([state, options])](https://playwright.dev/docs/api/class-page#page-wait-for-load-state) to
    * wait until the page gets to a particular state (you should not need it in most cases).
    */
-  prependListener(event: 'popup', listener: (page: Page) => void): this;
+  prependListener(event: 'popup', listener: (page: Page) => any): this;
 
   /**
    * Emitted when a page issues a request. The [request] object is read-only. In order to intercept and mutate requests,
    * see [page.route(url, handler[, options])](https://playwright.dev/docs/api/class-page#page-route) or
    * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route).
    */
-  prependListener(event: 'request', listener: (request: Request) => void): this;
+  prependListener(event: 'request', listener: (request: Request) => any): this;
 
   /**
    * Emitted when a request fails, for example by timing out.
@@ -1707,37 +1764,140 @@ export interface Page {
    * will only be considered failed when the client cannot get an HTTP response from the server, e.g. due to network
    * error net::ERR_FAILED.
    */
-  prependListener(event: 'requestfailed', listener: (request: Request) => void): this;
+  prependListener(event: 'requestfailed', listener: (request: Request) => any): this;
 
   /**
    * Emitted when a request finishes successfully after downloading the response body. For a successful response, the
    * sequence of events is `request`, `response` and `requestfinished`.
    */
-  prependListener(event: 'requestfinished', listener: (request: Request) => void): this;
+  prependListener(event: 'requestfinished', listener: (request: Request) => any): this;
 
   /**
    * Emitted when [response] status and headers are received for a request. For a successful response, the sequence of
    * events is `request`, `response` and `requestfinished`.
    */
-  prependListener(event: 'response', listener: (response: Response) => void): this;
+  prependListener(event: 'response', listener: (response: Response) => any): this;
 
   /**
-   * Emitted when [WebSocket] request is sent.
+   * Emitted when {@link WebSocket} request is sent.
    */
-  prependListener(event: 'websocket', listener: (webSocket: WebSocket) => void): this;
+  prependListener(event: 'websocket', listener: (webSocket: WebSocket) => any): this;
 
   /**
    * Emitted when a dedicated [WebWorker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) is spawned
    * by the page.
    */
-  prependListener(event: 'worker', listener: (worker: Worker) => void): this;
+  prependListener(event: 'worker', listener: (worker: Worker) => any): this;
 
   /**
-   * @deprecated This property is discouraged. Please use other libraries such as [Axe](https://www.deque.com/axe/) if you need to
-   * test page accessibility. See our Node.js [guide](https://playwright.dev/docs/accessibility-testing) for integration
-   * with Axe.
+   * When testing a web page, sometimes unexpected overlays like a "Sign up" dialog appear and block actions you want to
+   * automate, e.g. clicking a button. These overlays don't always show up in the same way or at the same time, making
+   * them tricky to handle in automated tests.
+   *
+   * This method lets you set up a special function, called a handler, that activates when it detects that overlay is
+   * visible. The handler's job is to remove the overlay, allowing your test to continue as if the overlay wasn't there.
+   *
+   * Things to keep in mind:
+   * - When an overlay is shown predictably, we recommend explicitly waiting for it in your test and dismissing it as
+   *   a part of your normal test flow, instead of using
+   *   [page.addLocatorHandler(locator, handler[, options])](https://playwright.dev/docs/api/class-page#page-add-locator-handler).
+   * - Playwright checks for the overlay every time before executing or retrying an action that requires an
+   *   [actionability check](https://playwright.dev/docs/actionability), or before performing an auto-waiting assertion check. When overlay
+   *   is visible, Playwright calls the handler first, and then proceeds with the action/assertion. Note that the
+   *   handler is only called when you perform an action/assertion - if the overlay becomes visible but you don't
+   *   perform any actions, the handler will not be triggered.
+   * - After executing the handler, Playwright will ensure that overlay that triggered the handler is not visible
+   *   anymore. You can opt-out of this behavior with `noWaitAfter`.
+   * - The execution time of the handler counts towards the timeout of the action/assertion that executed the handler.
+   *   If your handler takes too long, it might cause timeouts.
+   * - You can register multiple handlers. However, only a single handler will be running at a time. Make sure the
+   *   actions within a handler don't depend on another handler.
+   *
+   * **NOTE** Running the handler will alter your page state mid-test. For example it will change the currently focused
+   * element and move the mouse. Make sure that actions that run after the handler are self-contained and do not rely on
+   * the focus and mouse state being unchanged. <br /> <br /> For example, consider a test that calls
+   * [locator.focus([options])](https://playwright.dev/docs/api/class-locator#locator-focus) followed by
+   * [keyboard.press(key[, options])](https://playwright.dev/docs/api/class-keyboard#keyboard-press). If your handler
+   * clicks a button between these two actions, the focused element most likely will be wrong, and key press will happen
+   * on the unexpected element. Use
+   * [locator.press(key[, options])](https://playwright.dev/docs/api/class-locator#locator-press) instead to avoid this
+   * problem. <br /> <br /> Another example is a series of mouse actions, where
+   * [mouse.move(x, y[, options])](https://playwright.dev/docs/api/class-mouse#mouse-move) is followed by
+   * [mouse.down([options])](https://playwright.dev/docs/api/class-mouse#mouse-down). Again, when the handler runs
+   * between these two actions, the mouse position will be wrong during the mouse down. Prefer self-contained actions
+   * like [locator.click([options])](https://playwright.dev/docs/api/class-locator#locator-click) that do not rely on
+   * the state being unchanged by a handler.
+   *
+   * **Usage**
+   *
+   * An example that closes a "Sign up to the newsletter" dialog when it appears:
+   *
+   * ```js
+   * // Setup the handler.
+   * await page.addLocatorHandler(page.getByText('Sign up to the newsletter'), async () => {
+   *   await page.getByRole('button', { name: 'No thanks' }).click();
+   * });
+   *
+   * // Write the test as usual.
+   * await page.goto('https://example.com');
+   * await page.getByRole('button', { name: 'Start here' }).click();
+   * ```
+   *
+   * An example that skips the "Confirm your security details" page when it is shown:
+   *
+   * ```js
+   * // Setup the handler.
+   * await page.addLocatorHandler(page.getByText('Confirm your security details'), async () => {
+   *   await page.getByRole('button', { name: 'Remind me later' }).click();
+   * });
+   *
+   * // Write the test as usual.
+   * await page.goto('https://example.com');
+   * await page.getByRole('button', { name: 'Start here' }).click();
+   * ```
+   *
+   * An example with a custom callback on every actionability check. It uses a `<body>` locator that is always visible,
+   * so the handler is called before every actionability check. It is important to specify `noWaitAfter`, because the
+   * handler does not hide the `<body>` element.
+   *
+   * ```js
+   * // Setup the handler.
+   * await page.addLocatorHandler(page.locator('body'), async () => {
+   *   await page.evaluate(() => window.removeObstructionsForTestIfNeeded());
+   * }, { noWaitAfter: true });
+   *
+   * // Write the test as usual.
+   * await page.goto('https://example.com');
+   * await page.getByRole('button', { name: 'Start here' }).click();
+   * ```
+   *
+   * Handler takes the original locator as an argument. You can also automatically remove the handler after a number of
+   * invocations by setting `times`:
+   *
+   * ```js
+   * await page.addLocatorHandler(page.getByLabel('Close'), async locator => {
+   *   await locator.click();
+   * }, { times: 1 });
+   * ```
+   *
+   * @param locator Locator that triggers the handler.
+   * @param handler Function that should be run once `locator` appears. This function should get rid of the element that blocks actions
+   * like click.
+   * @param options
    */
-  accessibility: Accessibility;
+  addLocatorHandler(locator: Locator, handler: ((locator: Locator) => Promise<any>), options?: {
+    /**
+     * By default, after calling the handler Playwright will wait until the overlay becomes hidden, and only then
+     * Playwright will continue with the action/assertion that triggered the handler. This option allows to opt-out of
+     * this behavior, so that overlay can stay visible after the handler has run.
+     */
+    noWaitAfter?: boolean;
+
+    /**
+     * Specifies the maximum number of times this handler should be called. Unlimited by default.
+     */
+    times?: number;
+  }): Promise<void>;
 
   /**
    * Adds a `<script>` tag into the page with the desired url or content. Returns the added tag when the script's onload
@@ -1797,7 +1957,8 @@ export interface Page {
   bringToFront(): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.check`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.check([options])](https://playwright.dev/docs/api/class-locator#locator-check) instead.
+   * Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method checks an element matching `selector` by performing the following steps:
    * 1. Find an element matching `selector`. If there is none, wait until a matching element is attached to the DOM.
@@ -1811,10 +1972,10 @@ export interface Page {
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set.
    * 1. Ensure that the element is now checked. If not, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   check(selector: string, options?: {
@@ -1847,8 +2008,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -1862,7 +2023,8 @@ export interface Page {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.click`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.click([options])](https://playwright.dev/docs/api/class-locator#locator-click) instead.
+   * Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method clicks an element matching `selector` by performing the following steps:
    * 1. Find an element matching `selector`. If there is none, wait until a matching element is attached to the DOM.
@@ -1873,10 +2035,10 @@ export interface Page {
    *    element, or the specified `position`.
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   click(selector: string, options?: {
@@ -1902,9 +2064,10 @@ export interface Page {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -1930,8 +2093,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -1956,6 +2119,11 @@ export interface Page {
    */
   close(options?: {
     /**
+     * The reason to be reported to the operations interrupted by the page closure.
+     */
+    reason?: string;
+
+    /**
      * Defaults to `false`. Whether to run the
      * [before unload](https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload) page handlers.
      */
@@ -1973,14 +2141,8 @@ export interface Page {
   context(): BrowserContext;
 
   /**
-   * **NOTE** Only available for Chromium atm.
-   *
-   * Browser-specific Coverage implementation. See [Coverage] for more details.
-   */
-  coverage: Coverage;
-
-  /**
-   * **NOTE** Use locator-based [`method: Locator.dblclick`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.dblclick([options])](https://playwright.dev/docs/api/class-locator#locator-dblclick)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method double clicks an element matching `selector` by performing the following steps:
    * 1. Find an element matching `selector`. If there is none, wait until a matching element is attached to the DOM.
@@ -1992,12 +2154,12 @@ export interface Page {
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set. Note that if
    *    the first click of the `dblclick()` triggers a navigation event, this method will throw.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    *
    * **NOTE** `page.dblclick()` dispatches two `click` events and a single `dblclick` event.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   dblclick(selector: string, options?: {
@@ -2018,9 +2180,10 @@ export interface Page {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -2046,8 +2209,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -2061,7 +2224,9 @@ export interface Page {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.dispatchEvent`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.dispatchEvent(type[, eventInit, options])](https://playwright.dev/docs/api/class-locator#locator-dispatch-event)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * The snippet below dispatches the `click` event on the element. Regardless of the visibility state of the element,
    * `click` is dispatched. This is equivalent to calling
@@ -2077,13 +2242,16 @@ export interface Page {
    * properties and dispatches it on the element. Events are `composed`, `cancelable` and bubble by default.
    *
    * Since `eventInit` is event-specific, please refer to the events documentation for the lists of initial properties:
+   * - [DeviceMotionEvent](https://developer.mozilla.org/en-US/docs/Web/API/DeviceMotionEvent/DeviceMotionEvent)
+   * - [DeviceOrientationEvent](https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent/DeviceOrientationEvent)
    * - [DragEvent](https://developer.mozilla.org/en-US/docs/Web/API/DragEvent/DragEvent)
+   * - [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/Event)
    * - [FocusEvent](https://developer.mozilla.org/en-US/docs/Web/API/FocusEvent/FocusEvent)
    * - [KeyboardEvent](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/KeyboardEvent)
    * - [MouseEvent](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/MouseEvent)
    * - [PointerEvent](https://developer.mozilla.org/en-US/docs/Web/API/PointerEvent/PointerEvent)
    * - [TouchEvent](https://developer.mozilla.org/en-US/docs/Web/API/TouchEvent/TouchEvent)
-   * - [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/Event)
+   * - [WheelEvent](https://developer.mozilla.org/en-US/docs/Web/API/WheelEvent/WheelEvent)
    *
    * You can also specify `JSHandle` as the property value if you want live objects to be passed into the event:
    *
@@ -2094,7 +2262,7 @@ export interface Page {
    * ```
    *
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param type DOM event type: `"click"`, `"dragstart"`, etc.
    * @param eventInit Optional event-specific initialization properties.
    * @param options
@@ -2107,8 +2275,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -2131,9 +2299,9 @@ export interface Page {
    * ```
    *
    * @param source A selector to search for an element to drag. If there are multiple elements satisfying the selector, the first will
-   * be used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * be used.
    * @param target A selector to search for an element to drop onto. If there are multiple elements satisfying the selector, the first
-   * will be used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * will be used.
    * @param options
    */
   dragAndDrop(source: string, target: string, options?: {
@@ -2176,8 +2344,8 @@ export interface Page {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -2278,7 +2446,9 @@ export interface Page {
    * (async () => {
    *   const browser = await webkit.launch({ headless: false });
    *   const page = await browser.newPage();
-   *   await page.exposeFunction('sha256', text => crypto.createHash('sha256').update(text).digest('hex'));
+   *   await page.exposeFunction('sha256', text =>
+   *     crypto.createHash('sha256').update(text).digest('hex'),
+   *   );
    *   await page.setContent(`
    *     <script>
    *       async function onClick() {
@@ -2298,7 +2468,8 @@ export interface Page {
   exposeFunction(name: string, callback: Function): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.fill`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.fill(value[, options])](https://playwright.dev/docs/api/class-locator#locator-fill)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method waits for an element matching `selector`, waits for [actionability](https://playwright.dev/docs/actionability) checks,
    * focuses the element, fills it and triggers an `input` event after filling. Note that you can pass an empty string
@@ -2310,9 +2481,9 @@ export interface Page {
    * instead.
    *
    * To send fine-grained keyboard events, use
-   * [page.type(selector, text[, options])](https://playwright.dev/docs/api/class-page#page-type).
+   * [locator.pressSequentially(text[, options])](https://playwright.dev/docs/api/class-locator#locator-press-sequentially).
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param value Value to fill for the `<input>`, `<textarea>` or `[contenteditable]` element.
    * @param options
    */
@@ -2336,8 +2507,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -2345,12 +2516,13 @@ export interface Page {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.focus`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.focus([options])](https://playwright.dev/docs/api/class-locator#locator-focus) instead.
+   * Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method fetches an element with `selector` and focuses it. If there's no element matching `selector`, the
    * method waits until a matching element appears in the DOM.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   focus(selector: string, options?: {
@@ -2361,8 +2533,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -2410,7 +2582,7 @@ export interface Page {
    * await locator.click();
    * ```
    *
-   * @param selector A selector to use when resolving DOM element. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to use when resolving DOM element.
    */
   frameLocator(selector: string): FrameLocator;
 
@@ -2420,11 +2592,13 @@ export interface Page {
   frames(): Array<Frame>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.getAttribute`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.getAttribute(name[, options])](https://playwright.dev/docs/api/class-locator#locator-get-attribute)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns element attribute value.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param name Attribute name to get the value for.
    * @param options
    */
@@ -2436,8 +2610,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -2445,10 +2619,18 @@ export interface Page {
   }): Promise<null|string>;
 
   /**
-   * Allows locating elements by their alt text. For example, this method will find the image by alt text "Castle":
+   * Allows locating elements by their alt text.
+   *
+   * **Usage**
+   *
+   * For example, this method will find the image by alt text "Playwright logo":
    *
    * ```html
-   * <img alt='Castle'>
+   * <img alt='Playwright logo'>
+   * ```
+   *
+   * ```js
+   * await page.getByAltText('Playwright logo').click();
    * ```
    *
    * @param text Text to locate the element for.
@@ -2463,12 +2645,22 @@ export interface Page {
   }): Locator;
 
   /**
-   * Allows locating input elements by the text of the associated label. For example, this method will find the input by
-   * label text "Password" in the following DOM:
+   * Allows locating input elements by the text of the associated `<label>` or `aria-labelledby` element, or by the
+   * `aria-label` attribute.
+   *
+   * **Usage**
+   *
+   * For example, this method will find inputs by label "Username" and "Password" in the following DOM:
    *
    * ```html
+   * <input aria-label="Username">
    * <label for="password-input">Password:</label>
    * <input id="password-input">
+   * ```
+   *
+   * ```js
+   * await page.getByLabel('Username').fill('john');
+   * await page.getByLabel('Password').fill('secret');
    * ```
    *
    * @param text Text to locate the element for.
@@ -2483,11 +2675,22 @@ export interface Page {
   }): Locator;
 
   /**
-   * Allows locating input elements by the placeholder text. For example, this method will find the input by placeholder
-   * "Country":
+   * Allows locating input elements by the placeholder text.
+   *
+   * **Usage**
+   *
+   * For example, consider the following DOM structure.
    *
    * ```html
-   * <input placeholder="Country">
+   * <input type="email" placeholder="name@example.com" />
+   * ```
+   *
+   * You can fill the input after locating it by the placeholder text:
+   *
+   * ```js
+   * await page
+   *     .getByPlaceholder('name@example.com')
+   *     .fill('playwright@microsoft.com');
    * ```
    *
    * @param text Text to locate the element for.
@@ -2504,14 +2707,40 @@ export interface Page {
   /**
    * Allows locating elements by their [ARIA role](https://www.w3.org/TR/wai-aria-1.2/#roles),
    * [ARIA attributes](https://www.w3.org/TR/wai-aria-1.2/#aria-attributes) and
-   * [accessible name](https://w3c.github.io/accname/#dfn-accessible-name). Note that role selector **does not replace**
-   * accessibility audits and conformance tests, but rather gives early feedback about the ARIA guidelines.
+   * [accessible name](https://w3c.github.io/accname/#dfn-accessible-name).
    *
-   * Note that many html elements have an implicitly
-   * [defined role](https://w3c.github.io/html-aam/#html-element-role-mappings) that is recognized by the role selector.
-   * You can find all the [supported roles here](https://www.w3.org/TR/wai-aria-1.2/#role_definitions). ARIA guidelines
-   * **do not recommend** duplicating implicit roles and attributes by setting `role` and/or `aria-*` attributes to
-   * default values.
+   * **Usage**
+   *
+   * Consider the following DOM structure.
+   *
+   * ```html
+   * <h3>Sign up</h3>
+   * <label>
+   *   <input type="checkbox" /> Subscribe
+   * </label>
+   * <br/>
+   * <button>Submit</button>
+   * ```
+   *
+   * You can locate each element by it's implicit role:
+   *
+   * ```js
+   * await expect(page.getByRole('heading', { name: 'Sign up' })).toBeVisible();
+   *
+   * await page.getByRole('checkbox', { name: 'Subscribe' }).check();
+   *
+   * await page.getByRole('button', { name: /submit/i }).click();
+   * ```
+   *
+   * **Details**
+   *
+   * Role selector **does not replace** accessibility audits and conformance tests, but rather gives early feedback
+   * about the ARIA guidelines.
+   *
+   * Many html elements have an implicitly [defined role](https://w3c.github.io/html-aam/#html-element-role-mappings)
+   * that is recognized by the role selector. You can find all the
+   * [supported roles here](https://www.w3.org/TR/wai-aria-1.2/#role_definitions). ARIA guidelines **do not recommend**
+   * duplicating implicit roles and attributes by setting `role` and/or `aria-*` attributes to default values.
    * @param role Required aria role.
    * @param options
    */
@@ -2584,23 +2813,52 @@ export interface Page {
   }): Locator;
 
   /**
-   * Locate element by the test id. By default, the `data-testid` attribute is used as a test id. Use
+   * Locate element by the test id.
+   *
+   * **Usage**
+   *
+   * Consider the following DOM structure.
+   *
+   * ```html
+   * <button data-testid="directions">Itinéraire</button>
+   * ```
+   *
+   * You can locate the element by it's test id:
+   *
+   * ```js
+   * await page.getByTestId('directions').click();
+   * ```
+   *
+   * **Details**
+   *
+   * By default, the `data-testid` attribute is used as a test id. Use
    * [selectors.setTestIdAttribute(attributeName)](https://playwright.dev/docs/api/class-selectors#selectors-set-test-id-attribute)
    * to configure a different test id attribute if necessary.
    *
    * ```js
    * // Set custom test id attribute from @playwright/test config:
-   * use: {
-   *   testIdAttribute: 'data-pw'
-   * }
+   * import { defineConfig } from '@playwright/test';
+   *
+   * export default defineConfig({
+   *   use: {
+   *     testIdAttribute: 'data-pw'
+   *   },
+   * });
    * ```
    *
    * @param testId Id to locate the element by.
    */
-  getByTestId(testId: string): Locator;
+  getByTestId(testId: string|RegExp): Locator;
 
   /**
-   * Allows locating elements that contain given text. Consider the following DOM structure:
+   * Allows locating elements that contain given text.
+   *
+   * See also [locator.filter([options])](https://playwright.dev/docs/api/class-locator#locator-filter) that allows to
+   * match by another criteria, like an accessible role, and then filter by the text content.
+   *
+   * **Usage**
+   *
+   * Consider the following DOM structure:
    *
    * ```html
    * <div>Hello <span>world</span></div>
@@ -2611,29 +2869,28 @@ export interface Page {
    *
    * ```js
    * // Matches <span>
-   * page.getByText('world')
+   * page.getByText('world');
    *
    * // Matches first <div>
-   * page.getByText('Hello world')
+   * page.getByText('Hello world');
    *
    * // Matches second <div>
-   * page.getByText('Hello', { exact: true })
+   * page.getByText('Hello', { exact: true });
    *
    * // Matches both <div>s
-   * page.getByText(/Hello/)
+   * page.getByText(/Hello/);
    *
    * // Matches second <div>
-   * page.getByText(/^hello$/i)
+   * page.getByText(/^hello$/i);
    * ```
    *
-   * See also [locator.filter([options])](https://playwright.dev/docs/api/class-locator#locator-filter) that allows to
-   * match by another criteria, like an accessible role, and then filter by the text content.
+   * **Details**
    *
-   * **NOTE** Matching by text always normalizes whitespace, even with exact match. For example, it turns multiple
-   * spaces into one, turns line breaks into spaces and ignores leading and trailing whitespace.
+   * Matching by text always normalizes whitespace, even with exact match. For example, it turns multiple spaces into
+   * one, turns line breaks into spaces and ignores leading and trailing whitespace.
    *
-   * **NOTE** Input elements of the type `button` and `submit` are matched by their `value` instead of the text content.
-   * For example, locating by text `"Log in"` matches `<input type=button value="Log in">`.
+   * Input elements of the type `button` and `submit` are matched by their `value` instead of the text content. For
+   * example, locating by text `"Log in"` matches `<input type=button value="Log in">`.
    * @param text Text to locate the element for.
    * @param options
    */
@@ -2646,11 +2903,20 @@ export interface Page {
   }): Locator;
 
   /**
-   * Allows locating elements by their title. For example, this method will find the button by its title "Place the
-   * order":
+   * Allows locating elements by their title attribute.
+   *
+   * **Usage**
+   *
+   * Consider the following DOM structure.
    *
    * ```html
-   * <button title='Place the order'>Order Now</button>
+   * <span title='Issues count'>25 issues</span>
+   * ```
+   *
+   * You can check the issues count after locating it by the title text:
+   *
+   * ```js
+   * await expect(page.getByTitle('Issues count')).toHaveText('25 issues');
    * ```
    *
    * @param text Text to locate the element for.
@@ -2673,8 +2939,8 @@ export interface Page {
    */
   goBack(options?: {
     /**
-     * Maximum operation time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can
-     * be changed by using the
+     * Maximum operation time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via
+     * `navigationTimeout` option in the config, or by using the
      * [browserContext.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-navigation-timeout),
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout),
      * [page.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout)
@@ -2686,8 +2952,8 @@ export interface Page {
      * When to consider operation succeeded, defaults to `load`. Events can be either:
      * - `'domcontentloaded'` - consider operation to be finished when the `DOMContentLoaded` event is fired.
      * - `'load'` - consider operation to be finished when the `load` event is fired.
-     * - `'networkidle'` - consider operation to be finished when there are no network connections for at least `500`
-     *   ms.
+     * - `'networkidle'` - **DISCOURAGED** consider operation to be finished when there are no network connections for
+     *   at least `500` ms. Don't use this method for testing, rely on web assertions to assess readiness instead.
      * - `'commit'` - consider operation to be finished when network response is received and the document started
      *   loading.
      */
@@ -2703,8 +2969,8 @@ export interface Page {
    */
   goForward(options?: {
     /**
-     * Maximum operation time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can
-     * be changed by using the
+     * Maximum operation time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via
+     * `navigationTimeout` option in the config, or by using the
      * [browserContext.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-navigation-timeout),
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout),
      * [page.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout)
@@ -2716,8 +2982,8 @@ export interface Page {
      * When to consider operation succeeded, defaults to `load`. Events can be either:
      * - `'domcontentloaded'` - consider operation to be finished when the `DOMContentLoaded` event is fired.
      * - `'load'` - consider operation to be finished when the `load` event is fired.
-     * - `'networkidle'` - consider operation to be finished when there are no network connections for at least `500`
-     *   ms.
+     * - `'networkidle'` - **DISCOURAGED** consider operation to be finished when there are no network connections for
+     *   at least `500` ms. Don't use this method for testing, rely on web assertions to assess readiness instead.
      * - `'commit'` - consider operation to be finished when network response is received and the document started
      *   loading.
      */
@@ -2757,8 +3023,8 @@ export interface Page {
     referer?: string;
 
     /**
-     * Maximum operation time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can
-     * be changed by using the
+     * Maximum operation time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via
+     * `navigationTimeout` option in the config, or by using the
      * [browserContext.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-navigation-timeout),
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout),
      * [page.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout)
@@ -2770,8 +3036,8 @@ export interface Page {
      * When to consider operation succeeded, defaults to `load`. Events can be either:
      * - `'domcontentloaded'` - consider operation to be finished when the `DOMContentLoaded` event is fired.
      * - `'load'` - consider operation to be finished when the `load` event is fired.
-     * - `'networkidle'` - consider operation to be finished when there are no network connections for at least `500`
-     *   ms.
+     * - `'networkidle'` - **DISCOURAGED** consider operation to be finished when there are no network connections for
+     *   at least `500` ms. Don't use this method for testing, rely on web assertions to assess readiness instead.
      * - `'commit'` - consider operation to be finished when network response is received and the document started
      *   loading.
      */
@@ -2779,7 +3045,8 @@ export interface Page {
   }): Promise<null|Response>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.hover`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.hover([options])](https://playwright.dev/docs/api/class-locator#locator-hover) instead.
+   * Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method hovers over an element matching `selector` by performing the following steps:
    * 1. Find an element matching `selector`. If there is none, wait until a matching element is attached to the DOM.
@@ -2790,10 +3057,10 @@ export interface Page {
    *    element, or the specified `position`.
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   hover(selector: string, options?: {
@@ -2804,9 +3071,10 @@ export interface Page {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -2832,8 +3100,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -2847,11 +3115,12 @@ export interface Page {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.innerHTML`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.innerHTML([options])](https://playwright.dev/docs/api/class-locator#locator-inner-html)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns `element.innerHTML`.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   innerHTML(selector: string, options?: {
@@ -2862,8 +3131,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -2871,11 +3140,12 @@ export interface Page {
   }): Promise<string>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.innerText`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.innerText([options])](https://playwright.dev/docs/api/class-locator#locator-inner-text)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns `element.innerText`.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   innerText(selector: string, options?: {
@@ -2886,8 +3156,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -2895,7 +3165,9 @@ export interface Page {
   }): Promise<string>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.inputValue`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.inputValue([options])](https://playwright.dev/docs/api/class-locator#locator-input-value) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns `input.value` for the selected `<input>` or `<textarea>` or `<select>` element.
    *
@@ -2903,7 +3175,7 @@ export interface Page {
    * [control](https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control), returns the value of the
    * control.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   inputValue(selector: string, options?: {
@@ -2914,8 +3186,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -2923,11 +3195,12 @@ export interface Page {
   }): Promise<string>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.isChecked`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.isChecked([options])](https://playwright.dev/docs/api/class-locator#locator-is-checked)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns whether the element is checked. Throws if the element is not a checkbox or radio input.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   isChecked(selector: string, options?: {
@@ -2938,8 +3211,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -2952,11 +3225,13 @@ export interface Page {
   isClosed(): boolean;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.isDisabled`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.isDisabled([options])](https://playwright.dev/docs/api/class-locator#locator-is-disabled) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns whether the element is disabled, the opposite of [enabled](https://playwright.dev/docs/actionability#enabled).
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   isDisabled(selector: string, options?: {
@@ -2967,8 +3242,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -2976,11 +3251,13 @@ export interface Page {
   }): Promise<boolean>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.isEditable`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.isEditable([options])](https://playwright.dev/docs/api/class-locator#locator-is-editable) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns whether the element is [editable](https://playwright.dev/docs/actionability#editable).
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   isEditable(selector: string, options?: {
@@ -2991,8 +3268,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -3000,11 +3277,12 @@ export interface Page {
   }): Promise<boolean>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.isEnabled`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.isEnabled([options])](https://playwright.dev/docs/api/class-locator#locator-is-enabled)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns whether the element is [enabled](https://playwright.dev/docs/actionability#enabled).
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   isEnabled(selector: string, options?: {
@@ -3015,8 +3293,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -3024,12 +3302,13 @@ export interface Page {
   }): Promise<boolean>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.isHidden`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.isHidden([options])](https://playwright.dev/docs/api/class-locator#locator-is-hidden)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns whether the element is hidden, the opposite of [visible](https://playwright.dev/docs/actionability#visible).  `selector` that
    * does not match any elements is considered hidden.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   isHidden(selector: string, options?: {
@@ -3040,19 +3319,21 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * @deprecated This option is ignored. [`method: Page.isHidden`] does not wait for the element to become hidden and returns
-     * immediately.
+     * @deprecated This option is ignored.
+     * [page.isHidden(selector[, options])](https://playwright.dev/docs/api/class-page#page-is-hidden) does not wait for
+     * the element to become hidden and returns immediately.
      */
     timeout?: number;
   }): Promise<boolean>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.isVisible`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.isVisible([options])](https://playwright.dev/docs/api/class-locator#locator-is-visible)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns whether the element is [visible](https://playwright.dev/docs/actionability#visible). `selector` that does not match any elements
    * is considered not visible.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   isVisible(selector: string, options?: {
@@ -3063,13 +3344,12 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * @deprecated This option is ignored. [`method: Page.isVisible`] does not wait for the element to become visible and returns
-     * immediately.
+     * @deprecated This option is ignored.
+     * [page.isVisible(selector[, options])](https://playwright.dev/docs/api/class-page#page-is-visible) does not wait for
+     * the element to become visible and returns immediately.
      */
     timeout?: number;
   }): Promise<boolean>;
-
-  keyboard: Keyboard;
 
   /**
    * The method returns an element locator that can be used to perform actions on this page / frame. Locator is resolved
@@ -3077,17 +3357,38 @@ export interface Page {
    * performed on different DOM elements. That would happen if the DOM structure between those actions has changed.
    *
    * [Learn more about locators](https://playwright.dev/docs/locators).
-   * @param selector A selector to use when resolving DOM element. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to use when resolving DOM element.
    * @param options
    */
   locator(selector: string, options?: {
     /**
-     * Matches elements containing an element that matches an inner locator. Inner locator is queried against the outer
-     * one. For example, `article` that has `text=Playwright` matches `<article><div>Playwright</div></article>`.
+     * Narrows down the results of the method to those which contain elements matching this relative locator. For example,
+     * `article` that has `text=Playwright` matches `<article><div>Playwright</div></article>`.
      *
-     * Note that outer and inner locators must belong to the same frame. Inner locator must not contain [FrameLocator]s.
+     * Inner locator **must be relative** to the outer locator and is queried starting with the outer locator match, not
+     * the document root. For example, you can find `content` that has `div` in
+     * `<article><content><div>Playwright</div></content></article>`. However, looking for `content` that has `article
+     * div` will fail, because the inner locator must be relative and should not use any elements outside the `content`.
+     *
+     * Note that outer and inner locators must belong to the same frame. Inner locator must not contain {@link
+     * FrameLocator}s.
      */
     has?: Locator;
+
+    /**
+     * Matches elements that do not contain an element that matches an inner locator. Inner locator is queried against the
+     * outer one. For example, `article` that does not have `div` matches `<article><span>Playwright</span></article>`.
+     *
+     * Note that outer and inner locators must belong to the same frame. Inner locator must not contain {@link
+     * FrameLocator}s.
+     */
+    hasNot?: Locator;
+
+    /**
+     * Matches elements that do not contain specified text somewhere inside, possibly in a child or a descendant element.
+     * When passed a [string], matching is case-insensitive and searches for a substring.
+     */
+    hasNotText?: string|RegExp;
 
     /**
      * Matches elements containing specified text somewhere inside, possibly in a child or a descendant element. When
@@ -3101,8 +3402,6 @@ export interface Page {
    * The page's main frame. Page is guaranteed to have a main frame which persists during navigations.
    */
   mainFrame(): Frame;
-
-  mouse: Mouse;
 
   /**
    * Returns the opener for popup pages and `null` for others. If the opener has been closed already the returns `null`.
@@ -3138,8 +3437,8 @@ export interface Page {
    *
    * ```js
    * // Generates a PDF with 'screen' media type.
-   * await page.emulateMedia({media: 'screen'});
-   * await page.pdf({path: 'page.pdf'});
+   * await page.emulateMedia({ media: 'screen' });
+   * await page.pdf({ path: 'page.pdf' });
    * ```
    *
    * The `width`, `height`, and `margin` options accept values labeled with units. Unlabeled values are treated as
@@ -3236,6 +3535,11 @@ export interface Page {
     };
 
     /**
+     * Whether or not to embed the document outline into the PDF. Defaults to `false`.
+     */
+    outline?: boolean;
+
+    /**
      * Paper ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means print all pages.
      */
     pageRanges?: string;
@@ -3263,13 +3567,19 @@ export interface Page {
     scale?: number;
 
     /**
+     * Whether or not to generate tagged (accessible) PDF. Defaults to `false`.
+     */
+    tagged?: boolean;
+
+    /**
      * Paper width, accepts values labeled with units.
      */
     width?: string|number;
   }): Promise<Buffer>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.press`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.press(key[, options])](https://playwright.dev/docs/api/class-locator#locator-press)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Focuses the element, and then uses
    * [keyboard.down(key)](https://playwright.dev/docs/api/class-keyboard#keyboard-down) and
@@ -3284,15 +3594,16 @@ export interface Page {
    * `Delete`, `Escape`, `ArrowDown`, `End`, `Enter`, `Home`, `Insert`, `PageDown`, `PageUp`, `ArrowRight`, `ArrowUp`,
    * etc.
    *
-   * Following modification shortcuts are also supported: `Shift`, `Control`, `Alt`, `Meta`, `ShiftLeft`.
+   * Following modification shortcuts are also supported: `Shift`, `Control`, `Alt`, `Meta`, `ShiftLeft`,
+   * `ControlOrMeta`. `ControlOrMeta` resolves to `Control` on Windows and Linux and to `Meta` on macOS.
    *
    * Holding down `Shift` will type the text that corresponds to the `key` in the upper case.
    *
    * If `key` is a single character, it is case-sensitive, so the values `a` and `A` will generate different respective
    * texts.
    *
-   * Shortcuts such as `key: "Control+o"` or `key: "Control+Shift+T"` are supported as well. When specified with the
-   * modifier, modifier is pressed and being held while the subsequent key is being pressed.
+   * Shortcuts such as `key: "Control+o"`, `key: "Control++` or `key: "Control+Shift+T"` are supported as well. When
+   * specified with the modifier, modifier is pressed and being held while the subsequent key is being pressed.
    *
    * **Usage**
    *
@@ -3309,7 +3620,7 @@ export interface Page {
    * ```
    *
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param key Name of the key to press or a character to generate, such as `ArrowLeft` or `a`.
    * @param options
    */
@@ -3333,8 +3644,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -3349,8 +3660,8 @@ export interface Page {
    */
   reload(options?: {
     /**
-     * Maximum operation time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can
-     * be changed by using the
+     * Maximum operation time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via
+     * `navigationTimeout` option in the config, or by using the
      * [browserContext.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-navigation-timeout),
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout),
      * [page.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout)
@@ -3362,8 +3673,8 @@ export interface Page {
      * When to consider operation succeeded, defaults to `load`. Events can be either:
      * - `'domcontentloaded'` - consider operation to be finished when the `DOMContentLoaded` event is fired.
      * - `'load'` - consider operation to be finished when the `load` event is fired.
-     * - `'networkidle'` - consider operation to be finished when there are no network connections for at least `500`
-     *   ms.
+     * - `'networkidle'` - **DISCOURAGED** consider operation to be finished when there are no network connections for
+     *   at least `500` ms. Don't use this method for testing, rely on web assertions to assess readiness instead.
      * - `'commit'` - consider operation to be finished when network response is received and the document started
      *   loading.
      */
@@ -3371,13 +3682,13 @@ export interface Page {
   }): Promise<null|Response>;
 
   /**
-   * API testing helper associated with this page. This method returns the same instance as
-   * [browserContext.request](https://playwright.dev/docs/api/class-browsercontext#browser-context-request) on the
-   * page's context. See
-   * [browserContext.request](https://playwright.dev/docs/api/class-browsercontext#browser-context-request) for more
-   * details.
+   * Removes all locator handlers added by
+   * [page.addLocatorHandler(locator, handler[, options])](https://playwright.dev/docs/api/class-page#page-add-locator-handler)
+   * for a specific locator.
+   * @param locator Locator passed to
+   * [page.addLocatorHandler(locator, handler[, options])](https://playwright.dev/docs/api/class-page#page-add-locator-handler).
    */
-  request: APIRequestContext;
+  removeLocatorHandler(locator: Locator): Promise<void>;
 
   /**
    * Routing provides the capability to modify network requests that are made by a page.
@@ -3391,6 +3702,11 @@ export interface Page {
    * intercept requests intercepted by Service Worker. See [this](https://github.com/microsoft/playwright/issues/1090)
    * issue. We recommend disabling Service Workers when using request interception by setting
    * `Browser.newContext.serviceWorkers` to `'block'`.
+   *
+   * **NOTE** [page.route(url, handler[, options])](https://playwright.dev/docs/api/class-page#page-route) will not
+   * intercept the first request of a popup page. Use
+   * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)
+   * instead.
    *
    * **Usage**
    *
@@ -3416,11 +3732,11 @@ export interface Page {
    * some post data, and leaving all other requests as is:
    *
    * ```js
-   * await page.route('/api/**', route => {
+   * await page.route('/api/**', async route => {
    *   if (route.request().postData().includes('my-string'))
-   *     route.fulfill({ body: 'mocked-data' });
+   *     await route.fulfill({ body: 'mocked-data' });
    *   else
-   *     route.continue();
+   *     await route.continue();
    * });
    * ```
    *
@@ -3438,7 +3754,7 @@ export interface Page {
    * @param handler handler function to route the request.
    * @param options
    */
-  route(url: string|RegExp|((url: URL) => boolean), handler: ((route: Route, request: Request) => void), options?: {
+  route(url: string|RegExp|((url: URL) => boolean), handler: ((route: Route, request: Request) => Promise<any>|any), options?: {
     /**
      * How often a route should be used. By default it will be used every time.
      */
@@ -3447,7 +3763,7 @@ export interface Page {
 
   /**
    * If specified the network requests that are made in the page will be served from the HAR file. Read more about
-   * [Replaying from HAR](https://playwright.dev/docs/network#replaying-from-har).
+   * [Replaying from HAR](https://playwright.dev/docs/mock#replaying-from-har).
    *
    * Playwright will not serve requests intercepted by Service Worker from the HAR file. See
    * [this](https://github.com/microsoft/playwright/issues/1090) issue. We recommend disabling Service Workers when
@@ -3468,9 +3784,22 @@ export interface Page {
     /**
      * If specified, updates the given HAR with the actual network information instead of serving from file. The file is
      * written to disk when
-     * [browserContext.close()](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) is called.
+     * [browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) is
+     * called.
      */
     update?: boolean;
+
+    /**
+     * Optional setting to control resource content management. If `attach` is specified, resources are persisted as
+     * separate files or entries in the ZIP archive. If `embed` is specified, content is stored inline the HAR file.
+     */
+    updateContent?: "embed"|"attach";
+
+    /**
+     * When set to `minimal`, only record information necessary for routing from HAR. This omits sizes, timing, page,
+     * cookies, security and other types of HAR information that are not used when replaying from HAR. Defaults to `full`.
+     */
+    updateMode?: "full"|"minimal";
 
     /**
      * A glob pattern, regular expression or predicate to match the request URL. Only requests with URL matching the
@@ -3486,7 +3815,9 @@ export interface Page {
   screenshot(options?: PageScreenshotOptions): Promise<Buffer>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.selectOption`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.selectOption(values[, options])](https://playwright.dev/docs/api/class-locator#locator-select-option)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method waits for an element matching `selector`, waits for [actionability](https://playwright.dev/docs/actionability) checks, waits
    * until all specified options are present in the `<select>` element and selects these options.
@@ -3503,7 +3834,7 @@ export interface Page {
    * **Usage**
    *
    * ```js
-   * // single selection matching the value
+   * // Single selection matching the value or label
    * page.selectOption('select#colors', 'blue');
    *
    * // single selection matching the label
@@ -3515,13 +3846,13 @@ export interface Page {
    * ```
    *
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param values Options to select. If the `<select>` has the `multiple` attribute, all matching options are selected, otherwise
-   * only the first option matching one of the passed options is selected. String values are equivalent to
-   * `{value:'string'}`. Option is considered matching if all specified properties match.
+   * only the first option matching one of the passed options is selected. String values are matching both values and
+   * labels. Option is considered matching if all specified properties match.
    * @param options
    */
-  selectOption(selector: string, values: null|string|ElementHandle|Array<string>|{
+  selectOption(selector: string, values: null|string|ElementHandle|ReadonlyArray<string>|{
     /**
      * Matches by `option.value`. Optional.
      */
@@ -3536,7 +3867,7 @@ export interface Page {
      * Matches by the index. Optional.
      */
     index?: number;
-  }|Array<ElementHandle>|Array<{
+  }|ReadonlyArray<ElementHandle>|ReadonlyArray<{
     /**
      * Matches by `option.value`. Optional.
      */
@@ -3571,8 +3902,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -3580,7 +3911,9 @@ export interface Page {
   }): Promise<Array<string>>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.setChecked`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.setChecked(checked[, options])](https://playwright.dev/docs/api/class-locator#locator-set-checked)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method checks or unchecks an element matching `selector` by performing the following steps:
    * 1. Find an element matching `selector`. If there is none, wait until a matching element is attached to the DOM.
@@ -3594,10 +3927,10 @@ export interface Page {
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set.
    * 1. Ensure that the element is now checked or unchecked. If not, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param checked Whether to check or uncheck the checkbox.
    * @param options
    */
@@ -3631,8 +3964,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -3646,13 +3979,15 @@ export interface Page {
   }): Promise<void>;
 
   /**
+   * This method internally calls [document.write()](https://developer.mozilla.org/en-US/docs/Web/API/Document/write),
+   * inheriting all its specific characteristics and behaviors.
    * @param html HTML markup to assign to the page.
    * @param options
    */
   setContent(html: string, options?: {
     /**
-     * Maximum operation time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can
-     * be changed by using the
+     * Maximum operation time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via
+     * `navigationTimeout` option in the config, or by using the
      * [browserContext.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-navigation-timeout),
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout),
      * [page.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout)
@@ -3664,8 +3999,8 @@ export interface Page {
      * When to consider operation succeeded, defaults to `load`. Events can be either:
      * - `'domcontentloaded'` - consider operation to be finished when the `DOMContentLoaded` event is fired.
      * - `'load'` - consider operation to be finished when the `load` event is fired.
-     * - `'networkidle'` - consider operation to be finished when there are no network connections for at least `500`
-     *   ms.
+     * - `'networkidle'` - **DISCOURAGED** consider operation to be finished when there are no network connections for
+     *   at least `500` ms. Don't use this method for testing, rely on web assertions to assess readiness instead.
      * - `'commit'` - consider operation to be finished when network response is received and the document started
      *   loading.
      */
@@ -3715,7 +4050,9 @@ export interface Page {
   setExtraHTTPHeaders(headers: { [key: string]: string; }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.setInputFiles`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.setInputFiles(files[, options])](https://playwright.dev/docs/api/class-locator#locator-set-input-files)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Sets the value of the file input to these file paths or files. If some of the `filePaths` are relative paths, then
    * they are resolved relative to the current working directory. For empty array, clears the selected files.
@@ -3725,11 +4062,11 @@ export interface Page {
    * the `<label>` element that has an associated
    * [control](https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control), targets the control instead.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param files
    * @param options
    */
-  setInputFiles(selector: string, files: string|Array<string>|{
+  setInputFiles(selector: string, files: string|ReadonlyArray<string>|{
     /**
      * File name
      */
@@ -3744,7 +4081,7 @@ export interface Page {
      * File content
      */
     buffer: Buffer;
-  }|Array<{
+  }|ReadonlyArray<{
     /**
      * File name
      */
@@ -3774,8 +4111,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -3821,7 +4158,8 @@ export interface Page {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.tap`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.tap([options])](https://playwright.dev/docs/api/class-locator#locator-tap) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
    *
    * This method taps an element matching `selector` by performing the following steps:
    * 1. Find an element matching `selector`. If there is none, wait until a matching element is attached to the DOM.
@@ -3832,13 +4170,13 @@ export interface Page {
    *    element, or the specified `position`.
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    *
-   * **NOTE** [page.tap(selector[, options])](https://playwright.dev/docs/api/class-page#page-tap) requires that the
-   * `hasTouch` option of the browser context be set to true.
+   * **NOTE** [page.tap(selector[, options])](https://playwright.dev/docs/api/class-page#page-tap) the method will throw
+   * if `hasTouch` option of the browser context is false.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   tap(selector: string, options?: {
@@ -3849,9 +4187,10 @@ export interface Page {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -3877,8 +4216,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -3892,11 +4231,13 @@ export interface Page {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.textContent`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.textContent([options])](https://playwright.dev/docs/api/class-locator#locator-text-content) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns `element.textContent`.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   textContent(selector: string, options?: {
@@ -3907,8 +4248,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -3920,11 +4261,7 @@ export interface Page {
    */
   title(): Promise<string>;
 
-  touchscreen: Touchscreen;
-
   /**
-   * **NOTE** Use locator-based [`method: Locator.type`] instead. Read more about [locators](https://playwright.dev/docs/locators).
-   *
    * Sends a `keydown`, `keypress`/`input`, and `keyup` event for each character in the text. `page.type` can be used to
    * send fine-grained keyboard events. To fill values in form fields, use
    * [page.fill(selector, value[, options])](https://playwright.dev/docs/api/class-page#page-fill).
@@ -3933,14 +4270,12 @@ export interface Page {
    * [keyboard.press(key[, options])](https://playwright.dev/docs/api/class-keyboard#keyboard-press).
    *
    * **Usage**
-   *
-   * ```js
-   * await page.type('#mytextarea', 'Hello'); // Types instantly
-   * await page.type('#mytextarea', 'World', {delay: 100}); // Types slower, like a user
-   * ```
-   *
+   * @deprecated In most cases, you should use
+   * [locator.fill(value[, options])](https://playwright.dev/docs/api/class-locator#locator-fill) instead. You only need
+   * to press keys one by one if there is special keyboard handling on the page - in this case use
+   * [locator.pressSequentially(text[, options])](https://playwright.dev/docs/api/class-locator#locator-press-sequentially).
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param text A text to type into a focused element.
    * @param options
    */
@@ -3964,8 +4299,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -3973,7 +4308,8 @@ export interface Page {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.uncheck`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.uncheck([options])](https://playwright.dev/docs/api/class-locator#locator-uncheck)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method unchecks an element matching `selector` by performing the following steps:
    * 1. Find an element matching `selector`. If there is none, wait until a matching element is attached to the DOM.
@@ -3987,10 +4323,10 @@ export interface Page {
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set.
    * 1. Ensure that the element is now unchecked. If not, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   uncheck(selector: string, options?: {
@@ -4023,8 +4359,8 @@ export interface Page {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -4044,7 +4380,25 @@ export interface Page {
    * @param url A glob pattern, regex pattern or predicate receiving [URL] to match while routing.
    * @param handler Optional handler function to route the request.
    */
-  unroute(url: string|RegExp|((url: URL) => boolean), handler?: ((route: Route, request: Request) => void)): Promise<void>;
+  unroute(url: string|RegExp|((url: URL) => boolean), handler?: ((route: Route, request: Request) => Promise<any>|any)): Promise<void>;
+
+  /**
+   * Removes all routes created with
+   * [page.route(url, handler[, options])](https://playwright.dev/docs/api/class-page#page-route) and
+   * [page.routeFromHAR(har[, options])](https://playwright.dev/docs/api/class-page#page-route-from-har).
+   * @param options
+   */
+  unrouteAll(options?: {
+    /**
+     * Specifies whether to wait for already running handlers and what to do if they throw errors:
+     * - `'default'` - do not wait for current handler calls (if any) to finish, if unrouted handler throws, it may
+     *   result in unhandled error
+     * - `'wait'` - wait for current handler calls (if any) to finish
+     * - `'ignoreErrors'` - do not wait for current handler calls (if any) to finish, all errors thrown by the handlers
+     *   after unrouting are silently caught
+     */
+    behavior?: "wait"|"ignoreErrors"|"default";
+  }): Promise<void>;
 
   url(): string;
 
@@ -4071,12 +4425,11 @@ export interface Page {
   waitForEvent(event: 'close', optionsOrPredicate?: { predicate?: (page: Page) => boolean | Promise<boolean>, timeout?: number } | ((page: Page) => boolean | Promise<boolean>)): Promise<Page>;
 
   /**
-   * Emitted when JavaScript within the page calls one of console API methods, e.g. `console.log` or `console.dir`. Also
-   * emitted if the page throws an error or a warning.
+   * Emitted when JavaScript within the page calls one of console API methods, e.g. `console.log` or `console.dir`.
    *
-   * The arguments passed into `console.log` appear as arguments on the event handler.
+   * The arguments passed into `console.log` are available on the {@link ConsoleMessage} event handler argument.
    *
-   * An example of handling `console` event:
+   * **Usage**
    *
    * ```js
    * page.on('console', async msg => {
@@ -4085,7 +4438,7 @@ export interface Page {
    *     values.push(await arg.jsonValue());
    *   console.log(...values);
    * });
-   * await page.evaluate(() => console.log('hello', 5, {foo: 'bar'}));
+   * await page.evaluate(() => console.log('hello', 5, { foo: 'bar' }));
    * ```
    *
    */
@@ -4118,14 +4471,15 @@ export interface Page {
    * will [freeze](https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop#never_blocking) waiting for the
    * dialog, and actions like click will never finish.
    *
+   * **Usage**
+   *
    * ```js
-   * page.on('dialog', dialog => {
-   *   dialog.accept();
-   * });
+   * page.on('dialog', dialog => dialog.accept());
    * ```
    *
-   * **NOTE** When no [page.on('dialog')](https://playwright.dev/docs/api/class-page#page-event-dialog) listeners are
-   * present, all dialogs are automatically dismissed.
+   * **NOTE** When no [page.on('dialog')](https://playwright.dev/docs/api/class-page#page-event-dialog) or
+   * [browserContext.on('dialog')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-dialog)
+   * listeners are present, all dialogs are automatically dismissed.
    */
   waitForEvent(event: 'dialog', optionsOrPredicate?: { predicate?: (dialog: Dialog) => boolean | Promise<boolean>, timeout?: number } | ((dialog: Dialog) => boolean | Promise<boolean>)): Promise<Dialog>;
 
@@ -4137,7 +4491,7 @@ export interface Page {
 
   /**
    * Emitted when attachment download started. User can access basic file operations on downloaded content via the
-   * passed [Download] instance.
+   * passed {@link Download} instance.
    */
   waitForEvent(event: 'download', optionsOrPredicate?: { predicate?: (download: Download) => boolean | Promise<boolean>, timeout?: number } | ((download: Download) => boolean | Promise<boolean>)): Promise<Download>;
 
@@ -4148,8 +4502,8 @@ export interface Page {
    * that can be uploaded after that.
    *
    * ```js
-   * page.on('filechooser', async (fileChooser) => {
-   *   await fileChooser.setFiles('/tmp/myfile.pdf');
+   * page.on('filechooser', async fileChooser => {
+   *   await fileChooser.setFiles(path.join(__dirname, '/tmp/myfile.pdf'));
    * });
    * ```
    *
@@ -4199,7 +4553,12 @@ export interface Page {
    *
    * The earliest moment that page is available is when it has navigated to the initial url. For example, when opening a
    * popup with `window.open('http://example.com')`, this event will fire when the network request to
-   * "http://example.com" is done and its response has started loading in the popup.
+   * "http://example.com" is done and its response has started loading in the popup. If you would like to route/listen
+   * to this network request, use
+   * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)
+   * and
+   * [browserContext.on('request')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-request)
+   * respectively instead of similar methods on the {@link Page}.
    *
    * ```js
    * // Start waiting for popup before clicking. Note no await.
@@ -4253,7 +4612,7 @@ export interface Page {
   waitForEvent(event: 'response', optionsOrPredicate?: { predicate?: (response: Response) => boolean | Promise<boolean>, timeout?: number } | ((response: Response) => boolean | Promise<boolean>)): Promise<Response>;
 
   /**
-   * Emitted when [WebSocket] request is sent.
+   * Emitted when {@link WebSocket} request is sent.
    */
   waitForEvent(event: 'websocket', optionsOrPredicate?: { predicate?: (webSocket: WebSocket) => boolean | Promise<boolean>, timeout?: number } | ((webSocket: WebSocket) => boolean | Promise<boolean>)): Promise<WebSocket>;
 
@@ -4270,6 +4629,9 @@ export interface Page {
    * This resolves when the page reaches a required load state, `load` by default. The navigation must have been
    * committed when this method is called. If current document has already reached the required state, resolves
    * immediately.
+   *
+   * **NOTE** Most of the time, this method is not needed because Playwright
+   * [auto-waits before every action](https://playwright.dev/docs/actionability).
    *
    * **Usage**
    *
@@ -4290,13 +4652,14 @@ export interface Page {
    * document, the method resolves immediately. Can be one of:
    * - `'load'` - wait for the `load` event to be fired.
    * - `'domcontentloaded'` - wait for the `DOMContentLoaded` event to be fired.
-   * - `'networkidle'` - wait until there are no network connections for at least `500` ms.
+   * - `'networkidle'` - **DISCOURAGED** wait until there are no network connections for at least `500` ms. Don't use
+   * this method for testing, rely on web assertions to assess readiness instead.
    * @param options
    */
   waitForLoadState(state?: "load"|"domcontentloaded"|"networkidle", options?: {
     /**
-     * Maximum operation time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can
-     * be changed by using the
+     * Maximum operation time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via
+     * `navigationTimeout` option in the config, or by using the
      * [browserContext.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-navigation-timeout),
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout),
      * [page.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout)
@@ -4325,12 +4688,14 @@ export interface Page {
    *
    * **NOTE** Usage of the [History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API) to change the URL
    * is considered a navigation.
+   * @deprecated This method is inherently racy, please use
+   * [page.waitForURL(url[, options])](https://playwright.dev/docs/api/class-page#page-wait-for-url) instead.
    * @param options
    */
   waitForNavigation(options?: {
     /**
-     * Maximum operation time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can
-     * be changed by using the
+     * Maximum operation time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via
+     * `navigationTimeout` option in the config, or by using the
      * [browserContext.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-navigation-timeout),
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout),
      * [page.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout)
@@ -4349,8 +4714,8 @@ export interface Page {
      * When to consider operation succeeded, defaults to `load`. Events can be either:
      * - `'domcontentloaded'` - consider operation to be finished when the `DOMContentLoaded` event is fired.
      * - `'load'` - consider operation to be finished when the `load` event is fired.
-     * - `'networkidle'` - consider operation to be finished when there are no network connections for at least `500`
-     *   ms.
+     * - `'networkidle'` - **DISCOURAGED** consider operation to be finished when there are no network connections for
+     *   at least `500` ms. Don't use this method for testing, rely on web assertions to assess readiness instead.
      * - `'commit'` - consider operation to be finished when network response is received and the document started
      *   loading.
      */
@@ -4370,12 +4735,14 @@ export interface Page {
    * const request = await requestPromise;
    *
    * // Alternative way with a predicate. Note no await.
-   * const requestPromise = page.waitForRequest(request => request.url() === 'https://example.com' && request.method() === 'GET');
+   * const requestPromise = page.waitForRequest(request =>
+   *   request.url() === 'https://example.com' && request.method() === 'GET',
+   * );
    * await page.getByText('trigger request').click();
    * const request = await requestPromise;
    * ```
    *
-   * @param urlOrPredicate Request URL string, regex or predicate receiving [Request] object.
+   * @param urlOrPredicate Request URL string, regex or predicate receiving {@link Request} object.
    * @param options
    */
   waitForRequest(urlOrPredicate: string|RegExp|((request: Request) => boolean|Promise<boolean>), options?: {
@@ -4395,18 +4762,21 @@ export interface Page {
    *
    * ```js
    * // Start waiting for response before clicking. Note no await.
-   * const responsePromise = page.waitForRequest('https://example.com/resource');
+   * const responsePromise = page.waitForResponse('https://example.com/resource');
    * await page.getByText('trigger response').click();
    * const response = await responsePromise;
    *
    * // Alternative way with a predicate. Note no await.
-   * const responsePromise = page.waitForRequest(response => response.url() === 'https://example.com' && response.status() === 200);
+   * const responsePromise = page.waitForResponse(response =>
+   *   response.url() === 'https://example.com' && response.status() === 200
+   *       && response.request().method() === 'GET'
+   * );
    * await page.getByText('trigger response').click();
    * const response = await responsePromise;
    * ```
    *
-   * @param urlOrPredicate Request URL string, regex or predicate receiving [Response] object. When a `baseURL` via the context options was
-   * provided and the passed URL is a path, it gets merged via the
+   * @param urlOrPredicate Request URL string, regex or predicate receiving {@link Response} object. When a `baseURL` via the context options
+   * was provided and the passed URL is a path, it gets merged via the
    * [`new URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor.
    * @param options
    */
@@ -4421,6 +4791,9 @@ export interface Page {
   }): Promise<Response>;
 
   /**
+   * **NOTE** Never wait for timeout in production. Tests that wait for time are inherently flaky. Use {@link Locator} actions
+   * and web assertions that wait automatically.
+   *
    * Waits for the given `timeout` in milliseconds.
    *
    * Note that `page.waitForTimeout()` should only be used for debugging. Tests using the timer in production are going
@@ -4454,8 +4827,8 @@ export interface Page {
    */
   waitForURL(url: string|RegExp|((url: URL) => boolean), options?: {
     /**
-     * Maximum operation time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can
-     * be changed by using the
+     * Maximum operation time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via
+     * `navigationTimeout` option in the config, or by using the
      * [browserContext.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-navigation-timeout),
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout),
      * [page.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout)
@@ -4467,8 +4840,8 @@ export interface Page {
      * When to consider operation succeeded, defaults to `load`. Events can be either:
      * - `'domcontentloaded'` - consider operation to be finished when the `DOMContentLoaded` event is fired.
      * - `'load'` - consider operation to be finished when the `load` event is fired.
-     * - `'networkidle'` - consider operation to be finished when there are no network connections for at least `500`
-     *   ms.
+     * - `'networkidle'` - **DISCOURAGED** consider operation to be finished when there are no network connections for
+     *   at least `500` ms. Don't use this method for testing, rely on web assertions to assess readiness instead.
      * - `'commit'` - consider operation to be finished when network response is received and the document started
      *   loading.
      */
@@ -4481,14 +4854,51 @@ export interface Page {
    *
    * **NOTE** This does not contain ServiceWorkers
    */
-  workers(): Array<Worker>;}
+  workers(): Array<Worker>;
+
+  /**
+   * @deprecated This property is discouraged. Please use other libraries such as [Axe](https://www.deque.com/axe/) if you need to
+   * test page accessibility. See our Node.js [guide](https://playwright.dev/docs/accessibility-testing) for integration
+   * with Axe.
+   */
+  accessibility: Accessibility;
+
+  /**
+   * Playwright has ability to mock clock and passage of time.
+   */
+  clock: Clock;
+
+  /**
+   * **NOTE** Only available for Chromium atm.
+   *
+   * Browser-specific Coverage implementation. See {@link Coverage} for more details.
+   */
+  coverage: Coverage;
+
+  keyboard: Keyboard;
+
+  mouse: Mouse;
+
+  /**
+   * API testing helper associated with this page. This method returns the same instance as
+   * [browserContext.request](https://playwright.dev/docs/api/class-browsercontext#browser-context-request) on the
+   * page's context. See
+   * [browserContext.request](https://playwright.dev/docs/api/class-browsercontext#browser-context-request) for more
+   * details.
+   */
+  request: APIRequestContext;
+
+  touchscreen: Touchscreen;
+
+  [Symbol.asyncDispose](): Promise<void>;
+}
 
 /**
  * At every point of time, page exposes its current frame tree via the
  * [page.mainFrame()](https://playwright.dev/docs/api/class-page#page-main-frame) and
  * [frame.childFrames()](https://playwright.dev/docs/api/class-frame#frame-child-frames) methods.
  *
- * [Frame] object's lifecycle is controlled by three events, dispatched on the page object:
+ * {@link Frame} object's lifecycle is controlled by three events, dispatched on the page object:
  * - [page.on('frameattached')](https://playwright.dev/docs/api/class-page#page-event-frame-attached) - fired when
  *   the frame gets attached to the page. A Frame can be attached to the page only once.
  * - [page.on('framenavigated')](https://playwright.dev/docs/api/class-page#page-event-frame-navigated) - fired when
@@ -4510,9 +4920,8 @@ export interface Page {
  *
  *   function dumpFrameTree(frame, indent) {
  *     console.log(indent + frame.url());
- *     for (const child of frame.childFrames()) {
+ *     for (const child of frame.childFrames())
  *       dumpFrameTree(child, indent + '  ');
- *     }
  *   }
  * })();
  * ```
@@ -4549,12 +4958,14 @@ export interface Frame {
    * console.log(await frame.evaluate('1 + 2')); // prints "3"
    * ```
    *
-   * [ElementHandle] instances can be passed as an argument to the
+   * {@link ElementHandle} instances can be passed as an argument to the
    * [frame.evaluate(pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-evaluate):
    *
    * ```js
    * const bodyHandle = await frame.evaluate('document.body');
-   * const html = await frame.evaluate(([body, suffix]) => body.innerHTML + suffix, [bodyHandle, 'hello']);
+   * const html = await frame.evaluate(([body, suffix]) =>
+   *   body.innerHTML + suffix, [bodyHandle, 'hello'],
+   * );
    * await bodyHandle.dispose();
    * ```
    *
@@ -4592,12 +5003,14 @@ export interface Frame {
    * console.log(await frame.evaluate('1 + 2')); // prints "3"
    * ```
    *
-   * [ElementHandle] instances can be passed as an argument to the
+   * {@link ElementHandle} instances can be passed as an argument to the
    * [frame.evaluate(pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-evaluate):
    *
    * ```js
    * const bodyHandle = await frame.evaluate('document.body');
-   * const html = await frame.evaluate(([body, suffix]) => body.innerHTML + suffix, [bodyHandle, 'hello']);
+   * const html = await frame.evaluate(([body, suffix]) =>
+   *   body.innerHTML + suffix, [bodyHandle, 'hello'],
+   * );
    * await bodyHandle.dispose();
    * ```
    *
@@ -4607,13 +5020,13 @@ export interface Frame {
   evaluate<R>(pageFunction: PageFunction<void, R>, arg?: any): Promise<R>;
 
   /**
-   * Returns the return value of `pageFunction` as a [JSHandle].
+   * Returns the return value of `pageFunction` as a {@link JSHandle}.
    *
    * The only difference between
    * [frame.evaluate(pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-evaluate) and
    * [frame.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-evaluate-handle) is
    * that [frame.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-evaluate-handle)
-   * returns [JSHandle].
+   * returns {@link JSHandle}.
    *
    * If the function, passed to the
    * [frame.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-evaluate-handle),
@@ -4624,8 +5037,8 @@ export interface Frame {
    * **Usage**
    *
    * ```js
+   * // Handle for the window object
    * const aWindowHandle = await frame.evaluateHandle(() => Promise.resolve(window));
-   * aWindowHandle; // Handle for the window object.
    * ```
    *
    * A string can also be passed in instead of a function.
@@ -4634,12 +5047,14 @@ export interface Frame {
    * const aHandle = await frame.evaluateHandle('document'); // Handle for the 'document'.
    * ```
    *
-   * [JSHandle] instances can be passed as an argument to the
+   * {@link JSHandle} instances can be passed as an argument to the
    * [frame.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-evaluate-handle):
    *
    * ```js
    * const aHandle = await frame.evaluateHandle(() => document.body);
-   * const resultHandle = await frame.evaluateHandle(([body, suffix]) => body.innerHTML + suffix, [aHandle, 'hello']);
+   * const resultHandle = await frame.evaluateHandle(([body, suffix]) =>
+   *   body.innerHTML + suffix, [aHandle, 'hello'],
+   * );
    * console.log(await resultHandle.jsonValue());
    * await resultHandle.dispose();
    * ```
@@ -4649,13 +5064,13 @@ export interface Frame {
    */
   evaluateHandle<R, Arg>(pageFunction: PageFunction<Arg, R>, arg: Arg): Promise<SmartHandle<R>>;
   /**
-   * Returns the return value of `pageFunction` as a [JSHandle].
+   * Returns the return value of `pageFunction` as a {@link JSHandle}.
    *
    * The only difference between
    * [frame.evaluate(pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-evaluate) and
    * [frame.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-evaluate-handle) is
    * that [frame.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-evaluate-handle)
-   * returns [JSHandle].
+   * returns {@link JSHandle}.
    *
    * If the function, passed to the
    * [frame.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-evaluate-handle),
@@ -4666,8 +5081,8 @@ export interface Frame {
    * **Usage**
    *
    * ```js
+   * // Handle for the window object
    * const aWindowHandle = await frame.evaluateHandle(() => Promise.resolve(window));
-   * aWindowHandle; // Handle for the window object.
    * ```
    *
    * A string can also be passed in instead of a function.
@@ -4676,12 +5091,14 @@ export interface Frame {
    * const aHandle = await frame.evaluateHandle('document'); // Handle for the 'document'.
    * ```
    *
-   * [JSHandle] instances can be passed as an argument to the
+   * {@link JSHandle} instances can be passed as an argument to the
    * [frame.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-evaluate-handle):
    *
    * ```js
    * const aHandle = await frame.evaluateHandle(() => document.body);
-   * const resultHandle = await frame.evaluateHandle(([body, suffix]) => body.innerHTML + suffix, [aHandle, 'hello']);
+   * const resultHandle = await frame.evaluateHandle(([body, suffix]) =>
+   *   body.innerHTML + suffix, [aHandle, 'hello'],
+   * );
    * console.log(await resultHandle.jsonValue());
    * await resultHandle.dispose();
    * ```
@@ -4692,66 +5109,73 @@ export interface Frame {
   evaluateHandle<R>(pageFunction: PageFunction<void, R>, arg?: any): Promise<SmartHandle<R>>;
 
   /**
-   * **NOTE** Use locator-based [`method: Frame.locator`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [frame.locator(selector[, options])](https://playwright.dev/docs/api/class-frame#frame-locator)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns the ElementHandle pointing to the frame element.
    *
-   * **NOTE** The use of [ElementHandle] is discouraged, use [Locator] objects and web-first assertions instead.
+   * **NOTE** The use of {@link ElementHandle} is discouraged, use {@link Locator} objects and web-first assertions
+   * instead.
    *
-   * The method finds an element matching the specified selector within the frame. See
-   * [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements match the selector, returns `null`.
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * The method finds an element matching the specified selector within the frame. If no elements match the selector,
+   * returns `null`.
+   * @param selector A selector to query for.
    * @param options
    */
   $<K extends keyof HTMLElementTagNameMap>(selector: K, options?: { strict: boolean }): Promise<ElementHandleForTag<K> | null>;
   /**
-   * **NOTE** Use locator-based [`method: Frame.locator`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [frame.locator(selector[, options])](https://playwright.dev/docs/api/class-frame#frame-locator)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns the ElementHandle pointing to the frame element.
    *
-   * **NOTE** The use of [ElementHandle] is discouraged, use [Locator] objects and web-first assertions instead.
+   * **NOTE** The use of {@link ElementHandle} is discouraged, use {@link Locator} objects and web-first assertions
+   * instead.
    *
-   * The method finds an element matching the specified selector within the frame. See
-   * [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements match the selector, returns `null`.
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * The method finds an element matching the specified selector within the frame. If no elements match the selector,
+   * returns `null`.
+   * @param selector A selector to query for.
    * @param options
    */
   $(selector: string, options?: { strict: boolean }): Promise<ElementHandle<SVGElement | HTMLElement> | null>;
 
   /**
-   * **NOTE** Use locator-based [`method: Frame.locator`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [frame.locator(selector[, options])](https://playwright.dev/docs/api/class-frame#frame-locator)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns the ElementHandles pointing to the frame elements.
    *
-   * **NOTE** The use of [ElementHandle] is discouraged, use [Locator] objects instead.
+   * **NOTE** The use of {@link ElementHandle} is discouraged, use {@link Locator} objects instead.
    *
-   * The method finds all elements matching the specified selector within the frame. See
-   * [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements match the selector, returns empty array.
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * The method finds all elements matching the specified selector within the frame. If no elements match the selector,
+   * returns empty array.
+   * @param selector A selector to query for.
    */
   $$<K extends keyof HTMLElementTagNameMap>(selector: K): Promise<ElementHandleForTag<K>[]>;
   /**
-   * **NOTE** Use locator-based [`method: Frame.locator`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [frame.locator(selector[, options])](https://playwright.dev/docs/api/class-frame#frame-locator)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns the ElementHandles pointing to the frame elements.
    *
-   * **NOTE** The use of [ElementHandle] is discouraged, use [Locator] objects instead.
+   * **NOTE** The use of {@link ElementHandle} is discouraged, use {@link Locator} objects instead.
    *
-   * The method finds all elements matching the specified selector within the frame. See
-   * [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements match the selector, returns empty array.
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * The method finds all elements matching the specified selector within the frame. If no elements match the selector,
+   * returns empty array.
+   * @param selector A selector to query for.
    */
   $$(selector: string): Promise<ElementHandle<SVGElement | HTMLElement>[]>;
 
   /**
    * **NOTE** This method does not wait for the element to pass the actionability checks and therefore can lead to the flaky
-   * tests. Use [`method: Locator.evaluate`], other [Locator] helper methods or web-first assertions instead.
+   * tests. Use
+   * [locator.evaluate(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate),
+   * other {@link Locator} helper methods or web-first assertions instead.
    *
    * Returns the return value of `pageFunction`.
    *
    * The method finds an element matching the specified selector within the frame and passes it as a first argument to
-   * `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements match the selector,
-   * the method throws an error.
+   * `pageFunction`. If no elements match the selector, the method throws an error.
    *
    * If `pageFunction` returns a [Promise], then
    * [frame.$eval(selector, pageFunction[, arg, options])](https://playwright.dev/docs/api/class-frame#frame-eval-on-selector)
@@ -4765,7 +5189,7 @@ export interface Frame {
    * const html = await frame.$eval('.main-container', (e, suffix) => e.outerHTML + suffix, 'hello');
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    * @param options
@@ -4773,13 +5197,14 @@ export interface Frame {
   $eval<K extends keyof HTMLElementTagNameMap, R, Arg>(selector: K, pageFunction: PageFunctionOn<HTMLElementTagNameMap[K], Arg, R>, arg: Arg): Promise<R>;
   /**
    * **NOTE** This method does not wait for the element to pass the actionability checks and therefore can lead to the flaky
-   * tests. Use [`method: Locator.evaluate`], other [Locator] helper methods or web-first assertions instead.
+   * tests. Use
+   * [locator.evaluate(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate),
+   * other {@link Locator} helper methods or web-first assertions instead.
    *
    * Returns the return value of `pageFunction`.
    *
    * The method finds an element matching the specified selector within the frame and passes it as a first argument to
-   * `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements match the selector,
-   * the method throws an error.
+   * `pageFunction`. If no elements match the selector, the method throws an error.
    *
    * If `pageFunction` returns a [Promise], then
    * [frame.$eval(selector, pageFunction[, arg, options])](https://playwright.dev/docs/api/class-frame#frame-eval-on-selector)
@@ -4793,7 +5218,7 @@ export interface Frame {
    * const html = await frame.$eval('.main-container', (e, suffix) => e.outerHTML + suffix, 'hello');
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    * @param options
@@ -4801,13 +5226,14 @@ export interface Frame {
   $eval<R, Arg, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(selector: string, pageFunction: PageFunctionOn<E, Arg, R>, arg: Arg): Promise<R>;
   /**
    * **NOTE** This method does not wait for the element to pass the actionability checks and therefore can lead to the flaky
-   * tests. Use [`method: Locator.evaluate`], other [Locator] helper methods or web-first assertions instead.
+   * tests. Use
+   * [locator.evaluate(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate),
+   * other {@link Locator} helper methods or web-first assertions instead.
    *
    * Returns the return value of `pageFunction`.
    *
    * The method finds an element matching the specified selector within the frame and passes it as a first argument to
-   * `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements match the selector,
-   * the method throws an error.
+   * `pageFunction`. If no elements match the selector, the method throws an error.
    *
    * If `pageFunction` returns a [Promise], then
    * [frame.$eval(selector, pageFunction[, arg, options])](https://playwright.dev/docs/api/class-frame#frame-eval-on-selector)
@@ -4821,7 +5247,7 @@ export interface Frame {
    * const html = await frame.$eval('.main-container', (e, suffix) => e.outerHTML + suffix, 'hello');
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    * @param options
@@ -4829,13 +5255,14 @@ export interface Frame {
   $eval<K extends keyof HTMLElementTagNameMap, R>(selector: K, pageFunction: PageFunctionOn<HTMLElementTagNameMap[K], void, R>, arg?: any): Promise<R>;
   /**
    * **NOTE** This method does not wait for the element to pass the actionability checks and therefore can lead to the flaky
-   * tests. Use [`method: Locator.evaluate`], other [Locator] helper methods or web-first assertions instead.
+   * tests. Use
+   * [locator.evaluate(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate),
+   * other {@link Locator} helper methods or web-first assertions instead.
    *
    * Returns the return value of `pageFunction`.
    *
    * The method finds an element matching the specified selector within the frame and passes it as a first argument to
-   * `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements match the selector,
-   * the method throws an error.
+   * `pageFunction`. If no elements match the selector, the method throws an error.
    *
    * If `pageFunction` returns a [Promise], then
    * [frame.$eval(selector, pageFunction[, arg, options])](https://playwright.dev/docs/api/class-frame#frame-eval-on-selector)
@@ -4849,7 +5276,7 @@ export interface Frame {
    * const html = await frame.$eval('.main-container', (e, suffix) => e.outerHTML + suffix, 'hello');
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    * @param options
@@ -4857,13 +5284,14 @@ export interface Frame {
   $eval<R, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(selector: string, pageFunction: PageFunctionOn<E, void, R>, arg?: any): Promise<R>;
 
   /**
-   * **NOTE** In most cases, [`method: Locator.evaluateAll`], other [Locator] helper methods and web-first assertions do a better
-   * job.
+   * **NOTE** In most cases,
+   * [locator.evaluateAll(pageFunction[, arg])](https://playwright.dev/docs/api/class-locator#locator-evaluate-all),
+   * other {@link Locator} helper methods and web-first assertions do a better job.
    *
    * Returns the return value of `pageFunction`.
    *
    * The method finds all elements matching the specified selector within the frame and passes an array of matched
-   * elements as a first argument to `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * elements as a first argument to `pageFunction`.
    *
    * If `pageFunction` returns a [Promise], then
    * [frame.$$eval(selector, pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-eval-on-selector-all)
@@ -4875,19 +5303,20 @@ export interface Frame {
    * const divsCounts = await frame.$$eval('div', (divs, min) => divs.length >= min, 10);
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   $$eval<K extends keyof HTMLElementTagNameMap, R, Arg>(selector: K, pageFunction: PageFunctionOn<HTMLElementTagNameMap[K][], Arg, R>, arg: Arg): Promise<R>;
   /**
-   * **NOTE** In most cases, [`method: Locator.evaluateAll`], other [Locator] helper methods and web-first assertions do a better
-   * job.
+   * **NOTE** In most cases,
+   * [locator.evaluateAll(pageFunction[, arg])](https://playwright.dev/docs/api/class-locator#locator-evaluate-all),
+   * other {@link Locator} helper methods and web-first assertions do a better job.
    *
    * Returns the return value of `pageFunction`.
    *
    * The method finds all elements matching the specified selector within the frame and passes an array of matched
-   * elements as a first argument to `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * elements as a first argument to `pageFunction`.
    *
    * If `pageFunction` returns a [Promise], then
    * [frame.$$eval(selector, pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-eval-on-selector-all)
@@ -4899,19 +5328,20 @@ export interface Frame {
    * const divsCounts = await frame.$$eval('div', (divs, min) => divs.length >= min, 10);
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   $$eval<R, Arg, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(selector: string, pageFunction: PageFunctionOn<E[], Arg, R>, arg: Arg): Promise<R>;
   /**
-   * **NOTE** In most cases, [`method: Locator.evaluateAll`], other [Locator] helper methods and web-first assertions do a better
-   * job.
+   * **NOTE** In most cases,
+   * [locator.evaluateAll(pageFunction[, arg])](https://playwright.dev/docs/api/class-locator#locator-evaluate-all),
+   * other {@link Locator} helper methods and web-first assertions do a better job.
    *
    * Returns the return value of `pageFunction`.
    *
    * The method finds all elements matching the specified selector within the frame and passes an array of matched
-   * elements as a first argument to `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * elements as a first argument to `pageFunction`.
    *
    * If `pageFunction` returns a [Promise], then
    * [frame.$$eval(selector, pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-eval-on-selector-all)
@@ -4923,19 +5353,20 @@ export interface Frame {
    * const divsCounts = await frame.$$eval('div', (divs, min) => divs.length >= min, 10);
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   $$eval<K extends keyof HTMLElementTagNameMap, R>(selector: K, pageFunction: PageFunctionOn<HTMLElementTagNameMap[K][], void, R>, arg?: any): Promise<R>;
   /**
-   * **NOTE** In most cases, [`method: Locator.evaluateAll`], other [Locator] helper methods and web-first assertions do a better
-   * job.
+   * **NOTE** In most cases,
+   * [locator.evaluateAll(pageFunction[, arg])](https://playwright.dev/docs/api/class-locator#locator-evaluate-all),
+   * other {@link Locator} helper methods and web-first assertions do a better job.
    *
    * Returns the return value of `pageFunction`.
    *
    * The method finds all elements matching the specified selector within the frame and passes an array of matched
-   * elements as a first argument to `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * elements as a first argument to `pageFunction`.
    *
    * If `pageFunction` returns a [Promise], then
    * [frame.$$eval(selector, pageFunction[, arg])](https://playwright.dev/docs/api/class-frame#frame-eval-on-selector-all)
@@ -4947,7 +5378,7 @@ export interface Frame {
    * const divsCounts = await frame.$$eval('div', (divs, min) => divs.length >= min, 10);
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
@@ -4969,7 +5400,7 @@ export interface Frame {
    *   const browser = await firefox.launch();
    *   const page = await browser.newPage();
    *   const watchDog = page.mainFrame().waitForFunction('window.innerWidth < 100');
-   *   page.setViewportSize({width: 50, height: 50});
+   *   await page.setViewportSize({ width: 50, height: 50 });
    *   await watchDog;
    *   await browser.close();
    * })();
@@ -5003,7 +5434,7 @@ export interface Frame {
    *   const browser = await firefox.launch();
    *   const page = await browser.newPage();
    *   const watchDog = page.mainFrame().waitForFunction('window.innerWidth < 100');
-   *   page.setViewportSize({width: 50, height: 50});
+   *   await page.setViewportSize({ width: 50, height: 50 });
    *   await watchDog;
    *   await browser.close();
    * })();
@@ -5023,10 +5454,14 @@ export interface Frame {
   waitForFunction<R>(pageFunction: PageFunction<void, R>, arg?: any, options?: PageWaitForFunctionOptions): Promise<SmartHandle<R>>;
 
   /**
+   * **NOTE** Use web assertions that assert visibility or a locator-based
+   * [locator.waitFor([options])](https://playwright.dev/docs/api/class-locator#locator-wait-for) instead. Read more
+   * about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns when element specified by selector satisfies `state` option. Returns `null` if waiting for `hidden` or
    * `detached`.
    *
-   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using [Locator]
+   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using {@link Locator}
    * objects and web-first assertions make the code wait-for-selector-free.
    *
    * Wait for the `selector` to satisfy `state` option (either appear/disappear from dom, or become visible/hidden). If
@@ -5043,7 +5478,7 @@ export interface Frame {
    * (async () => {
    *   const browser = await chromium.launch();
    *   const page = await browser.newPage();
-   *   for (let currentURL of ['https://google.com', 'https://bbc.com']) {
+   *   for (const currentURL of ['https://google.com', 'https://bbc.com']) {
    *     await page.goto(currentURL);
    *     const element = await page.mainFrame().waitForSelector('img');
    *     console.log('Loaded image: ' + await element.getAttribute('src'));
@@ -5052,15 +5487,19 @@ export interface Frame {
    * })();
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param options
    */
   waitForSelector<K extends keyof HTMLElementTagNameMap>(selector: K, options?: PageWaitForSelectorOptionsNotHidden): Promise<ElementHandleForTag<K>>;
   /**
+   * **NOTE** Use web assertions that assert visibility or a locator-based
+   * [locator.waitFor([options])](https://playwright.dev/docs/api/class-locator#locator-wait-for) instead. Read more
+   * about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns when element specified by selector satisfies `state` option. Returns `null` if waiting for `hidden` or
    * `detached`.
    *
-   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using [Locator]
+   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using {@link Locator}
    * objects and web-first assertions make the code wait-for-selector-free.
    *
    * Wait for the `selector` to satisfy `state` option (either appear/disappear from dom, or become visible/hidden). If
@@ -5077,7 +5516,7 @@ export interface Frame {
    * (async () => {
    *   const browser = await chromium.launch();
    *   const page = await browser.newPage();
-   *   for (let currentURL of ['https://google.com', 'https://bbc.com']) {
+   *   for (const currentURL of ['https://google.com', 'https://bbc.com']) {
    *     await page.goto(currentURL);
    *     const element = await page.mainFrame().waitForSelector('img');
    *     console.log('Loaded image: ' + await element.getAttribute('src'));
@@ -5086,15 +5525,19 @@ export interface Frame {
    * })();
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param options
    */
   waitForSelector(selector: string, options?: PageWaitForSelectorOptionsNotHidden): Promise<ElementHandle<SVGElement | HTMLElement>>;
   /**
+   * **NOTE** Use web assertions that assert visibility or a locator-based
+   * [locator.waitFor([options])](https://playwright.dev/docs/api/class-locator#locator-wait-for) instead. Read more
+   * about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns when element specified by selector satisfies `state` option. Returns `null` if waiting for `hidden` or
    * `detached`.
    *
-   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using [Locator]
+   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using {@link Locator}
    * objects and web-first assertions make the code wait-for-selector-free.
    *
    * Wait for the `selector` to satisfy `state` option (either appear/disappear from dom, or become visible/hidden). If
@@ -5111,7 +5554,7 @@ export interface Frame {
    * (async () => {
    *   const browser = await chromium.launch();
    *   const page = await browser.newPage();
-   *   for (let currentURL of ['https://google.com', 'https://bbc.com']) {
+   *   for (const currentURL of ['https://google.com', 'https://bbc.com']) {
    *     await page.goto(currentURL);
    *     const element = await page.mainFrame().waitForSelector('img');
    *     console.log('Loaded image: ' + await element.getAttribute('src'));
@@ -5120,15 +5563,19 @@ export interface Frame {
    * })();
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param options
    */
   waitForSelector<K extends keyof HTMLElementTagNameMap>(selector: K, options: PageWaitForSelectorOptions): Promise<ElementHandleForTag<K> | null>;
   /**
+   * **NOTE** Use web assertions that assert visibility or a locator-based
+   * [locator.waitFor([options])](https://playwright.dev/docs/api/class-locator#locator-wait-for) instead. Read more
+   * about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns when element specified by selector satisfies `state` option. Returns `null` if waiting for `hidden` or
    * `detached`.
    *
-   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using [Locator]
+   * **NOTE** Playwright automatically waits for element to be ready before performing an action. Using {@link Locator}
    * objects and web-first assertions make the code wait-for-selector-free.
    *
    * Wait for the `selector` to satisfy `state` option (either appear/disappear from dom, or become visible/hidden). If
@@ -5145,7 +5592,7 @@ export interface Frame {
    * (async () => {
    *   const browser = await chromium.launch();
    *   const page = await browser.newPage();
-   *   for (let currentURL of ['https://google.com', 'https://bbc.com']) {
+   *   for (const currentURL of ['https://google.com', 'https://bbc.com']) {
    *     await page.goto(currentURL);
    *     const element = await page.mainFrame().waitForSelector('img');
    *     console.log('Loaded image: ' + await element.getAttribute('src'));
@@ -5154,7 +5601,7 @@ export interface Frame {
    * })();
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param options
    */
   waitForSelector(selector: string, options: PageWaitForSelectorOptions): Promise<null|ElementHandle<SVGElement | HTMLElement>>;
@@ -5214,7 +5661,8 @@ export interface Frame {
   }): Promise<ElementHandle>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.check`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.check([options])](https://playwright.dev/docs/api/class-locator#locator-check) instead.
+   * Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method checks an element matching `selector` by performing the following steps:
    * 1. Find an element matching `selector`. If there is none, wait until a matching element is attached to the DOM.
@@ -5228,10 +5676,10 @@ export interface Frame {
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set.
    * 1. Ensure that the element is now checked. If not, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   check(selector: string, options?: {
@@ -5264,8 +5712,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -5281,7 +5729,8 @@ export interface Frame {
   childFrames(): Array<Frame>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.click`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.click([options])](https://playwright.dev/docs/api/class-locator#locator-click) instead.
+   * Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method clicks an element matching `selector` by performing the following steps:
    * 1. Find an element matching `selector`. If there is none, wait until a matching element is attached to the DOM.
@@ -5292,10 +5741,10 @@ export interface Frame {
    *    element, or the specified `position`.
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   click(selector: string, options?: {
@@ -5321,9 +5770,10 @@ export interface Frame {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -5349,8 +5799,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -5369,7 +5819,8 @@ export interface Frame {
   content(): Promise<string>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.dblclick`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.dblclick([options])](https://playwright.dev/docs/api/class-locator#locator-dblclick)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method double clicks an element matching `selector` by performing the following steps:
    * 1. Find an element matching `selector`. If there is none, wait until a matching element is attached to the DOM.
@@ -5381,12 +5832,12 @@ export interface Frame {
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set. Note that if
    *    the first click of the `dblclick()` triggers a navigation event, this method will throw.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    *
    * **NOTE** `frame.dblclick()` dispatches two `click` events and a single `dblclick` event.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   dblclick(selector: string, options?: {
@@ -5407,9 +5858,10 @@ export interface Frame {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -5435,8 +5887,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -5450,7 +5902,9 @@ export interface Frame {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.dispatchEvent`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.dispatchEvent(type[, eventInit, options])](https://playwright.dev/docs/api/class-locator#locator-dispatch-event)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * The snippet below dispatches the `click` event on the element. Regardless of the visibility state of the element,
    * `click` is dispatched. This is equivalent to calling
@@ -5466,13 +5920,16 @@ export interface Frame {
    * properties and dispatches it on the element. Events are `composed`, `cancelable` and bubble by default.
    *
    * Since `eventInit` is event-specific, please refer to the events documentation for the lists of initial properties:
+   * - [DeviceMotionEvent](https://developer.mozilla.org/en-US/docs/Web/API/DeviceMotionEvent/DeviceMotionEvent)
+   * - [DeviceOrientationEvent](https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent/DeviceOrientationEvent)
    * - [DragEvent](https://developer.mozilla.org/en-US/docs/Web/API/DragEvent/DragEvent)
+   * - [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/Event)
    * - [FocusEvent](https://developer.mozilla.org/en-US/docs/Web/API/FocusEvent/FocusEvent)
    * - [KeyboardEvent](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/KeyboardEvent)
    * - [MouseEvent](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/MouseEvent)
    * - [PointerEvent](https://developer.mozilla.org/en-US/docs/Web/API/PointerEvent/PointerEvent)
    * - [TouchEvent](https://developer.mozilla.org/en-US/docs/Web/API/TouchEvent/TouchEvent)
-   * - [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/Event)
+   * - [WheelEvent](https://developer.mozilla.org/en-US/docs/Web/API/WheelEvent/WheelEvent)
    *
    * You can also specify `JSHandle` as the property value if you want live objects to be passed into the event:
    *
@@ -5483,7 +5940,7 @@ export interface Frame {
    * ```
    *
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param type DOM event type: `"click"`, `"dragstart"`, etc.
    * @param eventInit Optional event-specific initialization properties.
    * @param options
@@ -5496,8 +5953,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -5506,9 +5963,9 @@ export interface Frame {
 
   /**
    * @param source A selector to search for an element to drag. If there are multiple elements satisfying the selector, the first will
-   * be used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * be used.
    * @param target A selector to search for an element to drop onto. If there are multiple elements satisfying the selector, the first
-   * will be used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * will be used.
    * @param options
    */
   dragAndDrop(source: string, target: string, options?: {
@@ -5551,8 +6008,8 @@ export interface Frame {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -5566,7 +6023,8 @@ export interface Frame {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.fill`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.fill(value[, options])](https://playwright.dev/docs/api/class-locator#locator-fill)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method waits for an element matching `selector`, waits for [actionability](https://playwright.dev/docs/actionability) checks,
    * focuses the element, fills it and triggers an `input` event after filling. Note that you can pass an empty string
@@ -5578,9 +6036,9 @@ export interface Frame {
    * instead.
    *
    * To send fine-grained keyboard events, use
-   * [frame.type(selector, text[, options])](https://playwright.dev/docs/api/class-frame#frame-type).
+   * [locator.pressSequentially(text[, options])](https://playwright.dev/docs/api/class-locator#locator-press-sequentially).
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param value Value to fill for the `<input>`, `<textarea>` or `[contenteditable]` element.
    * @param options
    */
@@ -5604,8 +6062,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -5613,12 +6071,13 @@ export interface Frame {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.focus`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.focus([options])](https://playwright.dev/docs/api/class-locator#locator-focus) instead.
+   * Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method fetches an element with `selector` and focuses it. If there's no element matching `selector`, the
    * method waits until a matching element appears in the DOM.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   focus(selector: string, options?: {
@@ -5629,8 +6088,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -5671,16 +6130,18 @@ export interface Frame {
    * await locator.click();
    * ```
    *
-   * @param selector A selector to use when resolving DOM element. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to use when resolving DOM element.
    */
   frameLocator(selector: string): FrameLocator;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.getAttribute`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.getAttribute(name[, options])](https://playwright.dev/docs/api/class-locator#locator-get-attribute)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns element attribute value.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param name Attribute name to get the value for.
    * @param options
    */
@@ -5692,8 +6153,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -5701,10 +6162,18 @@ export interface Frame {
   }): Promise<null|string>;
 
   /**
-   * Allows locating elements by their alt text. For example, this method will find the image by alt text "Castle":
+   * Allows locating elements by their alt text.
+   *
+   * **Usage**
+   *
+   * For example, this method will find the image by alt text "Playwright logo":
    *
    * ```html
-   * <img alt='Castle'>
+   * <img alt='Playwright logo'>
+   * ```
+   *
+   * ```js
+   * await page.getByAltText('Playwright logo').click();
    * ```
    *
    * @param text Text to locate the element for.
@@ -5719,12 +6188,22 @@ export interface Frame {
   }): Locator;
 
   /**
-   * Allows locating input elements by the text of the associated label. For example, this method will find the input by
-   * label text "Password" in the following DOM:
+   * Allows locating input elements by the text of the associated `<label>` or `aria-labelledby` element, or by the
+   * `aria-label` attribute.
+   *
+   * **Usage**
+   *
+   * For example, this method will find inputs by label "Username" and "Password" in the following DOM:
    *
    * ```html
+   * <input aria-label="Username">
    * <label for="password-input">Password:</label>
    * <input id="password-input">
+   * ```
+   *
+   * ```js
+   * await page.getByLabel('Username').fill('john');
+   * await page.getByLabel('Password').fill('secret');
    * ```
    *
    * @param text Text to locate the element for.
@@ -5739,11 +6218,22 @@ export interface Frame {
   }): Locator;
 
   /**
-   * Allows locating input elements by the placeholder text. For example, this method will find the input by placeholder
-   * "Country":
+   * Allows locating input elements by the placeholder text.
+   *
+   * **Usage**
+   *
+   * For example, consider the following DOM structure.
    *
    * ```html
-   * <input placeholder="Country">
+   * <input type="email" placeholder="name@example.com" />
+   * ```
+   *
+   * You can fill the input after locating it by the placeholder text:
+   *
+   * ```js
+   * await page
+   *     .getByPlaceholder('name@example.com')
+   *     .fill('playwright@microsoft.com');
    * ```
    *
    * @param text Text to locate the element for.
@@ -5760,14 +6250,40 @@ export interface Frame {
   /**
    * Allows locating elements by their [ARIA role](https://www.w3.org/TR/wai-aria-1.2/#roles),
    * [ARIA attributes](https://www.w3.org/TR/wai-aria-1.2/#aria-attributes) and
-   * [accessible name](https://w3c.github.io/accname/#dfn-accessible-name). Note that role selector **does not replace**
-   * accessibility audits and conformance tests, but rather gives early feedback about the ARIA guidelines.
+   * [accessible name](https://w3c.github.io/accname/#dfn-accessible-name).
    *
-   * Note that many html elements have an implicitly
-   * [defined role](https://w3c.github.io/html-aam/#html-element-role-mappings) that is recognized by the role selector.
-   * You can find all the [supported roles here](https://www.w3.org/TR/wai-aria-1.2/#role_definitions). ARIA guidelines
-   * **do not recommend** duplicating implicit roles and attributes by setting `role` and/or `aria-*` attributes to
-   * default values.
+   * **Usage**
+   *
+   * Consider the following DOM structure.
+   *
+   * ```html
+   * <h3>Sign up</h3>
+   * <label>
+   *   <input type="checkbox" /> Subscribe
+   * </label>
+   * <br/>
+   * <button>Submit</button>
+   * ```
+   *
+   * You can locate each element by it's implicit role:
+   *
+   * ```js
+   * await expect(page.getByRole('heading', { name: 'Sign up' })).toBeVisible();
+   *
+   * await page.getByRole('checkbox', { name: 'Subscribe' }).check();
+   *
+   * await page.getByRole('button', { name: /submit/i }).click();
+   * ```
+   *
+   * **Details**
+   *
+   * Role selector **does not replace** accessibility audits and conformance tests, but rather gives early feedback
+   * about the ARIA guidelines.
+   *
+   * Many html elements have an implicitly [defined role](https://w3c.github.io/html-aam/#html-element-role-mappings)
+   * that is recognized by the role selector. You can find all the
+   * [supported roles here](https://www.w3.org/TR/wai-aria-1.2/#role_definitions). ARIA guidelines **do not recommend**
+   * duplicating implicit roles and attributes by setting `role` and/or `aria-*` attributes to default values.
    * @param role Required aria role.
    * @param options
    */
@@ -5840,23 +6356,52 @@ export interface Frame {
   }): Locator;
 
   /**
-   * Locate element by the test id. By default, the `data-testid` attribute is used as a test id. Use
+   * Locate element by the test id.
+   *
+   * **Usage**
+   *
+   * Consider the following DOM structure.
+   *
+   * ```html
+   * <button data-testid="directions">Itinéraire</button>
+   * ```
+   *
+   * You can locate the element by it's test id:
+   *
+   * ```js
+   * await page.getByTestId('directions').click();
+   * ```
+   *
+   * **Details**
+   *
+   * By default, the `data-testid` attribute is used as a test id. Use
    * [selectors.setTestIdAttribute(attributeName)](https://playwright.dev/docs/api/class-selectors#selectors-set-test-id-attribute)
    * to configure a different test id attribute if necessary.
    *
    * ```js
    * // Set custom test id attribute from @playwright/test config:
-   * use: {
-   *   testIdAttribute: 'data-pw'
-   * }
+   * import { defineConfig } from '@playwright/test';
+   *
+   * export default defineConfig({
+   *   use: {
+   *     testIdAttribute: 'data-pw'
+   *   },
+   * });
    * ```
    *
    * @param testId Id to locate the element by.
    */
-  getByTestId(testId: string): Locator;
+  getByTestId(testId: string|RegExp): Locator;
 
   /**
-   * Allows locating elements that contain given text. Consider the following DOM structure:
+   * Allows locating elements that contain given text.
+   *
+   * See also [locator.filter([options])](https://playwright.dev/docs/api/class-locator#locator-filter) that allows to
+   * match by another criteria, like an accessible role, and then filter by the text content.
+   *
+   * **Usage**
+   *
+   * Consider the following DOM structure:
    *
    * ```html
    * <div>Hello <span>world</span></div>
@@ -5867,29 +6412,28 @@ export interface Frame {
    *
    * ```js
    * // Matches <span>
-   * page.getByText('world')
+   * page.getByText('world');
    *
    * // Matches first <div>
-   * page.getByText('Hello world')
+   * page.getByText('Hello world');
    *
    * // Matches second <div>
-   * page.getByText('Hello', { exact: true })
+   * page.getByText('Hello', { exact: true });
    *
    * // Matches both <div>s
-   * page.getByText(/Hello/)
+   * page.getByText(/Hello/);
    *
    * // Matches second <div>
-   * page.getByText(/^hello$/i)
+   * page.getByText(/^hello$/i);
    * ```
    *
-   * See also [locator.filter([options])](https://playwright.dev/docs/api/class-locator#locator-filter) that allows to
-   * match by another criteria, like an accessible role, and then filter by the text content.
+   * **Details**
    *
-   * **NOTE** Matching by text always normalizes whitespace, even with exact match. For example, it turns multiple
-   * spaces into one, turns line breaks into spaces and ignores leading and trailing whitespace.
+   * Matching by text always normalizes whitespace, even with exact match. For example, it turns multiple spaces into
+   * one, turns line breaks into spaces and ignores leading and trailing whitespace.
    *
-   * **NOTE** Input elements of the type `button` and `submit` are matched by their `value` instead of the text content.
-   * For example, locating by text `"Log in"` matches `<input type=button value="Log in">`.
+   * Input elements of the type `button` and `submit` are matched by their `value` instead of the text content. For
+   * example, locating by text `"Log in"` matches `<input type=button value="Log in">`.
    * @param text Text to locate the element for.
    * @param options
    */
@@ -5902,11 +6446,20 @@ export interface Frame {
   }): Locator;
 
   /**
-   * Allows locating elements by their title. For example, this method will find the button by its title "Place the
-   * order":
+   * Allows locating elements by their title attribute.
+   *
+   * **Usage**
+   *
+   * Consider the following DOM structure.
    *
    * ```html
-   * <button title='Place the order'>Order Now</button>
+   * <span title='Issues count'>25 issues</span>
+   * ```
+   *
+   * You can check the issues count after locating it by the title text:
+   *
+   * ```js
+   * await expect(page.getByTitle('Issues count')).toHaveText('25 issues');
    * ```
    *
    * @param text Text to locate the element for.
@@ -5951,8 +6504,8 @@ export interface Frame {
     referer?: string;
 
     /**
-     * Maximum operation time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can
-     * be changed by using the
+     * Maximum operation time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via
+     * `navigationTimeout` option in the config, or by using the
      * [browserContext.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-navigation-timeout),
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout),
      * [page.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout)
@@ -5964,8 +6517,8 @@ export interface Frame {
      * When to consider operation succeeded, defaults to `load`. Events can be either:
      * - `'domcontentloaded'` - consider operation to be finished when the `DOMContentLoaded` event is fired.
      * - `'load'` - consider operation to be finished when the `load` event is fired.
-     * - `'networkidle'` - consider operation to be finished when there are no network connections for at least `500`
-     *   ms.
+     * - `'networkidle'` - **DISCOURAGED** consider operation to be finished when there are no network connections for
+     *   at least `500` ms. Don't use this method for testing, rely on web assertions to assess readiness instead.
      * - `'commit'` - consider operation to be finished when network response is received and the document started
      *   loading.
      */
@@ -5973,7 +6526,8 @@ export interface Frame {
   }): Promise<null|Response>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.hover`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.hover([options])](https://playwright.dev/docs/api/class-locator#locator-hover) instead.
+   * Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method hovers over an element matching `selector` by performing the following steps:
    * 1. Find an element matching `selector`. If there is none, wait until a matching element is attached to the DOM.
@@ -5984,10 +6538,10 @@ export interface Frame {
    *    element, or the specified `position`.
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   hover(selector: string, options?: {
@@ -5998,9 +6552,10 @@ export interface Frame {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -6026,8 +6581,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6041,11 +6596,12 @@ export interface Frame {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.innerHTML`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.innerHTML([options])](https://playwright.dev/docs/api/class-locator#locator-inner-html)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns `element.innerHTML`.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   innerHTML(selector: string, options?: {
@@ -6056,8 +6612,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6065,11 +6621,12 @@ export interface Frame {
   }): Promise<string>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.innerText`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.innerText([options])](https://playwright.dev/docs/api/class-locator#locator-inner-text)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns `element.innerText`.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   innerText(selector: string, options?: {
@@ -6080,8 +6637,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6089,7 +6646,9 @@ export interface Frame {
   }): Promise<string>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.inputValue`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.inputValue([options])](https://playwright.dev/docs/api/class-locator#locator-input-value) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns `input.value` for the selected `<input>` or `<textarea>` or `<select>` element.
    *
@@ -6097,7 +6656,7 @@ export interface Frame {
    * [control](https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control), returns the value of the
    * control.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   inputValue(selector: string, options?: {
@@ -6108,8 +6667,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6117,11 +6676,12 @@ export interface Frame {
   }): Promise<string>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.isChecked`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.isChecked([options])](https://playwright.dev/docs/api/class-locator#locator-is-checked)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns whether the element is checked. Throws if the element is not a checkbox or radio input.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   isChecked(selector: string, options?: {
@@ -6132,8 +6692,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6146,11 +6706,13 @@ export interface Frame {
   isDetached(): boolean;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.isDisabled`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.isDisabled([options])](https://playwright.dev/docs/api/class-locator#locator-is-disabled) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns whether the element is disabled, the opposite of [enabled](https://playwright.dev/docs/actionability#enabled).
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   isDisabled(selector: string, options?: {
@@ -6161,8 +6723,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6170,11 +6732,13 @@ export interface Frame {
   }): Promise<boolean>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.isEditable`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.isEditable([options])](https://playwright.dev/docs/api/class-locator#locator-is-editable) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns whether the element is [editable](https://playwright.dev/docs/actionability#editable).
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   isEditable(selector: string, options?: {
@@ -6185,8 +6749,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6196,7 +6760,7 @@ export interface Frame {
   /**
    * Returns whether the element is [enabled](https://playwright.dev/docs/actionability#enabled).
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   isEnabled(selector: string, options?: {
@@ -6207,8 +6771,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6216,12 +6780,13 @@ export interface Frame {
   }): Promise<boolean>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.isHidden`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.isHidden([options])](https://playwright.dev/docs/api/class-locator#locator-is-hidden)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns whether the element is hidden, the opposite of [visible](https://playwright.dev/docs/actionability#visible).  `selector` that
    * does not match any elements is considered hidden.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   isHidden(selector: string, options?: {
@@ -6232,19 +6797,21 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * @deprecated This option is ignored. [`method: Frame.isHidden`] does not wait for the element to become hidden and returns
-     * immediately.
+     * @deprecated This option is ignored.
+     * [frame.isHidden(selector[, options])](https://playwright.dev/docs/api/class-frame#frame-is-hidden) does not wait
+     * for the element to become hidden and returns immediately.
      */
     timeout?: number;
   }): Promise<boolean>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.isVisible`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.isVisible([options])](https://playwright.dev/docs/api/class-locator#locator-is-visible)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns whether the element is [visible](https://playwright.dev/docs/actionability#visible). `selector` that does not match any elements
    * is considered not visible.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   isVisible(selector: string, options?: {
@@ -6255,8 +6822,9 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * @deprecated This option is ignored. [`method: Frame.isVisible`] does not wait for the element to become visible and returns
-     * immediately.
+     * @deprecated This option is ignored.
+     * [frame.isVisible(selector[, options])](https://playwright.dev/docs/api/class-frame#frame-is-visible) does not wait
+     * for the element to become visible and returns immediately.
      */
     timeout?: number;
   }): Promise<boolean>;
@@ -6269,17 +6837,38 @@ export interface Frame {
    * [Learn more about locators](https://playwright.dev/docs/locators).
    *
    * [Learn more about locators](https://playwright.dev/docs/locators).
-   * @param selector A selector to use when resolving DOM element. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to use when resolving DOM element.
    * @param options
    */
   locator(selector: string, options?: {
     /**
-     * Matches elements containing an element that matches an inner locator. Inner locator is queried against the outer
-     * one. For example, `article` that has `text=Playwright` matches `<article><div>Playwright</div></article>`.
+     * Narrows down the results of the method to those which contain elements matching this relative locator. For example,
+     * `article` that has `text=Playwright` matches `<article><div>Playwright</div></article>`.
      *
-     * Note that outer and inner locators must belong to the same frame. Inner locator must not contain [FrameLocator]s.
+     * Inner locator **must be relative** to the outer locator and is queried starting with the outer locator match, not
+     * the document root. For example, you can find `content` that has `div` in
+     * `<article><content><div>Playwright</div></content></article>`. However, looking for `content` that has `article
+     * div` will fail, because the inner locator must be relative and should not use any elements outside the `content`.
+     *
+     * Note that outer and inner locators must belong to the same frame. Inner locator must not contain {@link
+     * FrameLocator}s.
      */
     has?: Locator;
+
+    /**
+     * Matches elements that do not contain an element that matches an inner locator. Inner locator is queried against the
+     * outer one. For example, `article` that does not have `div` matches `<article><span>Playwright</span></article>`.
+     *
+     * Note that outer and inner locators must belong to the same frame. Inner locator must not contain {@link
+     * FrameLocator}s.
+     */
+    hasNot?: Locator;
+
+    /**
+     * Matches elements that do not contain specified text somewhere inside, possibly in a child or a descendant element.
+     * When passed a [string], matching is case-insensitive and searches for a substring.
+     */
+    hasNotText?: string|RegExp;
 
     /**
      * Matches elements containing specified text somewhere inside, possibly in a child or a descendant element. When
@@ -6310,7 +6899,8 @@ export interface Frame {
   parentFrame(): null|Frame;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.press`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.press(key[, options])](https://playwright.dev/docs/api/class-locator#locator-press)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * `key` can specify the intended
    * [keyboardEvent.key](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key) value or a single character
@@ -6321,17 +6911,18 @@ export interface Frame {
    * `Delete`, `Escape`, `ArrowDown`, `End`, `Enter`, `Home`, `Insert`, `PageDown`, `PageUp`, `ArrowRight`, `ArrowUp`,
    * etc.
    *
-   * Following modification shortcuts are also supported: `Shift`, `Control`, `Alt`, `Meta`, `ShiftLeft`.
+   * Following modification shortcuts are also supported: `Shift`, `Control`, `Alt`, `Meta`, `ShiftLeft`,
+   * `ControlOrMeta`. `ControlOrMeta` resolves to `Control` on Windows and Linux and to `Meta` on macOS.
    *
    * Holding down `Shift` will type the text that corresponds to the `key` in the upper case.
    *
    * If `key` is a single character, it is case-sensitive, so the values `a` and `A` will generate different respective
    * texts.
    *
-   * Shortcuts such as `key: "Control+o"` or `key: "Control+Shift+T"` are supported as well. When specified with the
-   * modifier, modifier is pressed and being held while the subsequent key is being pressed.
+   * Shortcuts such as `key: "Control+o"`, `key: "Control++` or `key: "Control+Shift+T"` are supported as well. When
+   * specified with the modifier, modifier is pressed and being held while the subsequent key is being pressed.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param key Name of the key to press or a character to generate, such as `ArrowLeft` or `a`.
    * @param options
    */
@@ -6355,8 +6946,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6364,7 +6955,9 @@ export interface Frame {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.selectOption`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.selectOption(values[, options])](https://playwright.dev/docs/api/class-locator#locator-select-option)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method waits for an element matching `selector`, waits for [actionability](https://playwright.dev/docs/actionability) checks, waits
    * until all specified options are present in the `<select>` element and selects these options.
@@ -6381,7 +6974,7 @@ export interface Frame {
    * **Usage**
    *
    * ```js
-   * // single selection matching the value
+   * // Single selection matching the value or label
    * frame.selectOption('select#colors', 'blue');
    *
    * // single selection matching both the value and the label
@@ -6391,13 +6984,13 @@ export interface Frame {
    * frame.selectOption('select#colors', 'red', 'green', 'blue');
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param values Options to select. If the `<select>` has the `multiple` attribute, all matching options are selected, otherwise
-   * only the first option matching one of the passed options is selected. String values are equivalent to
-   * `{value:'string'}`. Option is considered matching if all specified properties match.
+   * only the first option matching one of the passed options is selected. String values are matching both values and
+   * labels. Option is considered matching if all specified properties match.
    * @param options
    */
-  selectOption(selector: string, values: null|string|ElementHandle|Array<string>|{
+  selectOption(selector: string, values: null|string|ElementHandle|ReadonlyArray<string>|{
     /**
      * Matches by `option.value`. Optional.
      */
@@ -6412,7 +7005,7 @@ export interface Frame {
      * Matches by the index. Optional.
      */
     index?: number;
-  }|Array<ElementHandle>|Array<{
+  }|ReadonlyArray<ElementHandle>|ReadonlyArray<{
     /**
      * Matches by `option.value`. Optional.
      */
@@ -6447,8 +7040,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6456,7 +7049,9 @@ export interface Frame {
   }): Promise<Array<string>>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.setChecked`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.setChecked(checked[, options])](https://playwright.dev/docs/api/class-locator#locator-set-checked)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method checks or unchecks an element matching `selector` by performing the following steps:
    * 1. Find an element matching `selector`. If there is none, wait until a matching element is attached to the DOM.
@@ -6470,10 +7065,10 @@ export interface Frame {
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set.
    * 1. Ensure that the element is now checked or unchecked. If not, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param checked Whether to check or uncheck the checkbox.
    * @param options
    */
@@ -6507,8 +7102,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6522,13 +7117,15 @@ export interface Frame {
   }): Promise<void>;
 
   /**
+   * This method internally calls [document.write()](https://developer.mozilla.org/en-US/docs/Web/API/Document/write),
+   * inheriting all its specific characteristics and behaviors.
    * @param html HTML markup to assign to the page.
    * @param options
    */
   setContent(html: string, options?: {
     /**
-     * Maximum operation time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can
-     * be changed by using the
+     * Maximum operation time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via
+     * `navigationTimeout` option in the config, or by using the
      * [browserContext.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-navigation-timeout),
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout),
      * [page.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout)
@@ -6540,8 +7137,8 @@ export interface Frame {
      * When to consider operation succeeded, defaults to `load`. Events can be either:
      * - `'domcontentloaded'` - consider operation to be finished when the `DOMContentLoaded` event is fired.
      * - `'load'` - consider operation to be finished when the `load` event is fired.
-     * - `'networkidle'` - consider operation to be finished when there are no network connections for at least `500`
-     *   ms.
+     * - `'networkidle'` - **DISCOURAGED** consider operation to be finished when there are no network connections for
+     *   at least `500` ms. Don't use this method for testing, rely on web assertions to assess readiness instead.
      * - `'commit'` - consider operation to be finished when network response is received and the document started
      *   loading.
      */
@@ -6549,7 +7146,9 @@ export interface Frame {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.setInputFiles`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.setInputFiles(files[, options])](https://playwright.dev/docs/api/class-locator#locator-set-input-files)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * Sets the value of the file input to these file paths or files. If some of the `filePaths` are relative paths, then
    * they are resolved relative to the current working directory. For empty array, clears the selected files.
@@ -6559,11 +7158,11 @@ export interface Frame {
    * the `<label>` element that has an associated
    * [control](https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control), targets the control instead.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param files
    * @param options
    */
-  setInputFiles(selector: string, files: string|Array<string>|{
+  setInputFiles(selector: string, files: string|ReadonlyArray<string>|{
     /**
      * File name
      */
@@ -6578,7 +7177,7 @@ export interface Frame {
      * File content
      */
     buffer: Buffer;
-  }|Array<{
+  }|ReadonlyArray<{
     /**
      * File name
      */
@@ -6608,8 +7207,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6617,7 +7216,8 @@ export interface Frame {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.tap`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.tap([options])](https://playwright.dev/docs/api/class-locator#locator-tap) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
    *
    * This method taps an element matching `selector` by performing the following steps:
    * 1. Find an element matching `selector`. If there is none, wait until a matching element is attached to the DOM.
@@ -6628,12 +7228,12 @@ export interface Frame {
    *    element, or the specified `position`.
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    *
    * **NOTE** `frame.tap()` requires that the `hasTouch` option of the browser context be set to true.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   tap(selector: string, options?: {
@@ -6644,9 +7244,10 @@ export interface Frame {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -6672,8 +7273,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6687,11 +7288,13 @@ export interface Frame {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.textContent`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based
+   * [locator.textContent([options])](https://playwright.dev/docs/api/class-locator#locator-text-content) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
    *
    * Returns `element.textContent`.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   textContent(selector: string, options?: {
@@ -6702,8 +7305,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6716,8 +7319,6 @@ export interface Frame {
   title(): Promise<string>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.type`] instead. Read more about [locators](https://playwright.dev/docs/locators).
-   *
    * Sends a `keydown`, `keypress`/`input`, and `keyup` event for each character in the text. `frame.type` can be used
    * to send fine-grained keyboard events. To fill values in form fields, use
    * [frame.fill(selector, value[, options])](https://playwright.dev/docs/api/class-frame#frame-fill).
@@ -6726,14 +7327,12 @@ export interface Frame {
    * [keyboard.press(key[, options])](https://playwright.dev/docs/api/class-keyboard#keyboard-press).
    *
    * **Usage**
-   *
-   * ```js
-   * await frame.type('#mytextarea', 'Hello'); // Types instantly
-   * await frame.type('#mytextarea', 'World', {delay: 100}); // Types slower, like a user
-   * ```
-   *
+   * @deprecated In most cases, you should use
+   * [locator.fill(value[, options])](https://playwright.dev/docs/api/class-locator#locator-fill) instead. You only need
+   * to press keys one by one if there is special keyboard handling on the page - in this case use
+   * [locator.pressSequentially(text[, options])](https://playwright.dev/docs/api/class-locator#locator-press-sequentially).
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param text A text to type into a focused element.
    * @param options
    */
@@ -6757,8 +7356,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6766,7 +7365,8 @@ export interface Frame {
   }): Promise<void>;
 
   /**
-   * **NOTE** Use locator-based [`method: Locator.uncheck`] instead. Read more about [locators](https://playwright.dev/docs/locators).
+   * **NOTE** Use locator-based [locator.uncheck([options])](https://playwright.dev/docs/api/class-locator#locator-uncheck)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
    *
    * This method checks an element matching `selector` by performing the following steps:
    * 1. Find an element matching `selector`. If there is none, wait until a matching element is attached to the DOM.
@@ -6780,10 +7380,10 @@ export interface Frame {
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set.
    * 1. Ensure that the element is now unchecked. If not, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param selector A selector to search for an element. If there are multiple elements satisfying the selector, the first will be
-   * used. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * used.
    * @param options
    */
   uncheck(selector: string, options?: {
@@ -6816,8 +7416,8 @@ export interface Frame {
     strict?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -6842,6 +7442,9 @@ export interface Frame {
    * committed when this method is called. If current document has already reached the required state, resolves
    * immediately.
    *
+   * **NOTE** Most of the time, this method is not needed because Playwright
+   * [auto-waits before every action](https://playwright.dev/docs/actionability).
+   *
    * **Usage**
    *
    * ```js
@@ -6853,13 +7456,14 @@ export interface Frame {
    * document, the method resolves immediately. Can be one of:
    * - `'load'` - wait for the `load` event to be fired.
    * - `'domcontentloaded'` - wait for the `DOMContentLoaded` event to be fired.
-   * - `'networkidle'` - wait until there are no network connections for at least `500` ms.
+   * - `'networkidle'` - **DISCOURAGED** wait until there are no network connections for at least `500` ms. Don't use
+   * this method for testing, rely on web assertions to assess readiness instead.
    * @param options
    */
   waitForLoadState(state?: "load"|"domcontentloaded"|"networkidle", options?: {
     /**
-     * Maximum operation time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can
-     * be changed by using the
+     * Maximum operation time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via
+     * `navigationTimeout` option in the config, or by using the
      * [browserContext.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-navigation-timeout),
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout),
      * [page.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout)
@@ -6887,12 +7491,14 @@ export interface Frame {
    *
    * **NOTE** Usage of the [History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API) to change the URL
    * is considered a navigation.
+   * @deprecated This method is inherently racy, please use
+   * [frame.waitForURL(url[, options])](https://playwright.dev/docs/api/class-frame#frame-wait-for-url) instead.
    * @param options
    */
   waitForNavigation(options?: {
     /**
-     * Maximum operation time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can
-     * be changed by using the
+     * Maximum operation time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via
+     * `navigationTimeout` option in the config, or by using the
      * [browserContext.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-navigation-timeout),
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout),
      * [page.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout)
@@ -6911,8 +7517,8 @@ export interface Frame {
      * When to consider operation succeeded, defaults to `load`. Events can be either:
      * - `'domcontentloaded'` - consider operation to be finished when the `DOMContentLoaded` event is fired.
      * - `'load'` - consider operation to be finished when the `load` event is fired.
-     * - `'networkidle'` - consider operation to be finished when there are no network connections for at least `500`
-     *   ms.
+     * - `'networkidle'` - **DISCOURAGED** consider operation to be finished when there are no network connections for
+     *   at least `500` ms. Don't use this method for testing, rely on web assertions to assess readiness instead.
      * - `'commit'` - consider operation to be finished when network response is received and the document started
      *   loading.
      */
@@ -6920,6 +7526,9 @@ export interface Frame {
   }): Promise<null|Response>;
 
   /**
+   * **NOTE** Never wait for timeout in production. Tests that wait for time are inherently flaky. Use {@link Locator} actions
+   * and web assertions that wait automatically.
+   *
    * Waits for the given `timeout` in milliseconds.
    *
    * Note that `frame.waitForTimeout()` should only be used for debugging. Tests using the timer in production are going
@@ -6945,8 +7554,8 @@ export interface Frame {
    */
   waitForURL(url: string|RegExp|((url: URL) => boolean), options?: {
     /**
-     * Maximum operation time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can
-     * be changed by using the
+     * Maximum operation time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via
+     * `navigationTimeout` option in the config, or by using the
      * [browserContext.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-navigation-timeout),
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout),
      * [page.setDefaultNavigationTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout)
@@ -6958,13 +7567,14 @@ export interface Frame {
      * When to consider operation succeeded, defaults to `load`. Events can be either:
      * - `'domcontentloaded'` - consider operation to be finished when the `DOMContentLoaded` event is fired.
      * - `'load'` - consider operation to be finished when the `load` event is fired.
-     * - `'networkidle'` - consider operation to be finished when there are no network connections for at least `500`
-     *   ms.
+     * - `'networkidle'` - **DISCOURAGED** consider operation to be finished when there are no network connections for
+     *   at least `500` ms. Don't use this method for testing, rely on web assertions to assess readiness instead.
      * - `'commit'` - consider operation to be finished when network response is received and the document started
      *   loading.
      */
     waitUntil?: "load"|"domcontentloaded"|"networkidle"|"commit";
-  }): Promise<void>;}
+  }): Promise<void>;
+}
 
 /**
  * - extends: [EventEmitter]
@@ -7146,15 +7756,57 @@ export interface BrowserContext {
    * ```
    *
    */
-  on(event: 'backgroundpage', listener: (page: Page) => void): this;
+  on(event: 'backgroundpage', listener: (page: Page) => any): this;
 
   /**
    * Emitted when Browser context gets closed. This might happen because of one of the following:
    * - Browser context is closed.
    * - Browser application is closed or crashed.
-   * - The [browser.close()](https://playwright.dev/docs/api/class-browser#browser-close) method was called.
+   * - The [browser.close([options])](https://playwright.dev/docs/api/class-browser#browser-close) method was called.
    */
-  on(event: 'close', listener: (browserContext: BrowserContext) => void): this;
+  on(event: 'close', listener: (browserContext: BrowserContext) => any): this;
+
+  /**
+   * Emitted when JavaScript within the page calls one of console API methods, e.g. `console.log` or `console.dir`.
+   *
+   * The arguments passed into `console.log` and the page are available on the {@link ConsoleMessage} event handler
+   * argument.
+   *
+   * **Usage**
+   *
+   * ```js
+   * context.on('console', async msg => {
+   *   const values = [];
+   *   for (const arg of msg.args())
+   *     values.push(await arg.jsonValue());
+   *   console.log(...values);
+   * });
+   * await page.evaluate(() => console.log('hello', 5, { foo: 'bar' }));
+   * ```
+   *
+   */
+  on(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
+
+  /**
+   * Emitted when a JavaScript dialog appears, such as `alert`, `prompt`, `confirm` or `beforeunload`. Listener **must**
+   * either [dialog.accept([promptText])](https://playwright.dev/docs/api/class-dialog#dialog-accept) or
+   * [dialog.dismiss()](https://playwright.dev/docs/api/class-dialog#dialog-dismiss) the dialog - otherwise the page
+   * will [freeze](https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop#never_blocking) waiting for the
+   * dialog, and actions like click will never finish.
+   *
+   * **Usage**
+   *
+   * ```js
+   * context.on('dialog', dialog => {
+   *   dialog.accept();
+   * });
+   * ```
+   *
+   * **NOTE** When no [page.on('dialog')](https://playwright.dev/docs/api/class-page#page-event-dialog) or
+   * [browserContext.on('dialog')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-dialog)
+   * listeners are present, all dialogs are automatically dismissed.
+   */
+  on(event: 'dialog', listener: (dialog: Dialog) => any): this;
 
   /**
    * The event is emitted when a new Page is created in the BrowserContext. The page may still be loading. The event
@@ -7164,7 +7816,12 @@ export interface BrowserContext {
    *
    * The earliest moment that page is available is when it has navigated to the initial url. For example, when opening a
    * popup with `window.open('http://example.com')`, this event will fire when the network request to
-   * "http://example.com" is done and its response has started loading in the popup.
+   * "http://example.com" is done and its response has started loading in the popup. If you would like to route/listen
+   * to this network request, use
+   * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)
+   * and
+   * [browserContext.on('request')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-request)
+   * respectively instead of similar methods on the {@link Page}.
    *
    * ```js
    * const newPagePromise = context.waitForEvent('page');
@@ -7177,7 +7834,7 @@ export interface BrowserContext {
    * [page.waitForLoadState([state, options])](https://playwright.dev/docs/api/class-page#page-wait-for-load-state) to
    * wait until the page gets to a particular state (you should not need it in most cases).
    */
-  on(event: 'page', listener: (page: Page) => void): this;
+  on(event: 'page', listener: (page: Page) => any): this;
 
   /**
    * Emitted when a request is issued from any pages created through this context. The [request] object is read-only. To
@@ -7188,7 +7845,7 @@ export interface BrowserContext {
    * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)
    * or [page.route(url, handler[, options])](https://playwright.dev/docs/api/class-page#page-route).
    */
-  on(event: 'request', listener: (request: Request) => void): this;
+  on(event: 'request', listener: (request: Request) => any): this;
 
   /**
    * Emitted when a request fails, for example by timing out. To only listen for failed requests from a particular page,
@@ -7200,7 +7857,7 @@ export interface BrowserContext {
    * event and not with
    * [browserContext.on('requestfailed')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-request-failed).
    */
-  on(event: 'requestfailed', listener: (request: Request) => void): this;
+  on(event: 'requestfailed', listener: (request: Request) => any): this;
 
   /**
    * Emitted when a request finishes successfully after downloading the response body. For a successful response, the
@@ -7208,61 +7865,82 @@ export interface BrowserContext {
    * particular page, use
    * [page.on('requestfinished')](https://playwright.dev/docs/api/class-page#page-event-request-finished).
    */
-  on(event: 'requestfinished', listener: (request: Request) => void): this;
+  on(event: 'requestfinished', listener: (request: Request) => any): this;
 
   /**
    * Emitted when [response] status and headers are received for a request. For a successful response, the sequence of
    * events is `request`, `response` and `requestfinished`. To listen for response events from a particular page, use
    * [page.on('response')](https://playwright.dev/docs/api/class-page#page-event-response).
    */
-  on(event: 'response', listener: (response: Response) => void): this;
+  on(event: 'response', listener: (response: Response) => any): this;
 
   /**
    * **NOTE** Service workers are only supported on Chromium-based browsers.
    *
    * Emitted when new service worker is created in the context.
    */
-  on(event: 'serviceworker', listener: (worker: Worker) => void): this;
+  on(event: 'serviceworker', listener: (worker: Worker) => any): this;
+
+  /**
+   * Emitted when exception is unhandled in any of the pages in this context. To listen for errors from a particular
+   * page, use [page.on('pageerror')](https://playwright.dev/docs/api/class-page#page-event-page-error) instead.
+   */
+  on(event: 'weberror', listener: (webError: WebError) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'backgroundpage', listener: (page: Page) => void): this;
+  once(event: 'backgroundpage', listener: (page: Page) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'close', listener: (browserContext: BrowserContext) => void): this;
+  once(event: 'close', listener: (browserContext: BrowserContext) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'page', listener: (page: Page) => void): this;
+  once(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'request', listener: (request: Request) => void): this;
+  once(event: 'dialog', listener: (dialog: Dialog) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'requestfailed', listener: (request: Request) => void): this;
+  once(event: 'page', listener: (page: Page) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'requestfinished', listener: (request: Request) => void): this;
+  once(event: 'request', listener: (request: Request) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'response', listener: (response: Response) => void): this;
+  once(event: 'requestfailed', listener: (request: Request) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'serviceworker', listener: (worker: Worker) => void): this;
+  once(event: 'requestfinished', listener: (request: Request) => any): this;
+
+  /**
+   * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
+   */
+  once(event: 'response', listener: (response: Response) => any): this;
+
+  /**
+   * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
+   */
+  once(event: 'serviceworker', listener: (worker: Worker) => any): this;
+
+  /**
+   * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
+   */
+  once(event: 'weberror', listener: (webError: WebError) => any): this;
 
   /**
    * **NOTE** Only works with Chromium browser's persistent context.
@@ -7274,15 +7952,57 @@ export interface BrowserContext {
    * ```
    *
    */
-  addListener(event: 'backgroundpage', listener: (page: Page) => void): this;
+  addListener(event: 'backgroundpage', listener: (page: Page) => any): this;
 
   /**
    * Emitted when Browser context gets closed. This might happen because of one of the following:
    * - Browser context is closed.
    * - Browser application is closed or crashed.
-   * - The [browser.close()](https://playwright.dev/docs/api/class-browser#browser-close) method was called.
+   * - The [browser.close([options])](https://playwright.dev/docs/api/class-browser#browser-close) method was called.
    */
-  addListener(event: 'close', listener: (browserContext: BrowserContext) => void): this;
+  addListener(event: 'close', listener: (browserContext: BrowserContext) => any): this;
+
+  /**
+   * Emitted when JavaScript within the page calls one of console API methods, e.g. `console.log` or `console.dir`.
+   *
+   * The arguments passed into `console.log` and the page are available on the {@link ConsoleMessage} event handler
+   * argument.
+   *
+   * **Usage**
+   *
+   * ```js
+   * context.on('console', async msg => {
+   *   const values = [];
+   *   for (const arg of msg.args())
+   *     values.push(await arg.jsonValue());
+   *   console.log(...values);
+   * });
+   * await page.evaluate(() => console.log('hello', 5, { foo: 'bar' }));
+   * ```
+   *
+   */
+  addListener(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
+
+  /**
+   * Emitted when a JavaScript dialog appears, such as `alert`, `prompt`, `confirm` or `beforeunload`. Listener **must**
+   * either [dialog.accept([promptText])](https://playwright.dev/docs/api/class-dialog#dialog-accept) or
+   * [dialog.dismiss()](https://playwright.dev/docs/api/class-dialog#dialog-dismiss) the dialog - otherwise the page
+   * will [freeze](https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop#never_blocking) waiting for the
+   * dialog, and actions like click will never finish.
+   *
+   * **Usage**
+   *
+   * ```js
+   * context.on('dialog', dialog => {
+   *   dialog.accept();
+   * });
+   * ```
+   *
+   * **NOTE** When no [page.on('dialog')](https://playwright.dev/docs/api/class-page#page-event-dialog) or
+   * [browserContext.on('dialog')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-dialog)
+   * listeners are present, all dialogs are automatically dismissed.
+   */
+  addListener(event: 'dialog', listener: (dialog: Dialog) => any): this;
 
   /**
    * The event is emitted when a new Page is created in the BrowserContext. The page may still be loading. The event
@@ -7292,7 +8012,12 @@ export interface BrowserContext {
    *
    * The earliest moment that page is available is when it has navigated to the initial url. For example, when opening a
    * popup with `window.open('http://example.com')`, this event will fire when the network request to
-   * "http://example.com" is done and its response has started loading in the popup.
+   * "http://example.com" is done and its response has started loading in the popup. If you would like to route/listen
+   * to this network request, use
+   * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)
+   * and
+   * [browserContext.on('request')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-request)
+   * respectively instead of similar methods on the {@link Page}.
    *
    * ```js
    * const newPagePromise = context.waitForEvent('page');
@@ -7305,7 +8030,7 @@ export interface BrowserContext {
    * [page.waitForLoadState([state, options])](https://playwright.dev/docs/api/class-page#page-wait-for-load-state) to
    * wait until the page gets to a particular state (you should not need it in most cases).
    */
-  addListener(event: 'page', listener: (page: Page) => void): this;
+  addListener(event: 'page', listener: (page: Page) => any): this;
 
   /**
    * Emitted when a request is issued from any pages created through this context. The [request] object is read-only. To
@@ -7316,7 +8041,7 @@ export interface BrowserContext {
    * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)
    * or [page.route(url, handler[, options])](https://playwright.dev/docs/api/class-page#page-route).
    */
-  addListener(event: 'request', listener: (request: Request) => void): this;
+  addListener(event: 'request', listener: (request: Request) => any): this;
 
   /**
    * Emitted when a request fails, for example by timing out. To only listen for failed requests from a particular page,
@@ -7328,7 +8053,7 @@ export interface BrowserContext {
    * event and not with
    * [browserContext.on('requestfailed')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-request-failed).
    */
-  addListener(event: 'requestfailed', listener: (request: Request) => void): this;
+  addListener(event: 'requestfailed', listener: (request: Request) => any): this;
 
   /**
    * Emitted when a request finishes successfully after downloading the response body. For a successful response, the
@@ -7336,101 +8061,137 @@ export interface BrowserContext {
    * particular page, use
    * [page.on('requestfinished')](https://playwright.dev/docs/api/class-page#page-event-request-finished).
    */
-  addListener(event: 'requestfinished', listener: (request: Request) => void): this;
+  addListener(event: 'requestfinished', listener: (request: Request) => any): this;
 
   /**
    * Emitted when [response] status and headers are received for a request. For a successful response, the sequence of
    * events is `request`, `response` and `requestfinished`. To listen for response events from a particular page, use
    * [page.on('response')](https://playwright.dev/docs/api/class-page#page-event-response).
    */
-  addListener(event: 'response', listener: (response: Response) => void): this;
+  addListener(event: 'response', listener: (response: Response) => any): this;
 
   /**
    * **NOTE** Service workers are only supported on Chromium-based browsers.
    *
    * Emitted when new service worker is created in the context.
    */
-  addListener(event: 'serviceworker', listener: (worker: Worker) => void): this;
+  addListener(event: 'serviceworker', listener: (worker: Worker) => any): this;
+
+  /**
+   * Emitted when exception is unhandled in any of the pages in this context. To listen for errors from a particular
+   * page, use [page.on('pageerror')](https://playwright.dev/docs/api/class-page#page-event-page-error) instead.
+   */
+  addListener(event: 'weberror', listener: (webError: WebError) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'backgroundpage', listener: (page: Page) => void): this;
+  removeListener(event: 'backgroundpage', listener: (page: Page) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'close', listener: (browserContext: BrowserContext) => void): this;
+  removeListener(event: 'close', listener: (browserContext: BrowserContext) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'page', listener: (page: Page) => void): this;
+  removeListener(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'request', listener: (request: Request) => void): this;
+  removeListener(event: 'dialog', listener: (dialog: Dialog) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'requestfailed', listener: (request: Request) => void): this;
+  removeListener(event: 'page', listener: (page: Page) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'requestfinished', listener: (request: Request) => void): this;
+  removeListener(event: 'request', listener: (request: Request) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'response', listener: (response: Response) => void): this;
+  removeListener(event: 'requestfailed', listener: (request: Request) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'serviceworker', listener: (worker: Worker) => void): this;
+  removeListener(event: 'requestfinished', listener: (request: Request) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'backgroundpage', listener: (page: Page) => void): this;
+  removeListener(event: 'response', listener: (response: Response) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'close', listener: (browserContext: BrowserContext) => void): this;
+  removeListener(event: 'serviceworker', listener: (worker: Worker) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'page', listener: (page: Page) => void): this;
+  removeListener(event: 'weberror', listener: (webError: WebError) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'request', listener: (request: Request) => void): this;
+  off(event: 'backgroundpage', listener: (page: Page) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'requestfailed', listener: (request: Request) => void): this;
+  off(event: 'close', listener: (browserContext: BrowserContext) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'requestfinished', listener: (request: Request) => void): this;
+  off(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'response', listener: (response: Response) => void): this;
+  off(event: 'dialog', listener: (dialog: Dialog) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'serviceworker', listener: (worker: Worker) => void): this;
+  off(event: 'page', listener: (page: Page) => any): this;
+
+  /**
+   * Removes an event listener added by `on` or `addListener`.
+   */
+  off(event: 'request', listener: (request: Request) => any): this;
+
+  /**
+   * Removes an event listener added by `on` or `addListener`.
+   */
+  off(event: 'requestfailed', listener: (request: Request) => any): this;
+
+  /**
+   * Removes an event listener added by `on` or `addListener`.
+   */
+  off(event: 'requestfinished', listener: (request: Request) => any): this;
+
+  /**
+   * Removes an event listener added by `on` or `addListener`.
+   */
+  off(event: 'response', listener: (response: Response) => any): this;
+
+  /**
+   * Removes an event listener added by `on` or `addListener`.
+   */
+  off(event: 'serviceworker', listener: (worker: Worker) => any): this;
+
+  /**
+   * Removes an event listener added by `on` or `addListener`.
+   */
+  off(event: 'weberror', listener: (webError: WebError) => any): this;
 
   /**
    * **NOTE** Only works with Chromium browser's persistent context.
@@ -7442,15 +8203,57 @@ export interface BrowserContext {
    * ```
    *
    */
-  prependListener(event: 'backgroundpage', listener: (page: Page) => void): this;
+  prependListener(event: 'backgroundpage', listener: (page: Page) => any): this;
 
   /**
    * Emitted when Browser context gets closed. This might happen because of one of the following:
    * - Browser context is closed.
    * - Browser application is closed or crashed.
-   * - The [browser.close()](https://playwright.dev/docs/api/class-browser#browser-close) method was called.
+   * - The [browser.close([options])](https://playwright.dev/docs/api/class-browser#browser-close) method was called.
    */
-  prependListener(event: 'close', listener: (browserContext: BrowserContext) => void): this;
+  prependListener(event: 'close', listener: (browserContext: BrowserContext) => any): this;
+
+  /**
+   * Emitted when JavaScript within the page calls one of console API methods, e.g. `console.log` or `console.dir`.
+   *
+   * The arguments passed into `console.log` and the page are available on the {@link ConsoleMessage} event handler
+   * argument.
+   *
+   * **Usage**
+   *
+   * ```js
+   * context.on('console', async msg => {
+   *   const values = [];
+   *   for (const arg of msg.args())
+   *     values.push(await arg.jsonValue());
+   *   console.log(...values);
+   * });
+   * await page.evaluate(() => console.log('hello', 5, { foo: 'bar' }));
+   * ```
+   *
+   */
+  prependListener(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
+
+  /**
+   * Emitted when a JavaScript dialog appears, such as `alert`, `prompt`, `confirm` or `beforeunload`. Listener **must**
+   * either [dialog.accept([promptText])](https://playwright.dev/docs/api/class-dialog#dialog-accept) or
+   * [dialog.dismiss()](https://playwright.dev/docs/api/class-dialog#dialog-dismiss) the dialog - otherwise the page
+   * will [freeze](https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop#never_blocking) waiting for the
+   * dialog, and actions like click will never finish.
+   *
+   * **Usage**
+   *
+   * ```js
+   * context.on('dialog', dialog => {
+   *   dialog.accept();
+   * });
+   * ```
+   *
+   * **NOTE** When no [page.on('dialog')](https://playwright.dev/docs/api/class-page#page-event-dialog) or
+   * [browserContext.on('dialog')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-dialog)
+   * listeners are present, all dialogs are automatically dismissed.
+   */
+  prependListener(event: 'dialog', listener: (dialog: Dialog) => any): this;
 
   /**
    * The event is emitted when a new Page is created in the BrowserContext. The page may still be loading. The event
@@ -7460,7 +8263,12 @@ export interface BrowserContext {
    *
    * The earliest moment that page is available is when it has navigated to the initial url. For example, when opening a
    * popup with `window.open('http://example.com')`, this event will fire when the network request to
-   * "http://example.com" is done and its response has started loading in the popup.
+   * "http://example.com" is done and its response has started loading in the popup. If you would like to route/listen
+   * to this network request, use
+   * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)
+   * and
+   * [browserContext.on('request')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-request)
+   * respectively instead of similar methods on the {@link Page}.
    *
    * ```js
    * const newPagePromise = context.waitForEvent('page');
@@ -7473,7 +8281,7 @@ export interface BrowserContext {
    * [page.waitForLoadState([state, options])](https://playwright.dev/docs/api/class-page#page-wait-for-load-state) to
    * wait until the page gets to a particular state (you should not need it in most cases).
    */
-  prependListener(event: 'page', listener: (page: Page) => void): this;
+  prependListener(event: 'page', listener: (page: Page) => any): this;
 
   /**
    * Emitted when a request is issued from any pages created through this context. The [request] object is read-only. To
@@ -7484,7 +8292,7 @@ export interface BrowserContext {
    * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)
    * or [page.route(url, handler[, options])](https://playwright.dev/docs/api/class-page#page-route).
    */
-  prependListener(event: 'request', listener: (request: Request) => void): this;
+  prependListener(event: 'request', listener: (request: Request) => any): this;
 
   /**
    * Emitted when a request fails, for example by timing out. To only listen for failed requests from a particular page,
@@ -7496,7 +8304,7 @@ export interface BrowserContext {
    * event and not with
    * [browserContext.on('requestfailed')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-request-failed).
    */
-  prependListener(event: 'requestfailed', listener: (request: Request) => void): this;
+  prependListener(event: 'requestfailed', listener: (request: Request) => any): this;
 
   /**
    * Emitted when a request finishes successfully after downloading the response body. For a successful response, the
@@ -7504,21 +8312,27 @@ export interface BrowserContext {
    * particular page, use
    * [page.on('requestfinished')](https://playwright.dev/docs/api/class-page#page-event-request-finished).
    */
-  prependListener(event: 'requestfinished', listener: (request: Request) => void): this;
+  prependListener(event: 'requestfinished', listener: (request: Request) => any): this;
 
   /**
    * Emitted when [response] status and headers are received for a request. For a successful response, the sequence of
    * events is `request`, `response` and `requestfinished`. To listen for response events from a particular page, use
    * [page.on('response')](https://playwright.dev/docs/api/class-page#page-event-response).
    */
-  prependListener(event: 'response', listener: (response: Response) => void): this;
+  prependListener(event: 'response', listener: (response: Response) => any): this;
 
   /**
    * **NOTE** Service workers are only supported on Chromium-based browsers.
    *
    * Emitted when new service worker is created in the context.
    */
-  prependListener(event: 'serviceworker', listener: (worker: Worker) => void): this;
+  prependListener(event: 'serviceworker', listener: (worker: Worker) => any): this;
+
+  /**
+   * Emitted when exception is unhandled in any of the pages in this context. To listen for errors from a particular
+   * page, use [page.on('pageerror')](https://playwright.dev/docs/api/class-page#page-event-page-error) instead.
+   */
+  prependListener(event: 'weberror', listener: (webError: WebError) => any): this;
 
   /**
    * Adds cookies into this browser context. All pages within this context will have these cookies installed. Cookies
@@ -7531,9 +8345,11 @@ export interface BrowserContext {
    * await browserContext.addCookies([cookieObject1, cookieObject2]);
    * ```
    *
-   * @param cookies
+   * @param cookies Adds cookies to the browser context.
+   *
+   * For the cookie to apply to all subdomains as well, prefix domain with a dot, like this: ".example.com".
    */
-  addCookies(cookies: Array<{
+  addCookies(cookies: ReadonlyArray<{
     name: string;
 
     value: string;
@@ -7587,9 +8403,37 @@ export interface BrowserContext {
   browser(): null|Browser;
 
   /**
-   * Clears context cookies.
+   * Removes cookies from context. Accepts optional filter.
+   *
+   * **Usage**
+   *
+   * ```js
+   * await context.clearCookies();
+   * await context.clearCookies({ name: 'session-id' });
+   * await context.clearCookies({ domain: 'my-origin.com' });
+   * await context.clearCookies({ domain: /.*my-origin\.com/ });
+   * await context.clearCookies({ path: '/api/v1' });
+   * await context.clearCookies({ name: 'session-id', domain: 'my-origin.com' });
+   * ```
+   *
+   * @param options
    */
-  clearCookies(): Promise<void>;
+  clearCookies(options?: {
+    /**
+     * Only removes cookies with the given domain.
+     */
+    domain?: string|RegExp;
+
+    /**
+     * Only removes cookies with the given name.
+     */
+    name?: string|RegExp;
+
+    /**
+     * Only removes cookies with the given path.
+     */
+    path?: string|RegExp;
+  }): Promise<void>;
 
   /**
    * Clears all permission overrides for the browser context.
@@ -7610,15 +8454,21 @@ export interface BrowserContext {
    * Closes the browser context. All the pages that belong to the browser context will be closed.
    *
    * **NOTE** The default browser context cannot be closed.
+   * @param options
    */
-  close(): Promise<void>;
+  close(options?: {
+    /**
+     * The reason to be reported to the operations interrupted by the context closure.
+     */
+    reason?: string;
+  }): Promise<void>;
 
   /**
    * If no URLs are specified, this method returns all cookies. If URLs are specified, only cookies that affect those
    * URLs are returned.
    * @param urls Optional list of URLs.
    */
-  cookies(urls?: string|Array<string>): Promise<Array<Cookie>>;
+  cookies(urls?: string|ReadonlyArray<string>): Promise<Array<Cookie>>;
 
   /**
    * The method adds a function called `name` on the `window` object of every frame in every page in the context. When
@@ -7640,7 +8490,9 @@ export interface BrowserContext {
    * (async () => {
    *   const browser = await webkit.launch({ headless: false });
    *   const context = await browser.newContext();
-   *   await context.exposeFunction('sha256', text => crypto.createHash('sha256').update(text).digest('hex'));
+   *   await context.exposeFunction('sha256', text =>
+   *     crypto.createHash('sha256').update(text).digest('hex'),
+   *   );
    *   const page = await context.newPage();
    *   await page.setContent(`
    *     <script>
@@ -7681,7 +8533,7 @@ export interface BrowserContext {
    * - `'payment-handler'`
    * @param options
    */
-  grantPermissions(permissions: Array<string>, options?: {
+  grantPermissions(permissions: ReadonlyArray<string>, options?: {
     /**
      * The [origin] to grant permissions to, e.g. "https://example.com".
      */
@@ -7706,11 +8558,6 @@ export interface BrowserContext {
    * Returns all open pages in the context.
    */
   pages(): Array<Page>;
-
-  /**
-   * API testing helper associated with this context. Requests made with this API will use context cookies.
-   */
-  request: APIRequestContext;
 
   /**
    * Routing provides the capability to modify network requests that are made by any page in the browser context. Once
@@ -7748,11 +8595,11 @@ export interface BrowserContext {
    * some post data, and leaving all other requests as is:
    *
    * ```js
-   * await context.route('/api/**', route => {
+   * await context.route('/api/**', async route => {
    *   if (route.request().postData().includes('my-string'))
-   *     route.fulfill({ body: 'mocked-data' });
+   *     await route.fulfill({ body: 'mocked-data' });
    *   else
-   *     route.continue();
+   *     await route.continue();
    * });
    * ```
    *
@@ -7770,7 +8617,7 @@ export interface BrowserContext {
    * @param handler handler function to route the request.
    * @param options
    */
-  route(url: string|RegExp|((url: URL) => boolean), handler: ((route: Route, request: Request) => void), options?: {
+  route(url: string|RegExp|((url: URL) => boolean), handler: ((route: Route, request: Request) => Promise<any>|any), options?: {
     /**
      * How often a route should be used. By default it will be used every time.
      */
@@ -7779,7 +8626,7 @@ export interface BrowserContext {
 
   /**
    * If specified the network requests that are made in the context will be served from the HAR file. Read more about
-   * [Replaying from HAR](https://playwright.dev/docs/network#replaying-from-har).
+   * [Replaying from HAR](https://playwright.dev/docs/mock#replaying-from-har).
    *
    * Playwright will not serve requests intercepted by Service Worker from the HAR file. See
    * [this](https://github.com/microsoft/playwright/issues/1090) issue. We recommend disabling Service Workers when
@@ -7800,9 +8647,23 @@ export interface BrowserContext {
     /**
      * If specified, updates the given HAR with the actual network information instead of serving from file. The file is
      * written to disk when
-     * [browserContext.close()](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) is called.
+     * [browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) is
+     * called.
      */
     update?: boolean;
+
+    /**
+     * Optional setting to control resource content management. If `attach` is specified, resources are persisted as
+     * separate files or entries in the ZIP archive. If `embed` is specified, content is stored inline the HAR file.
+     */
+    updateContent?: "embed"|"attach";
+
+    /**
+     * When set to `minimal`, only record information necessary for routing from HAR. This omits sizes, timing, page,
+     * cookies, security and other types of HAR information that are not used when replaying from HAR. Defaults to
+     * `minimal`.
+     */
+    updateMode?: "full"|"minimal";
 
     /**
      * A glob pattern, regular expression or predicate to match the request URL. Only requests with URL matching the
@@ -7869,7 +8730,7 @@ export interface BrowserContext {
    * **Usage**
    *
    * ```js
-   * await browserContext.setGeolocation({latitude: 59.95, longitude: 30.31667});
+   * await browserContext.setGeolocation({ latitude: 59.95, longitude: 30.31667 });
    * ```
    *
    * **NOTE** Consider using
@@ -7952,8 +8813,6 @@ export interface BrowserContext {
     }>;
   }>;
 
-  tracing: Tracing;
-
   /**
    * Removes a route created with
    * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route).
@@ -7963,7 +8822,26 @@ export interface BrowserContext {
    * @param handler Optional handler function used to register a routing with
    * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route).
    */
-  unroute(url: string|RegExp|((url: URL) => boolean), handler?: ((route: Route, request: Request) => void)): Promise<void>;
+  unroute(url: string|RegExp|((url: URL) => boolean), handler?: ((route: Route, request: Request) => Promise<any>|any)): Promise<void>;
+
+  /**
+   * Removes all routes created with
+   * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)
+   * and
+   * [browserContext.routeFromHAR(har[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route-from-har).
+   * @param options
+   */
+  unrouteAll(options?: {
+    /**
+     * Specifies whether to wait for already running handlers and what to do if they throw errors:
+     * - `'default'` - do not wait for current handler calls (if any) to finish, if unrouted handler throws, it may
+     *   result in unhandled error
+     * - `'wait'` - wait for current handler calls (if any) to finish
+     * - `'ignoreErrors'` - do not wait for current handler calls (if any) to finish, all errors thrown by the handlers
+     *   after unrouting are silently caught
+     */
+    behavior?: "wait"|"ignoreErrors"|"default";
+  }): Promise<void>;
 
   /**
    * **NOTE** Only works with Chromium browser's persistent context.
@@ -7981,9 +8859,51 @@ export interface BrowserContext {
    * Emitted when Browser context gets closed. This might happen because of one of the following:
    * - Browser context is closed.
    * - Browser application is closed or crashed.
-   * - The [browser.close()](https://playwright.dev/docs/api/class-browser#browser-close) method was called.
+   * - The [browser.close([options])](https://playwright.dev/docs/api/class-browser#browser-close) method was called.
    */
   waitForEvent(event: 'close', optionsOrPredicate?: { predicate?: (browserContext: BrowserContext) => boolean | Promise<boolean>, timeout?: number } | ((browserContext: BrowserContext) => boolean | Promise<boolean>)): Promise<BrowserContext>;
+
+  /**
+   * Emitted when JavaScript within the page calls one of console API methods, e.g. `console.log` or `console.dir`.
+   *
+   * The arguments passed into `console.log` and the page are available on the {@link ConsoleMessage} event handler
+   * argument.
+   *
+   * **Usage**
+   *
+   * ```js
+   * context.on('console', async msg => {
+   *   const values = [];
+   *   for (const arg of msg.args())
+   *     values.push(await arg.jsonValue());
+   *   console.log(...values);
+   * });
+   * await page.evaluate(() => console.log('hello', 5, { foo: 'bar' }));
+   * ```
+   *
+   */
+  waitForEvent(event: 'console', optionsOrPredicate?: { predicate?: (consoleMessage: ConsoleMessage) => boolean | Promise<boolean>, timeout?: number } | ((consoleMessage: ConsoleMessage) => boolean | Promise<boolean>)): Promise<ConsoleMessage>;
+
+  /**
+   * Emitted when a JavaScript dialog appears, such as `alert`, `prompt`, `confirm` or `beforeunload`. Listener **must**
+   * either [dialog.accept([promptText])](https://playwright.dev/docs/api/class-dialog#dialog-accept) or
+   * [dialog.dismiss()](https://playwright.dev/docs/api/class-dialog#dialog-dismiss) the dialog - otherwise the page
+   * will [freeze](https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop#never_blocking) waiting for the
+   * dialog, and actions like click will never finish.
+   *
+   * **Usage**
+   *
+   * ```js
+   * context.on('dialog', dialog => {
+   *   dialog.accept();
+   * });
+   * ```
+   *
+   * **NOTE** When no [page.on('dialog')](https://playwright.dev/docs/api/class-page#page-event-dialog) or
+   * [browserContext.on('dialog')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-dialog)
+   * listeners are present, all dialogs are automatically dismissed.
+   */
+  waitForEvent(event: 'dialog', optionsOrPredicate?: { predicate?: (dialog: Dialog) => boolean | Promise<boolean>, timeout?: number } | ((dialog: Dialog) => boolean | Promise<boolean>)): Promise<Dialog>;
 
   /**
    * The event is emitted when a new Page is created in the BrowserContext. The page may still be loading. The event
@@ -7993,7 +8913,12 @@ export interface BrowserContext {
    *
    * The earliest moment that page is available is when it has navigated to the initial url. For example, when opening a
    * popup with `window.open('http://example.com')`, this event will fire when the network request to
-   * "http://example.com" is done and its response has started loading in the popup.
+   * "http://example.com" is done and its response has started loading in the popup. If you would like to route/listen
+   * to this network request, use
+   * [browserContext.route(url, handler[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)
+   * and
+   * [browserContext.on('request')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-request)
+   * respectively instead of similar methods on the {@link Page}.
    *
    * ```js
    * const newPagePromise = context.waitForEvent('page');
@@ -8052,6 +8977,27 @@ export interface BrowserContext {
    * Emitted when new service worker is created in the context.
    */
   waitForEvent(event: 'serviceworker', optionsOrPredicate?: { predicate?: (worker: Worker) => boolean | Promise<boolean>, timeout?: number } | ((worker: Worker) => boolean | Promise<boolean>)): Promise<Worker>;
+
+  /**
+   * Emitted when exception is unhandled in any of the pages in this context. To listen for errors from a particular
+   * page, use [page.on('pageerror')](https://playwright.dev/docs/api/class-page#page-event-page-error) instead.
+   */
+  waitForEvent(event: 'weberror', optionsOrPredicate?: { predicate?: (webError: WebError) => boolean | Promise<boolean>, timeout?: number } | ((webError: WebError) => boolean | Promise<boolean>)): Promise<WebError>;
+
+
+  /**
+   * Playwright has ability to mock clock and passage of time.
+   */
+  clock: Clock;
+
+  /**
+   * API testing helper associated with this context. Requests made with this API will use context cookies.
+   */
+  request: APIRequestContext;
+
+  tracing: Tracing;
+
+  [Symbol.asyncDispose](): Promise<void>;
 }
 
 /**
@@ -8112,14 +9058,14 @@ export interface Worker {
   evaluate<R>(pageFunction: PageFunction<void, R>, arg?: any): Promise<R>;
 
   /**
-   * Returns the return value of `pageFunction` as a [JSHandle].
+   * Returns the return value of `pageFunction` as a {@link JSHandle}.
    *
    * The only difference between
    * [worker.evaluate(pageFunction[, arg])](https://playwright.dev/docs/api/class-worker#worker-evaluate) and
    * [worker.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-worker#worker-evaluate-handle)
    * is that
    * [worker.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-worker#worker-evaluate-handle)
-   * returns [JSHandle].
+   * returns {@link JSHandle}.
    *
    * If the function passed to the
    * [worker.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-worker#worker-evaluate-handle)
@@ -8131,14 +9077,14 @@ export interface Worker {
    */
   evaluateHandle<R, Arg>(pageFunction: PageFunction<Arg, R>, arg: Arg): Promise<SmartHandle<R>>;
   /**
-   * Returns the return value of `pageFunction` as a [JSHandle].
+   * Returns the return value of `pageFunction` as a {@link JSHandle}.
    *
    * The only difference between
    * [worker.evaluate(pageFunction[, arg])](https://playwright.dev/docs/api/class-worker#worker-evaluate) and
    * [worker.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-worker#worker-evaluate-handle)
    * is that
    * [worker.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-worker#worker-evaluate-handle)
-   * returns [JSHandle].
+   * returns {@link JSHandle}.
    *
    * If the function passed to the
    * [worker.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-worker#worker-evaluate-handle)
@@ -8153,36 +9099,37 @@ export interface Worker {
    * Emitted when this dedicated [WebWorker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) is
    * terminated.
    */
-  on(event: 'close', listener: (worker: Worker) => void): this;
+  on(event: 'close', listener: (worker: Worker) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'close', listener: (worker: Worker) => void): this;
+  once(event: 'close', listener: (worker: Worker) => any): this;
 
   /**
    * Emitted when this dedicated [WebWorker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) is
    * terminated.
    */
-  addListener(event: 'close', listener: (worker: Worker) => void): this;
+  addListener(event: 'close', listener: (worker: Worker) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'close', listener: (worker: Worker) => void): this;
+  removeListener(event: 'close', listener: (worker: Worker) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'close', listener: (worker: Worker) => void): this;
+  off(event: 'close', listener: (worker: Worker) => any): this;
 
   /**
    * Emitted when this dedicated [WebWorker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) is
    * terminated.
    */
-  prependListener(event: 'close', listener: (worker: Worker) => void): this;
+  prependListener(event: 'close', listener: (worker: Worker) => any): this;
 
-  url(): string;}
+  url(): string;
+}
 
 /**
  * JSHandle represents an in-page JavaScript object. JSHandles can be created with the
@@ -8244,12 +9191,12 @@ export interface JSHandle<T = any> {
   evaluate<R, O extends T = T>(pageFunction: PageFunctionOn<O, void, R>, arg?: any): Promise<R>;
 
   /**
-   * Returns the return value of `pageFunction` as a [JSHandle].
+   * Returns the return value of `pageFunction` as a {@link JSHandle}.
    *
    * This method passes this handle as the first argument to `pageFunction`.
    *
    * The only difference between `jsHandle.evaluate` and `jsHandle.evaluateHandle` is that `jsHandle.evaluateHandle`
-   * returns [JSHandle].
+   * returns {@link JSHandle}.
    *
    * If the function passed to the `jsHandle.evaluateHandle` returns a [Promise], then `jsHandle.evaluateHandle` would
    * wait for the promise to resolve and return its value.
@@ -8261,12 +9208,12 @@ export interface JSHandle<T = any> {
    */
   evaluateHandle<R, Arg, O extends T = T>(pageFunction: PageFunctionOn<O, Arg, R>, arg: Arg): Promise<SmartHandle<R>>;
   /**
-   * Returns the return value of `pageFunction` as a [JSHandle].
+   * Returns the return value of `pageFunction` as a {@link JSHandle}.
    *
    * This method passes this handle as the first argument to `pageFunction`.
    *
    * The only difference between `jsHandle.evaluate` and `jsHandle.evaluateHandle` is that `jsHandle.evaluateHandle`
-   * returns [JSHandle].
+   * returns {@link JSHandle}.
    *
    * If the function passed to the `jsHandle.evaluateHandle` returns a [Promise], then `jsHandle.evaluateHandle` would
    * wait for the promise to resolve and return its value.
@@ -8286,7 +9233,7 @@ export interface JSHandle<T = any> {
    */
   jsonValue(): Promise<T>;
   /**
-   * Returns either `null` or the object handle itself, if the object handle is an instance of [ElementHandle].
+   * Returns either `null` or the object handle itself, if the object handle is an instance of {@link ElementHandle}.
    */
   asElement(): T extends Node ? ElementHandle<T> : null;
   /**
@@ -8300,7 +9247,7 @@ export interface JSHandle<T = any> {
    * **Usage**
    *
    * ```js
-   * const handle = await page.evaluateHandle(() => ({window, document}));
+   * const handle = await page.evaluateHandle(() => ({ window, document }));
    * const properties = await handle.getProperties();
    * const windowHandle = properties.get('window');
    * const documentHandle = properties.get('document');
@@ -8314,15 +9261,18 @@ export interface JSHandle<T = any> {
    * Fetches a single property from the referenced object.
    * @param propertyName property to get
    */
-  getProperty(propertyName: string): Promise<JSHandle>;}
+  getProperty(propertyName: string): Promise<JSHandle>;
+
+  [Symbol.asyncDispose](): Promise<void>;
+}
 
 /**
- * - extends: [JSHandle]
+ * - extends: {@link JSHandle}
  *
  * ElementHandle represents an in-page DOM element. ElementHandles can be created with the
  * [page.$(selector[, options])](https://playwright.dev/docs/api/class-page#page-query-selector) method.
  *
- * **NOTE** The use of ElementHandle is discouraged, use [Locator] objects and web-first assertions instead.
+ * **NOTE** The use of ElementHandle is discouraged, use {@link Locator} objects and web-first assertions instead.
  *
  * ```js
  * const hrefElement = await page.$('a');
@@ -8337,8 +9287,8 @@ export interface JSHandle<T = any> {
  * [page.$eval(selector, pageFunction[, arg, options])](https://playwright.dev/docs/api/class-page#page-eval-on-selector)
  * and [page.evaluate(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate) methods.
  *
- * The difference between the [Locator] and ElementHandle is that the ElementHandle points to a particular element,
- * while [Locator] captures the logic of how to retrieve an element.
+ * The difference between the {@link Locator} and ElementHandle is that the ElementHandle points to a particular
+ * element, while {@link Locator} captures the logic of how to retrieve an element.
  *
  * In the example below, handle points to a particular DOM element on page. If that element changes text or is used by
  * React to render an entirely different component, handle is still pointing to that very DOM element. This can lead
@@ -8364,37 +9314,53 @@ export interface JSHandle<T = any> {
  */
 export interface ElementHandle<T=Node> extends JSHandle<T> {
   /**
-   * The method finds an element matching the specified selector in the `ElementHandle`'s subtree. See
-   * [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements match the selector, returns `null`.
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * **NOTE** Use locator-based [page.locator(selector[, options])](https://playwright.dev/docs/api/class-page#page-locator)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
+   * The method finds an element matching the specified selector in the `ElementHandle`'s subtree. If no elements match
+   * the selector, returns `null`.
+   * @param selector A selector to query for.
    */
   $<K extends keyof HTMLElementTagNameMap>(selector: K, options?: { strict: boolean }): Promise<ElementHandleForTag<K> | null>;
   /**
-   * The method finds an element matching the specified selector in the `ElementHandle`'s subtree. See
-   * [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements match the selector, returns `null`.
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * **NOTE** Use locator-based [page.locator(selector[, options])](https://playwright.dev/docs/api/class-page#page-locator)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
+   * The method finds an element matching the specified selector in the `ElementHandle`'s subtree. If no elements match
+   * the selector, returns `null`.
+   * @param selector A selector to query for.
    */
   $(selector: string, options?: { strict: boolean }): Promise<ElementHandle<SVGElement | HTMLElement> | null>;
 
   /**
-   * The method finds all elements matching the specified selector in the `ElementHandle`s subtree. See
-   * [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements match the selector, returns empty array.
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * **NOTE** Use locator-based [page.locator(selector[, options])](https://playwright.dev/docs/api/class-page#page-locator)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
+   * The method finds all elements matching the specified selector in the `ElementHandle`s subtree. If no elements match
+   * the selector, returns empty array.
+   * @param selector A selector to query for.
    */
   $$<K extends keyof HTMLElementTagNameMap>(selector: K): Promise<ElementHandleForTag<K>[]>;
   /**
-   * The method finds all elements matching the specified selector in the `ElementHandle`s subtree. See
-   * [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements match the selector, returns empty array.
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * **NOTE** Use locator-based [page.locator(selector[, options])](https://playwright.dev/docs/api/class-page#page-locator)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
+   * The method finds all elements matching the specified selector in the `ElementHandle`s subtree. If no elements match
+   * the selector, returns empty array.
+   * @param selector A selector to query for.
    */
   $$(selector: string): Promise<ElementHandle<SVGElement | HTMLElement>[]>;
 
   /**
+   * **NOTE** This method does not wait for the element to pass actionability checks and therefore can lead to the flaky tests.
+   * Use
+   * [locator.evaluate(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate),
+   * other {@link Locator} helper methods or web-first assertions instead.
+   *
    * Returns the return value of `pageFunction`.
    *
    * The method finds an element matching the specified selector in the `ElementHandle`s subtree and passes it as a
-   * first argument to `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements
-   * match the selector, the method throws an error.
+   * first argument to `pageFunction`. If no elements match the selector, the method throws an error.
    *
    * If `pageFunction` returns a [Promise], then
    * [elementHandle.$eval(selector, pageFunction[, arg])](https://playwright.dev/docs/api/class-elementhandle#element-handle-eval-on-selector)
@@ -8408,17 +9374,21 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * expect(await tweetHandle.$eval('.retweets', node => node.innerText)).toBe('10');
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   $eval<K extends keyof HTMLElementTagNameMap, R, Arg>(selector: K, pageFunction: PageFunctionOn<HTMLElementTagNameMap[K], Arg, R>, arg: Arg): Promise<R>;
   /**
+   * **NOTE** This method does not wait for the element to pass actionability checks and therefore can lead to the flaky tests.
+   * Use
+   * [locator.evaluate(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate),
+   * other {@link Locator} helper methods or web-first assertions instead.
+   *
    * Returns the return value of `pageFunction`.
    *
    * The method finds an element matching the specified selector in the `ElementHandle`s subtree and passes it as a
-   * first argument to `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements
-   * match the selector, the method throws an error.
+   * first argument to `pageFunction`. If no elements match the selector, the method throws an error.
    *
    * If `pageFunction` returns a [Promise], then
    * [elementHandle.$eval(selector, pageFunction[, arg])](https://playwright.dev/docs/api/class-elementhandle#element-handle-eval-on-selector)
@@ -8432,17 +9402,21 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * expect(await tweetHandle.$eval('.retweets', node => node.innerText)).toBe('10');
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   $eval<R, Arg, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(selector: string, pageFunction: PageFunctionOn<E, Arg, R>, arg: Arg): Promise<R>;
   /**
+   * **NOTE** This method does not wait for the element to pass actionability checks and therefore can lead to the flaky tests.
+   * Use
+   * [locator.evaluate(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate),
+   * other {@link Locator} helper methods or web-first assertions instead.
+   *
    * Returns the return value of `pageFunction`.
    *
    * The method finds an element matching the specified selector in the `ElementHandle`s subtree and passes it as a
-   * first argument to `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements
-   * match the selector, the method throws an error.
+   * first argument to `pageFunction`. If no elements match the selector, the method throws an error.
    *
    * If `pageFunction` returns a [Promise], then
    * [elementHandle.$eval(selector, pageFunction[, arg])](https://playwright.dev/docs/api/class-elementhandle#element-handle-eval-on-selector)
@@ -8456,17 +9430,21 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * expect(await tweetHandle.$eval('.retweets', node => node.innerText)).toBe('10');
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   $eval<K extends keyof HTMLElementTagNameMap, R>(selector: K, pageFunction: PageFunctionOn<HTMLElementTagNameMap[K], void, R>, arg?: any): Promise<R>;
   /**
+   * **NOTE** This method does not wait for the element to pass actionability checks and therefore can lead to the flaky tests.
+   * Use
+   * [locator.evaluate(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate),
+   * other {@link Locator} helper methods or web-first assertions instead.
+   *
    * Returns the return value of `pageFunction`.
    *
    * The method finds an element matching the specified selector in the `ElementHandle`s subtree and passes it as a
-   * first argument to `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more details. If no elements
-   * match the selector, the method throws an error.
+   * first argument to `pageFunction`. If no elements match the selector, the method throws an error.
    *
    * If `pageFunction` returns a [Promise], then
    * [elementHandle.$eval(selector, pageFunction[, arg])](https://playwright.dev/docs/api/class-elementhandle#element-handle-eval-on-selector)
@@ -8480,18 +9458,21 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * expect(await tweetHandle.$eval('.retweets', node => node.innerText)).toBe('10');
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   $eval<R, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(selector: string, pageFunction: PageFunctionOn<E, void, R>, arg?: any): Promise<R>;
 
   /**
+   * **NOTE** In most cases,
+   * [locator.evaluateAll(pageFunction[, arg])](https://playwright.dev/docs/api/class-locator#locator-evaluate-all),
+   * other {@link Locator} helper methods and web-first assertions do a better job.
+   *
    * Returns the return value of `pageFunction`.
    *
    * The method finds all elements matching the specified selector in the `ElementHandle`'s subtree and passes an array
-   * of matched elements as a first argument to `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more
-   * details.
+   * of matched elements as a first argument to `pageFunction`.
    *
    * If `pageFunction` returns a [Promise], then
    * [elementHandle.$$eval(selector, pageFunction[, arg])](https://playwright.dev/docs/api/class-elementhandle#element-handle-eval-on-selector-all)
@@ -8508,20 +9489,25 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    *
    * ```js
    * const feedHandle = await page.$('.feed');
-   * expect(await feedHandle.$$eval('.tweet', nodes => nodes.map(n => n.innerText))).toEqual(['Hello!', 'Hi!']);
+   * expect(await feedHandle.$$eval('.tweet', nodes =>
+   *   nodes.map(n => n.innerText))).toEqual(['Hello!', 'Hi!'],
+   * );
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   $$eval<K extends keyof HTMLElementTagNameMap, R, Arg>(selector: K, pageFunction: PageFunctionOn<HTMLElementTagNameMap[K][], Arg, R>, arg: Arg): Promise<R>;
   /**
+   * **NOTE** In most cases,
+   * [locator.evaluateAll(pageFunction[, arg])](https://playwright.dev/docs/api/class-locator#locator-evaluate-all),
+   * other {@link Locator} helper methods and web-first assertions do a better job.
+   *
    * Returns the return value of `pageFunction`.
    *
    * The method finds all elements matching the specified selector in the `ElementHandle`'s subtree and passes an array
-   * of matched elements as a first argument to `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more
-   * details.
+   * of matched elements as a first argument to `pageFunction`.
    *
    * If `pageFunction` returns a [Promise], then
    * [elementHandle.$$eval(selector, pageFunction[, arg])](https://playwright.dev/docs/api/class-elementhandle#element-handle-eval-on-selector-all)
@@ -8538,20 +9524,25 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    *
    * ```js
    * const feedHandle = await page.$('.feed');
-   * expect(await feedHandle.$$eval('.tweet', nodes => nodes.map(n => n.innerText))).toEqual(['Hello!', 'Hi!']);
+   * expect(await feedHandle.$$eval('.tweet', nodes =>
+   *   nodes.map(n => n.innerText))).toEqual(['Hello!', 'Hi!'],
+   * );
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   $$eval<R, Arg, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(selector: string, pageFunction: PageFunctionOn<E[], Arg, R>, arg: Arg): Promise<R>;
   /**
+   * **NOTE** In most cases,
+   * [locator.evaluateAll(pageFunction[, arg])](https://playwright.dev/docs/api/class-locator#locator-evaluate-all),
+   * other {@link Locator} helper methods and web-first assertions do a better job.
+   *
    * Returns the return value of `pageFunction`.
    *
    * The method finds all elements matching the specified selector in the `ElementHandle`'s subtree and passes an array
-   * of matched elements as a first argument to `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more
-   * details.
+   * of matched elements as a first argument to `pageFunction`.
    *
    * If `pageFunction` returns a [Promise], then
    * [elementHandle.$$eval(selector, pageFunction[, arg])](https://playwright.dev/docs/api/class-elementhandle#element-handle-eval-on-selector-all)
@@ -8568,20 +9559,25 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    *
    * ```js
    * const feedHandle = await page.$('.feed');
-   * expect(await feedHandle.$$eval('.tweet', nodes => nodes.map(n => n.innerText))).toEqual(['Hello!', 'Hi!']);
+   * expect(await feedHandle.$$eval('.tweet', nodes =>
+   *   nodes.map(n => n.innerText))).toEqual(['Hello!', 'Hi!'],
+   * );
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   $$eval<K extends keyof HTMLElementTagNameMap, R>(selector: K, pageFunction: PageFunctionOn<HTMLElementTagNameMap[K][], void, R>, arg?: any): Promise<R>;
   /**
+   * **NOTE** In most cases,
+   * [locator.evaluateAll(pageFunction[, arg])](https://playwright.dev/docs/api/class-locator#locator-evaluate-all),
+   * other {@link Locator} helper methods and web-first assertions do a better job.
+   *
    * Returns the return value of `pageFunction`.
    *
    * The method finds all elements matching the specified selector in the `ElementHandle`'s subtree and passes an array
-   * of matched elements as a first argument to `pageFunction`. See [Working with selectors](https://playwright.dev/docs/selectors) for more
-   * details.
+   * of matched elements as a first argument to `pageFunction`.
    *
    * If `pageFunction` returns a [Promise], then
    * [elementHandle.$$eval(selector, pageFunction[, arg])](https://playwright.dev/docs/api/class-elementhandle#element-handle-eval-on-selector-all)
@@ -8598,16 +9594,21 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    *
    * ```js
    * const feedHandle = await page.$('.feed');
-   * expect(await feedHandle.$$eval('.tweet', nodes => nodes.map(n => n.innerText))).toEqual(['Hello!', 'Hi!']);
+   * expect(await feedHandle.$$eval('.tweet', nodes =>
+   *   nodes.map(n => n.innerText))).toEqual(['Hello!', 'Hi!'],
+   * );
    * ```
    *
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param pageFunction Function to be evaluated in the page context.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   $$eval<R, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(selector: string, pageFunction: PageFunctionOn<E[], void, R>, arg?: any): Promise<R>;
 
   /**
+   * **NOTE** Use web assertions that assert visibility or a locator-based
+   * [locator.waitFor([options])](https://playwright.dev/docs/api/class-locator#locator-wait-for) instead.
+   *
    * Returns element specified by selector when it satisfies `state` option. Returns `null` if waiting for `hidden` or
    * `detached`.
    *
@@ -8628,11 +9629,14 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * **NOTE** This method does not work across navigations, use
    * [page.waitForSelector(selector[, options])](https://playwright.dev/docs/api/class-page#page-wait-for-selector)
    * instead.
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param options
    */
   waitForSelector<K extends keyof HTMLElementTagNameMap>(selector: K, options?: ElementHandleWaitForSelectorOptionsNotHidden): Promise<ElementHandleForTag<K>>;
   /**
+   * **NOTE** Use web assertions that assert visibility or a locator-based
+   * [locator.waitFor([options])](https://playwright.dev/docs/api/class-locator#locator-wait-for) instead.
+   *
    * Returns element specified by selector when it satisfies `state` option. Returns `null` if waiting for `hidden` or
    * `detached`.
    *
@@ -8653,11 +9657,14 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * **NOTE** This method does not work across navigations, use
    * [page.waitForSelector(selector[, options])](https://playwright.dev/docs/api/class-page#page-wait-for-selector)
    * instead.
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param options
    */
   waitForSelector(selector: string, options?: ElementHandleWaitForSelectorOptionsNotHidden): Promise<ElementHandle<SVGElement | HTMLElement>>;
   /**
+   * **NOTE** Use web assertions that assert visibility or a locator-based
+   * [locator.waitFor([options])](https://playwright.dev/docs/api/class-locator#locator-wait-for) instead.
+   *
    * Returns element specified by selector when it satisfies `state` option. Returns `null` if waiting for `hidden` or
    * `detached`.
    *
@@ -8678,11 +9685,14 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * **NOTE** This method does not work across navigations, use
    * [page.waitForSelector(selector[, options])](https://playwright.dev/docs/api/class-page#page-wait-for-selector)
    * instead.
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param options
    */
   waitForSelector<K extends keyof HTMLElementTagNameMap>(selector: K, options: ElementHandleWaitForSelectorOptions): Promise<ElementHandleForTag<K> | null>;
   /**
+   * **NOTE** Use web assertions that assert visibility or a locator-based
+   * [locator.waitFor([options])](https://playwright.dev/docs/api/class-locator#locator-wait-for) instead.
+   *
    * Returns element specified by selector when it satisfies `state` option. Returns `null` if waiting for `hidden` or
    * `detached`.
    *
@@ -8703,7 +9713,7 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * **NOTE** This method does not work across navigations, use
    * [page.waitForSelector(selector[, options])](https://playwright.dev/docs/api/class-page#page-wait-for-selector)
    * instead.
-   * @param selector A selector to query for. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to query for.
    * @param options
    */
   waitForSelector(selector: string, options: ElementHandleWaitForSelectorOptions): Promise<null|ElementHandle<SVGElement | HTMLElement>>;
@@ -8752,6 +9762,9 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   }>;
 
   /**
+   * **NOTE** Use locator-based [locator.check([options])](https://playwright.dev/docs/api/class-locator#locator-check) instead.
+   * Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * This method checks the element by performing the following steps:
    * 1. Ensure that element is a checkbox or a radio input. If not, this method throws. If the element is already
    *    checked, this method returns immediately.
@@ -8764,8 +9777,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    *
    * If the element is detached from the DOM at any moment during the action, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param options
    */
   check(options?: {
@@ -8792,8 +9805,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -8807,6 +9820,9 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   }): Promise<void>;
 
   /**
+   * **NOTE** Use locator-based [locator.click([options])](https://playwright.dev/docs/api/class-locator#locator-click) instead.
+   * Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * This method clicks the element by performing the following steps:
    * 1. Wait for [actionability](https://playwright.dev/docs/actionability) checks on the element, unless `force` option is set.
    * 1. Scroll the element into view if needed.
@@ -8816,8 +9832,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    *
    * If the element is detached from the DOM at any moment during the action, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param options
    */
   click(options?: {
@@ -8843,9 +9859,10 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -8865,8 +9882,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -8885,6 +9902,9 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   contentFrame(): Promise<null|Frame>;
 
   /**
+   * **NOTE** Use locator-based [locator.dblclick([options])](https://playwright.dev/docs/api/class-locator#locator-dblclick)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * This method double clicks the element by performing the following steps:
    * 1. Wait for [actionability](https://playwright.dev/docs/actionability) checks on the element, unless `force` option is set.
    * 1. Scroll the element into view if needed.
@@ -8895,8 +9915,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    *
    * If the element is detached from the DOM at any moment during the action, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    *
    * **NOTE** `elementHandle.dblclick()` dispatches two `click` events and a single `dblclick` event.
    * @param options
@@ -8919,9 +9939,10 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -8941,8 +9962,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -8956,6 +9977,10 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   }): Promise<void>;
 
   /**
+   * **NOTE** Use locator-based
+   * [locator.dispatchEvent(type[, eventInit, options])](https://playwright.dev/docs/api/class-locator#locator-dispatch-event)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * The snippet below dispatches the `click` event on the element. Regardless of the visibility state of the element,
    * `click` is dispatched. This is equivalent to calling
    * [element.click()](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/click).
@@ -8970,13 +9995,16 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * properties and dispatches it on the element. Events are `composed`, `cancelable` and bubble by default.
    *
    * Since `eventInit` is event-specific, please refer to the events documentation for the lists of initial properties:
+   * - [DeviceMotionEvent](https://developer.mozilla.org/en-US/docs/Web/API/DeviceMotionEvent/DeviceMotionEvent)
+   * - [DeviceOrientationEvent](https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent/DeviceOrientationEvent)
    * - [DragEvent](https://developer.mozilla.org/en-US/docs/Web/API/DragEvent/DragEvent)
+   * - [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/Event)
    * - [FocusEvent](https://developer.mozilla.org/en-US/docs/Web/API/FocusEvent/FocusEvent)
    * - [KeyboardEvent](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/KeyboardEvent)
    * - [MouseEvent](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/MouseEvent)
    * - [PointerEvent](https://developer.mozilla.org/en-US/docs/Web/API/PointerEvent/PointerEvent)
    * - [TouchEvent](https://developer.mozilla.org/en-US/docs/Web/API/TouchEvent/TouchEvent)
-   * - [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/Event)
+   * - [WheelEvent](https://developer.mozilla.org/en-US/docs/Web/API/WheelEvent/WheelEvent)
    *
    * You can also specify `JSHandle` as the property value if you want live objects to be passed into the event:
    *
@@ -8992,6 +10020,9 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   dispatchEvent(type: string, eventInit?: EvaluationArgument): Promise<void>;
 
   /**
+   * **NOTE** Use locator-based [locator.fill(value[, options])](https://playwright.dev/docs/api/class-locator#locator-fill)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * This method waits for [actionability](https://playwright.dev/docs/actionability) checks, focuses the element, fills it and triggers an
    * `input` event after filling. Note that you can pass an empty string to clear the input field.
    *
@@ -9001,7 +10032,7 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * instead.
    *
    * To send fine-grained keyboard events, use
-   * [elementHandle.type(text[, options])](https://playwright.dev/docs/api/class-elementhandle#element-handle-type).
+   * [locator.pressSequentially(text[, options])](https://playwright.dev/docs/api/class-locator#locator-press-sequentially).
    * @param value Value to set for the `<input>`, `<textarea>` or `[contenteditable]` element.
    * @param options
    */
@@ -9019,8 +10050,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
     noWaitAfter?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9028,17 +10059,27 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   }): Promise<void>;
 
   /**
+   * **NOTE** Use locator-based [locator.focus([options])](https://playwright.dev/docs/api/class-locator#locator-focus) instead.
+   * Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * Calls [focus](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/focus) on the element.
    */
   focus(): Promise<void>;
 
   /**
+   * **NOTE** Use locator-based
+   * [locator.getAttribute(name[, options])](https://playwright.dev/docs/api/class-locator#locator-get-attribute)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns element attribute value.
    * @param name Attribute name to get the value for.
    */
   getAttribute(name: string): Promise<null|string>;
 
   /**
+   * **NOTE** Use locator-based [locator.hover([options])](https://playwright.dev/docs/api/class-locator#locator-hover) instead.
+   * Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * This method hovers over the element by performing the following steps:
    * 1. Wait for [actionability](https://playwright.dev/docs/actionability) checks on the element, unless `force` option is set.
    * 1. Scroll the element into view if needed.
@@ -9048,8 +10089,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    *
    * If the element is detached from the DOM at any moment during the action, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param options
    */
   hover(options?: {
@@ -9060,9 +10101,10 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -9082,8 +10124,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9097,16 +10139,26 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   }): Promise<void>;
 
   /**
+   * **NOTE** Use locator-based [locator.innerHTML([options])](https://playwright.dev/docs/api/class-locator#locator-inner-html)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns the `element.innerHTML`.
    */
   innerHTML(): Promise<string>;
 
   /**
+   * **NOTE** Use locator-based [locator.innerText([options])](https://playwright.dev/docs/api/class-locator#locator-inner-text)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns the `element.innerText`.
    */
   innerText(): Promise<string>;
 
   /**
+   * **NOTE** Use locator-based
+   * [locator.inputValue([options])](https://playwright.dev/docs/api/class-locator#locator-input-value) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns `input.value` for the selected `<input>` or `<textarea>` or `<select>` element.
    *
    * Throws for non-input elements. However, if the element is inside the `<label>` element that has an associated
@@ -9116,8 +10168,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    */
   inputValue(options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9125,31 +10177,51 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   }): Promise<string>;
 
   /**
+   * **NOTE** Use locator-based [locator.isChecked([options])](https://playwright.dev/docs/api/class-locator#locator-is-checked)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns whether the element is checked. Throws if the element is not a checkbox or radio input.
    */
   isChecked(): Promise<boolean>;
 
   /**
+   * **NOTE** Use locator-based
+   * [locator.isDisabled([options])](https://playwright.dev/docs/api/class-locator#locator-is-disabled) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns whether the element is disabled, the opposite of [enabled](https://playwright.dev/docs/actionability#enabled).
    */
   isDisabled(): Promise<boolean>;
 
   /**
+   * **NOTE** Use locator-based
+   * [locator.isEditable([options])](https://playwright.dev/docs/api/class-locator#locator-is-editable) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns whether the element is [editable](https://playwright.dev/docs/actionability#editable).
    */
   isEditable(): Promise<boolean>;
 
   /**
+   * **NOTE** Use locator-based [locator.isEnabled([options])](https://playwright.dev/docs/api/class-locator#locator-is-enabled)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns whether the element is [enabled](https://playwright.dev/docs/actionability#enabled).
    */
   isEnabled(): Promise<boolean>;
 
   /**
+   * **NOTE** Use locator-based [locator.isHidden([options])](https://playwright.dev/docs/api/class-locator#locator-is-hidden)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns whether the element is hidden, the opposite of [visible](https://playwright.dev/docs/actionability#visible).
    */
   isHidden(): Promise<boolean>;
 
   /**
+   * **NOTE** Use locator-based [locator.isVisible([options])](https://playwright.dev/docs/api/class-locator#locator-is-visible)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns whether the element is [visible](https://playwright.dev/docs/actionability#visible).
    */
   isVisible(): Promise<boolean>;
@@ -9160,6 +10232,9 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   ownerFrame(): Promise<null|Frame>;
 
   /**
+   * **NOTE** Use locator-based [locator.press(key[, options])](https://playwright.dev/docs/api/class-locator#locator-press)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * Focuses the element, and then uses
    * [keyboard.down(key)](https://playwright.dev/docs/api/class-keyboard#keyboard-down) and
    * [keyboard.up(key)](https://playwright.dev/docs/api/class-keyboard#keyboard-up).
@@ -9173,15 +10248,16 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * `Delete`, `Escape`, `ArrowDown`, `End`, `Enter`, `Home`, `Insert`, `PageDown`, `PageUp`, `ArrowRight`, `ArrowUp`,
    * etc.
    *
-   * Following modification shortcuts are also supported: `Shift`, `Control`, `Alt`, `Meta`, `ShiftLeft`.
+   * Following modification shortcuts are also supported: `Shift`, `Control`, `Alt`, `Meta`, `ShiftLeft`,
+   * `ControlOrMeta`.
    *
    * Holding down `Shift` will type the text that corresponds to the `key` in the upper case.
    *
    * If `key` is a single character, it is case-sensitive, so the values `a` and `A` will generate different respective
    * texts.
    *
-   * Shortcuts such as `key: "Control+o"` or `key: "Control+Shift+T"` are supported as well. When specified with the
-   * modifier, modifier is pressed and being held while the subsequent key is being pressed.
+   * Shortcuts such as `key: "Control+o"`, `key: "Control++` or `key: "Control+Shift+T"` are supported as well. When
+   * specified with the modifier, modifier is pressed and being held while the subsequent key is being pressed.
    * @param key Name of the key to press or a character to generate, such as `ArrowLeft` or `a`.
    * @param options
    */
@@ -9199,8 +10275,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
     noWaitAfter?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9208,6 +10284,9 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   }): Promise<void>;
 
   /**
+   * **NOTE** Use locator-based [locator.screenshot([options])](https://playwright.dev/docs/api/class-locator#locator-screenshot)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * This method captures a screenshot of the page, clipped to the size and position of this particular element. If the
    * element is covered by other elements, it will not be actually visible on the screenshot. If the element is a
    * scrollable container, only the currently scrolled content will be visible on the screenshot.
@@ -9237,9 +10316,15 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
 
     /**
      * Specify locators that should be masked when the screenshot is taken. Masked elements will be overlaid with a pink
-     * box `#FF00FF` that completely covers its bounding box.
+     * box `#FF00FF` (customized by `maskColor`) that completely covers its bounding box.
      */
     mask?: Array<Locator>;
+
+    /**
+     * Specify the color of the overlay box for masked elements, in
+     * [CSS color format](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value). Default color is pink `#FF00FF`.
+     */
+    maskColor?: string;
 
     /**
      * Hides default white background and allows capturing screenshots with transparency. Not applicable to `jpeg` images.
@@ -9269,8 +10354,15 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
     scale?: "css"|"device";
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Text of the stylesheet to apply while making the screenshot. This is where you can hide dynamic elements, make
+     * elements invisible or change their properties to help you creating repeatable screenshots. This stylesheet pierces
+     * the Shadow DOM and applies to the inner frames.
+     */
+    style?: string;
+
+    /**
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9283,18 +10375,24 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   }): Promise<Buffer>;
 
   /**
+   * **NOTE** Use locator-based
+   * [locator.scrollIntoViewIfNeeded([options])](https://playwright.dev/docs/api/class-locator#locator-scroll-into-view-if-needed)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * This method waits for [actionability](https://playwright.dev/docs/actionability) checks, then tries to scroll element into view, unless
    * it is completely visible as defined by
    * [IntersectionObserver](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API)'s `ratio`.
    *
    * Throws when `elementHandle` does not point to an element
    * [connected](https://developer.mozilla.org/en-US/docs/Web/API/Node/isConnected) to a Document or a ShadowRoot.
+   *
+   * See [scrolling](https://playwright.dev/docs/input#scrolling) for alternative ways to scroll.
    * @param options
    */
   scrollIntoViewIfNeeded(options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9302,6 +10400,10 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   }): Promise<void>;
 
   /**
+   * **NOTE** Use locator-based
+   * [locator.selectOption(values[, options])](https://playwright.dev/docs/api/class-locator#locator-select-option)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * This method waits for [actionability](https://playwright.dev/docs/actionability) checks, waits until all specified options are present in
    * the `<select>` element and selects these options.
    *
@@ -9317,7 +10419,7 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * **Usage**
    *
    * ```js
-   * // single selection matching the value
+   * // Single selection matching the value or label
    * handle.selectOption('blue');
    *
    * // single selection matching the label
@@ -9328,11 +10430,11 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * ```
    *
    * @param values Options to select. If the `<select>` has the `multiple` attribute, all matching options are selected, otherwise
-   * only the first option matching one of the passed options is selected. String values are equivalent to
-   * `{value:'string'}`. Option is considered matching if all specified properties match.
+   * only the first option matching one of the passed options is selected. String values are matching both values and
+   * labels. Option is considered matching if all specified properties match.
    * @param options
    */
-  selectOption(values: null|string|ElementHandle|Array<string>|{
+  selectOption(values: null|string|ElementHandle|ReadonlyArray<string>|{
     /**
      * Matches by `option.value`. Optional.
      */
@@ -9347,7 +10449,7 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
      * Matches by the index. Optional.
      */
     index?: number;
-  }|Array<ElementHandle>|Array<{
+  }|ReadonlyArray<ElementHandle>|ReadonlyArray<{
     /**
      * Matches by `option.value`. Optional.
      */
@@ -9376,8 +10478,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
     noWaitAfter?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9385,6 +10487,10 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   }): Promise<Array<string>>;
 
   /**
+   * **NOTE** Use locator-based
+   * [locator.selectText([options])](https://playwright.dev/docs/api/class-locator#locator-select-text) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
+   *
    * This method waits for [actionability](https://playwright.dev/docs/actionability) checks, then focuses the element and selects all its
    * text content.
    *
@@ -9400,8 +10506,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
     force?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9409,6 +10515,10 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   }): Promise<void>;
 
   /**
+   * **NOTE** Use locator-based
+   * [locator.setChecked(checked[, options])](https://playwright.dev/docs/api/class-locator#locator-set-checked)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * This method checks or unchecks an element by performing the following steps:
    * 1. Ensure that element is a checkbox or a radio input. If not, this method throws.
    * 1. If the element already has the right checked state, this method returns immediately.
@@ -9420,8 +10530,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set.
    * 1. Ensure that the element is now checked or unchecked. If not, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param checked Whether to check or uncheck the checkbox.
    * @param options
    */
@@ -9449,8 +10559,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9464,17 +10574,21 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   }): Promise<void>;
 
   /**
+   * **NOTE** Use locator-based
+   * [locator.setInputFiles(files[, options])](https://playwright.dev/docs/api/class-locator#locator-set-input-files)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * Sets the value of the file input to these file paths or files. If some of the `filePaths` are relative paths, then
    * they are resolved relative to the current working directory. For empty array, clears the selected files.
    *
-   * This method expects [ElementHandle] to point to an
+   * This method expects {@link ElementHandle} to point to an
    * [input element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input). However, if the element is inside
    * the `<label>` element that has an associated
    * [control](https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control), targets the control instead.
    * @param files
    * @param options
    */
-  setInputFiles(files: string|Array<string>|{
+  setInputFiles(files: string|ReadonlyArray<string>|{
     /**
      * File name
      */
@@ -9489,7 +10603,7 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
      * File content
      */
     buffer: Buffer;
-  }|Array<{
+  }|ReadonlyArray<{
     /**
      * File name
      */
@@ -9513,8 +10627,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
     noWaitAfter?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9522,6 +10636,9 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   }): Promise<void>;
 
   /**
+   * **NOTE** Use locator-based [locator.tap([options])](https://playwright.dev/docs/api/class-locator#locator-tap) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
+   *
    * This method taps the element by performing the following steps:
    * 1. Wait for [actionability](https://playwright.dev/docs/actionability) checks on the element, unless `force` option is set.
    * 1. Scroll the element into view if needed.
@@ -9531,8 +10648,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    *
    * If the element is detached from the DOM at any moment during the action, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    *
    * **NOTE** `elementHandle.tap()` requires that the `hasTouch` option of the browser context be set to true.
    * @param options
@@ -9545,9 +10662,10 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -9567,8 +10685,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9582,6 +10700,10 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   }): Promise<void>;
 
   /**
+   * **NOTE** Use locator-based
+   * [locator.textContent([options])](https://playwright.dev/docs/api/class-locator#locator-text-content) instead. Read
+   * more about [locators](https://playwright.dev/docs/locators).
+   *
    * Returns the `node.textContent`.
    */
   textContent(): Promise<null|string>;
@@ -9594,20 +10716,10 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * [elementHandle.press(key[, options])](https://playwright.dev/docs/api/class-elementhandle#element-handle-press).
    *
    * **Usage**
-   *
-   * ```js
-   * await elementHandle.type('Hello'); // Types instantly
-   * await elementHandle.type('World', {delay: 100}); // Types slower, like a user
-   * ```
-   *
-   * An example of typing into a text field and then submitting the form:
-   *
-   * ```js
-   * const elementHandle = await page.$('input');
-   * await elementHandle.type('some text');
-   * await elementHandle.press('Enter');
-   * ```
-   *
+   * @deprecated In most cases, you should use
+   * [locator.fill(value[, options])](https://playwright.dev/docs/api/class-locator#locator-fill) instead. You only need
+   * to press keys one by one if there is special keyboard handling on the page - in this case use
+   * [locator.pressSequentially(text[, options])](https://playwright.dev/docs/api/class-locator#locator-press-sequentially).
    * @param text A text to type into a focused element.
    * @param options
    */
@@ -9625,8 +10737,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
     noWaitAfter?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9634,6 +10746,9 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
   }): Promise<void>;
 
   /**
+   * **NOTE** Use locator-based [locator.uncheck([options])](https://playwright.dev/docs/api/class-locator#locator-uncheck)
+   * instead. Read more about [locators](https://playwright.dev/docs/locators).
+   *
    * This method checks the element by performing the following steps:
    * 1. Ensure that element is a checkbox or a radio input. If not, this method throws. If the element is already
    *    unchecked, this method returns immediately.
@@ -9646,8 +10761,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    *
    * If the element is detached from the DOM at any moment during the action, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param options
    */
   uncheck(options?: {
@@ -9674,8 +10789,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9694,9 +10809,8 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    * Depending on the `state` parameter, this method waits for one of the [actionability](https://playwright.dev/docs/actionability) checks to
    * pass. This method throws when the element is detached while waiting, unless waiting for the `"hidden"` state.
    * - `"visible"` Wait until the element is [visible](https://playwright.dev/docs/actionability#visible).
-   * - `"hidden"` Wait until the element is [not visible](https://playwright.dev/docs/actionability#visible) or
-   *   [not attached](https://playwright.dev/docs/actionability#attached). Note that waiting for hidden does not throw when the element
-   *   detaches.
+   * - `"hidden"` Wait until the element is [not visible](https://playwright.dev/docs/actionability#visible) or not attached. Note that
+   *   waiting for hidden does not throw when the element detaches.
    * - `"stable"` Wait until the element is both [visible](https://playwright.dev/docs/actionability#visible) and
    *   [stable](https://playwright.dev/docs/actionability#stable).
    * - `"enabled"` Wait until the element is [enabled](https://playwright.dev/docs/actionability#enabled).
@@ -9709,29 +10823,34 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
    */
   waitForElementState(state: "visible"|"hidden"|"stable"|"enabled"|"disabled"|"editable", options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
     timeout?: number;
-  }): Promise<void>;}
+  }): Promise<void>;
+}
 
 /**
  * Locators are the central piece of Playwright's auto-waiting and retry-ability. In a nutshell, locators represent a
- * way to find element(s) on the page at any moment. Locator can be created with the
+ * way to find element(s) on the page at any moment. A locator can be created with the
  * [page.locator(selector[, options])](https://playwright.dev/docs/api/class-page#page-locator) method.
  *
  * [Learn more about locators](https://playwright.dev/docs/locators).
  */
 export interface Locator {
   /**
-   * Returns the return value of `pageFunction`.
+   * Execute JavaScript code in the page, taking the matching element as an argument.
    *
-   * This method passes this handle as the first argument to `pageFunction`.
+   * **Details**
    *
-   * If `pageFunction` returns a [Promise], then `handle.evaluate` would wait for the promise to resolve and return its
-   * value.
+   * Returns the return value of `pageFunction`, called with the matching element as a first argument, and `arg` as a
+   * second argument.
+   *
+   * If `pageFunction` returns a [Promise], this method will wait for the promise to resolve and return its value.
+   *
+   * If `pageFunction` throws or rejects, this method throws.
    *
    * **Usage**
    *
@@ -9748,12 +10867,16 @@ export interface Locator {
     timeout?: number;
   }): Promise<R>;
   /**
-   * Returns the return value of `pageFunction`.
+   * Execute JavaScript code in the page, taking the matching element as an argument.
    *
-   * This method passes this handle as the first argument to `pageFunction`.
+   * **Details**
    *
-   * If `pageFunction` returns a [Promise], then `handle.evaluate` would wait for the promise to resolve and return its
-   * value.
+   * Returns the return value of `pageFunction`, called with the matching element as a first argument, and `arg` as a
+   * second argument.
+   *
+   * If `pageFunction` returns a [Promise], this method will wait for the promise to resolve and return its value.
+   *
+   * If `pageFunction` throws or rejects, this method throws.
    *
    * **Usage**
    *
@@ -9770,18 +10893,78 @@ export interface Locator {
     timeout?: number;
   }): Promise<R>;
   /**
-   * The method finds all elements matching the specified locator and passes an array of matched elements as a first
-   * argument to `pageFunction`. Returns the result of `pageFunction` invocation.
+   * Execute JavaScript code in the page, taking the matching element as an argument, and return a {@link JSHandle} with
+   * the result.
    *
-   * If `pageFunction` returns a [Promise], then
-   * [locator.evaluateAll(pageFunction[, arg])](https://playwright.dev/docs/api/class-locator#locator-evaluate-all)
-   * would wait for the promise to resolve and return its value.
+   * **Details**
+   *
+   * Returns the return value of `pageFunction` as a{@link JSHandle}, called with the matching element as a first
+   * argument, and `arg` as a second argument.
+   *
+   * The only difference between
+   * [locator.evaluate(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate)
+   * and
+   * [locator.evaluateHandle(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate-handle)
+   * is that
+   * [locator.evaluateHandle(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate-handle)
+   * returns {@link JSHandle}.
+   *
+   * If `pageFunction` returns a [Promise], this method will wait for the promise to resolve and return its value.
+   *
+   * If `pageFunction` throws or rejects, this method throws.
+   *
+   * See [page.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate-handle) for
+   * more details.
+   * @param pageFunction Function to be evaluated in the page context.
+   * @param arg Optional argument to pass to `pageFunction`.
+   * @param options
+   */
+  evaluateHandle<R, Arg, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(pageFunction: PageFunctionOn<E, Arg, R>, arg: Arg): Promise<SmartHandle<R>>;
+  /**
+   * Execute JavaScript code in the page, taking the matching element as an argument, and return a {@link JSHandle} with
+   * the result.
+   *
+   * **Details**
+   *
+   * Returns the return value of `pageFunction` as a{@link JSHandle}, called with the matching element as a first
+   * argument, and `arg` as a second argument.
+   *
+   * The only difference between
+   * [locator.evaluate(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate)
+   * and
+   * [locator.evaluateHandle(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate-handle)
+   * is that
+   * [locator.evaluateHandle(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate-handle)
+   * returns {@link JSHandle}.
+   *
+   * If `pageFunction` returns a [Promise], this method will wait for the promise to resolve and return its value.
+   *
+   * If `pageFunction` throws or rejects, this method throws.
+   *
+   * See [page.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate-handle) for
+   * more details.
+   * @param pageFunction Function to be evaluated in the page context.
+   * @param arg Optional argument to pass to `pageFunction`.
+   * @param options
+   */
+  evaluateHandle<R, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(pageFunction: PageFunctionOn<E, void, R>): Promise<SmartHandle<R>>;
+  /**
+   * Execute JavaScript code in the page, taking all matching elements as an argument.
+   *
+   * **Details**
+   *
+   * Returns the return value of `pageFunction`, called with an array of all matching elements as a first argument, and
+   * `arg` as a second argument.
+   *
+   * If `pageFunction` returns a [Promise], this method will wait for the promise to resolve and return its value.
+   *
+   * If `pageFunction` throws or rejects, this method throws.
    *
    * **Usage**
    *
    * ```js
-   * const elements = page.locator('div');
-   * const divCounts = await elements.evaluateAll((divs, min) => divs.length >= min, 10);
+   * const locator = page.locator('div');
+   * const moreThanTen = await locator.evaluateAll((divs, min) => divs.length > min, 10);
    * ```
    *
    * @param pageFunction Function to be evaluated in the page context.
@@ -9789,18 +10972,22 @@ export interface Locator {
    */
   evaluateAll<R, Arg, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(pageFunction: PageFunctionOn<E[], Arg, R>, arg: Arg): Promise<R>;
   /**
-   * The method finds all elements matching the specified locator and passes an array of matched elements as a first
-   * argument to `pageFunction`. Returns the result of `pageFunction` invocation.
+   * Execute JavaScript code in the page, taking all matching elements as an argument.
    *
-   * If `pageFunction` returns a [Promise], then
-   * [locator.evaluateAll(pageFunction[, arg])](https://playwright.dev/docs/api/class-locator#locator-evaluate-all)
-   * would wait for the promise to resolve and return its value.
+   * **Details**
+   *
+   * Returns the return value of `pageFunction`, called with an array of all matching elements as a first argument, and
+   * `arg` as a second argument.
+   *
+   * If `pageFunction` returns a [Promise], this method will wait for the promise to resolve and return its value.
+   *
+   * If `pageFunction` throws or rejects, this method throws.
    *
    * **Usage**
    *
    * ```js
-   * const elements = page.locator('div');
-   * const divCounts = await elements.evaluateAll((divs, min) => divs.length >= min, 10);
+   * const locator = page.locator('div');
+   * const moreThanTen = await locator.evaluateAll((divs, min) => divs.length > min, 10);
    * ```
    *
    * @param pageFunction Function to be evaluated in the page context.
@@ -9808,22 +10995,82 @@ export interface Locator {
    */
   evaluateAll<R, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(pageFunction: PageFunctionOn<E[], void, R>): Promise<R>;
   /**
-   * Resolves given locator to the first matching DOM element. If no elements matching the query are visible, waits for
-   * them up to a given timeout. If multiple elements match the selector, throws.
+   * **NOTE** Always prefer using {@link Locator}s and web assertions over {@link ElementHandle}s because latter are inherently
+   * racy.
+   *
+   * Resolves given locator to the first matching DOM element. If there are no matching elements, waits for one. If
+   * multiple elements match the locator, throws.
    * @param options
    */
   elementHandle(options?: {
     timeout?: number;
   }): Promise<null|ElementHandle<SVGElement | HTMLElement>>;
   /**
+   * When the locator points to a list of elements, this returns an array of locators, pointing to their respective
+   * elements.
+   *
+   * **NOTE** [locator.all()](https://playwright.dev/docs/api/class-locator#locator-all) does not wait for elements to
+   * match the locator, and instead immediately returns whatever is present in the page.  When the list of elements
+   * changes dynamically, [locator.all()](https://playwright.dev/docs/api/class-locator#locator-all) will produce
+   * unpredictable and flaky results.  When the list of elements is stable, but loaded dynamically, wait for the full
+   * list to finish loading before calling [locator.all()](https://playwright.dev/docs/api/class-locator#locator-all).
+   *
+   * **Usage**
+   *
+   * ```js
+   * for (const li of await page.getByRole('listitem').all())
+   *   await li.click();
+   * ```
+   *
+   */
+  all(): Promise<Array<Locator>>;
+
+  /**
    * Returns an array of `node.innerText` values for all matching nodes.
+   *
+   * **NOTE** If you need to assert text on the page, prefer
+   * [expect(locator).toHaveText(expected[, options])](https://playwright.dev/docs/api/class-locatorassertions#locator-assertions-to-have-text)
+   * with `useInnerText` option to avoid flakiness. See [assertions guide](https://playwright.dev/docs/test-assertions) for more details.
+   *
+   * **Usage**
+   *
+   * ```js
+   * const texts = await page.getByRole('link').allInnerTexts();
+   * ```
+   *
    */
   allInnerTexts(): Promise<Array<string>>;
 
   /**
    * Returns an array of `node.textContent` values for all matching nodes.
+   *
+   * **NOTE** If you need to assert text on the page, prefer
+   * [expect(locator).toHaveText(expected[, options])](https://playwright.dev/docs/api/class-locatorassertions#locator-assertions-to-have-text)
+   * to avoid flakiness. See [assertions guide](https://playwright.dev/docs/test-assertions) for more details.
+   *
+   * **Usage**
+   *
+   * ```js
+   * const texts = await page.getByRole('link').allTextContents();
+   * ```
+   *
    */
   allTextContents(): Promise<Array<string>>;
+
+  /**
+   * Creates a locator that matches both this locator and the argument locator.
+   *
+   * **Usage**
+   *
+   * The following example finds a button with a specific title.
+   *
+   * ```js
+   * const button = page.getByRole('button').and(page.getByTitle('Subscribe'));
+   * ```
+   *
+   * @param locator Additional locator to match.
+   */
+  and(locator: Locator): Locator;
 
   /**
    * Calls [blur](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/blur) on the element.
@@ -9831,8 +11078,8 @@ export interface Locator {
    */
   blur(options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9840,8 +11087,11 @@ export interface Locator {
   }): Promise<void>;
 
   /**
-   * This method returns the bounding box of the element, or `null` if the element is not visible. The bounding box is
-   * calculated relative to the main frame viewport - which is usually the same as the browser window.
+   * This method returns the bounding box of the element matching the locator, or `null` if the element is not visible.
+   * The bounding box is calculated relative to the main frame viewport - which is usually the same as the browser
+   * window.
+   *
+   * **Details**
    *
    * Scrolling affects the returned bounding box, similarly to
    * [Element.getBoundingClientRect](https://developer.mozilla.org/en-US/docs/Web/API/Element/getBoundingClientRect).
@@ -9856,7 +11106,7 @@ export interface Locator {
    * **Usage**
    *
    * ```js
-   * const box = await element.boundingBox();
+   * const box = await page.getByRole('button').boundingBox();
    * await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
    * ```
    *
@@ -9864,8 +11114,8 @@ export interface Locator {
    */
   boundingBox(options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9893,7 +11143,11 @@ export interface Locator {
   }>;
 
   /**
-   * This method checks the element by performing the following steps:
+   * Ensure that checkbox or radio element is checked.
+   *
+   * **Details**
+   *
+   * Performs the following steps:
    * 1. Ensure that element is a checkbox or a radio input. If not, this method throws. If the element is already
    *    checked, this method returns immediately.
    * 1. Wait for [actionability](https://playwright.dev/docs/actionability) checks on the element, unless `force` option is set.
@@ -9905,8 +11159,15 @@ export interface Locator {
    *
    * If the element is detached from the DOM at any moment during the action, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
+   *
+   * **Usage**
+   *
+   * ```js
+   * await page.getByRole('checkbox').check();
+   * ```
+   *
    * @param options
    */
   check(options?: {
@@ -9933,8 +11194,8 @@ export interface Locator {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9948,6 +11209,10 @@ export interface Locator {
   }): Promise<void>;
 
   /**
+   * Clear the input field.
+   *
+   * **Details**
+   *
    * This method waits for [actionability](https://playwright.dev/docs/actionability) checks, focuses the element, clears it and triggers an
    * `input` event after clearing.
    *
@@ -9955,6 +11220,13 @@ export interface Locator {
    * error. However, if the element is inside the `<label>` element that has an associated
    * [control](https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control), the control will be cleared
    * instead.
+   *
+   * **Usage**
+   *
+   * ```js
+   * await page.getByRole('textbox').clear();
+   * ```
+   *
    * @param options
    */
   clear(options?: {
@@ -9971,8 +11243,8 @@ export interface Locator {
     noWaitAfter?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -9980,6 +11252,10 @@ export interface Locator {
   }): Promise<void>;
 
   /**
+   * Click an element.
+   *
+   * **Details**
+   *
    * This method clicks the element by performing the following steps:
    * 1. Wait for [actionability](https://playwright.dev/docs/actionability) checks on the element, unless `force` option is set.
    * 1. Scroll the element into view if needed.
@@ -9989,8 +11265,27 @@ export interface Locator {
    *
    * If the element is detached from the DOM at any moment during the action, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
+   *
+   * **Usage**
+   *
+   * Click a button:
+   *
+   * ```js
+   * await page.getByRole('button').click();
+   * ```
+   *
+   * Shift-right-click at a specific position on a canvas:
+   *
+   * ```js
+   * await page.locator('canvas').click({
+   *   button: 'right',
+   *   modifiers: ['Shift'],
+   *   position: { x: 23, y: 32 },
+   * });
+   * ```
+   *
    * @param options
    */
   click(options?: {
@@ -10016,9 +11311,10 @@ export interface Locator {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -10038,8 +11334,8 @@ export interface Locator {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10053,11 +11349,47 @@ export interface Locator {
   }): Promise<void>;
 
   /**
-   * Returns the number of elements matching given selector.
+   * Returns a {@link FrameLocator} object pointing to the same `iframe` as this locator.
+   *
+   * Useful when you have a {@link Locator} object obtained somewhere, and later on would like to interact with the
+   * content inside the frame.
+   *
+   * For a reverse operation, use
+   * [frameLocator.owner()](https://playwright.dev/docs/api/class-framelocator#frame-locator-owner).
+   *
+   * **Usage**
+   *
+   * ```js
+   * const locator = page.locator('iframe[name="embedded"]');
+   * // ...
+   * const frameLocator = locator.contentFrame();
+   * await frameLocator.getByRole('button').click();
+   * ```
+   *
+   */
+  contentFrame(): FrameLocator;
+
+  /**
+   * Returns the number of elements matching the locator.
+   *
+   * **NOTE** If you need to assert the number of elements on the page, prefer
+   * [expect(locator).toHaveCount(count[, options])](https://playwright.dev/docs/api/class-locatorassertions#locator-assertions-to-have-count)
+   * to avoid flakiness. See [assertions guide](https://playwright.dev/docs/test-assertions) for more details.
+   *
+   * **Usage**
+   *
+   * ```js
+   * const count = await page.getByRole('listitem').count();
+   * ```
+   *
    */
   count(): Promise<number>;
 
   /**
+   * Double-click an element.
+   *
+   * **Details**
+   *
    * This method double clicks the element by performing the following steps:
    * 1. Wait for [actionability](https://playwright.dev/docs/actionability) checks on the element, unless `force` option is set.
    * 1. Scroll the element into view if needed.
@@ -10068,8 +11400,8 @@ export interface Locator {
    *
    * If the element is detached from the DOM at any moment during the action, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    *
    * **NOTE** `element.dblclick()` dispatches two `click` events and a single `dblclick` event.
    * @param options
@@ -10092,9 +11424,10 @@ export interface Locator {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -10114,8 +11447,8 @@ export interface Locator {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10129,34 +11462,41 @@ export interface Locator {
   }): Promise<void>;
 
   /**
-   * The snippet below dispatches the `click` event on the element. Regardless of the visibility state of the element,
-   * `click` is dispatched. This is equivalent to calling
-   * [element.click()](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/click).
+   * Programmatically dispatch an event on the matching element.
    *
    * **Usage**
    *
    * ```js
-   * await element.dispatchEvent('click');
+   * await locator.dispatchEvent('click');
    * ```
+   *
+   * **Details**
+   *
+   * The snippet above dispatches the `click` event on the element. Regardless of the visibility state of the element,
+   * `click` is dispatched. This is equivalent to calling
+   * [element.click()](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/click).
    *
    * Under the hood, it creates an instance of an event based on the given `type`, initializes it with `eventInit`
    * properties and dispatches it on the element. Events are `composed`, `cancelable` and bubble by default.
    *
    * Since `eventInit` is event-specific, please refer to the events documentation for the lists of initial properties:
+   * - [DeviceMotionEvent](https://developer.mozilla.org/en-US/docs/Web/API/DeviceMotionEvent/DeviceMotionEvent)
+   * - [DeviceOrientationEvent](https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent/DeviceOrientationEvent)
    * - [DragEvent](https://developer.mozilla.org/en-US/docs/Web/API/DragEvent/DragEvent)
+   * - [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/Event)
    * - [FocusEvent](https://developer.mozilla.org/en-US/docs/Web/API/FocusEvent/FocusEvent)
    * - [KeyboardEvent](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/KeyboardEvent)
    * - [MouseEvent](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/MouseEvent)
    * - [PointerEvent](https://developer.mozilla.org/en-US/docs/Web/API/PointerEvent/PointerEvent)
    * - [TouchEvent](https://developer.mozilla.org/en-US/docs/Web/API/TouchEvent/TouchEvent)
-   * - [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/Event)
+   * - [WheelEvent](https://developer.mozilla.org/en-US/docs/Web/API/WheelEvent/WheelEvent)
    *
-   * You can also specify `JSHandle` as the property value if you want live objects to be passed into the event:
+   * You can also specify {@link JSHandle} as the property value if you want live objects to be passed into the event:
    *
    * ```js
    * // Note you can only create DataTransfer in Chromium and Firefox
    * const dataTransfer = await page.evaluateHandle(() => new DataTransfer());
-   * await element.dispatchEvent('dragstart', { dataTransfer });
+   * await locator.dispatchEvent('dragstart', { dataTransfer });
    * ```
    *
    * @param type DOM event type: `"click"`, `"dragstart"`, etc.
@@ -10165,8 +11505,8 @@ export interface Locator {
    */
   dispatchEvent(type: string, eventInit?: EvaluationArgument, options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10174,6 +11514,10 @@ export interface Locator {
   }): Promise<void>;
 
   /**
+   * Drag the source element towards the target element and drop it.
+   *
+   * **Details**
+   *
    * This method drags the locator to another target locator or target position. It will first move to the source
    * element, perform a `mousedown`, then move to the target element or position and perform a `mouseup`.
    *
@@ -10228,8 +11572,8 @@ export interface Locator {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10243,46 +11587,24 @@ export interface Locator {
   }): Promise<void>;
 
   /**
-   * Resolves given locator to all matching DOM elements.
+   * **NOTE** Always prefer using {@link Locator}s and web assertions over {@link ElementHandle}s because latter are inherently
+   * racy.
+   *
+   * Resolves given locator to all matching DOM elements. If there are no matching elements, returns an empty list.
    */
   elementHandles(): Promise<Array<ElementHandle>>;
 
   /**
-   * Returns the return value of `pageFunction` as a [JSHandle].
+   * Set a value to the input field.
    *
-   * This method passes this handle as the first argument to `pageFunction`.
+   * **Usage**
    *
-   * The only difference between
-   * [locator.evaluate(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate)
-   * and
-   * [locator.evaluateHandle(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate-handle)
-   * is that
-   * [locator.evaluateHandle(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate-handle)
-   * returns [JSHandle].
+   * ```js
+   * await page.getByRole('textbox').fill('example value');
+   * ```
    *
-   * If the function passed to the
-   * [locator.evaluateHandle(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate-handle)
-   * returns a [Promise], then
-   * [locator.evaluateHandle(pageFunction[, arg, options])](https://playwright.dev/docs/api/class-locator#locator-evaluate-handle)
-   * would wait for the promise to resolve and return its value.
+   * **Details**
    *
-   * See [page.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-page#page-evaluate-handle) for
-   * more details.
-   * @param pageFunction Function to be evaluated in the page context.
-   * @param arg Optional argument to pass to `pageFunction`.
-   * @param options
-   */
-  evaluateHandle(pageFunction: Function|string, arg?: EvaluationArgument, options?: {
-    /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
-     * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
-     * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
-     */
-    timeout?: number;
-  }): Promise<JSHandle>;
-
-  /**
    * This method waits for [actionability](https://playwright.dev/docs/actionability) checks, focuses the element, fills it and triggers an
    * `input` event after filling. Note that you can pass an empty string to clear the input field.
    *
@@ -10292,7 +11614,7 @@ export interface Locator {
    * instead.
    *
    * To send fine-grained keyboard events, use
-   * [locator.type(text[, options])](https://playwright.dev/docs/api/class-locator#locator-type).
+   * [locator.pressSequentially(text[, options])](https://playwright.dev/docs/api/class-locator#locator-press-sequentially).
    * @param value Value to set for the `<input>`, `<textarea>` or `[contenteditable]` element.
    * @param options
    */
@@ -10310,8 +11632,8 @@ export interface Locator {
     noWaitAfter?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10337,12 +11659,33 @@ export interface Locator {
    */
   filter(options?: {
     /**
-     * Matches elements containing an element that matches an inner locator. Inner locator is queried against the outer
-     * one. For example, `article` that has `text=Playwright` matches `<article><div>Playwright</div></article>`.
+     * Narrows down the results of the method to those which contain elements matching this relative locator. For example,
+     * `article` that has `text=Playwright` matches `<article><div>Playwright</div></article>`.
      *
-     * Note that outer and inner locators must belong to the same frame. Inner locator must not contain [FrameLocator]s.
+     * Inner locator **must be relative** to the outer locator and is queried starting with the outer locator match, not
+     * the document root. For example, you can find `content` that has `div` in
+     * `<article><content><div>Playwright</div></content></article>`. However, looking for `content` that has `article
+     * div` will fail, because the inner locator must be relative and should not use any elements outside the `content`.
+     *
+     * Note that outer and inner locators must belong to the same frame. Inner locator must not contain {@link
+     * FrameLocator}s.
      */
     has?: Locator;
+
+    /**
+     * Matches elements that do not contain an element that matches an inner locator. Inner locator is queried against the
+     * outer one. For example, `article` that does not have `div` matches `<article><span>Playwright</span></article>`.
+     *
+     * Note that outer and inner locators must belong to the same frame. Inner locator must not contain {@link
+     * FrameLocator}s.
+     */
+    hasNot?: Locator;
+
+    /**
+     * Matches elements that do not contain specified text somewhere inside, possibly in a child or a descendant element.
+     * When passed a [string], matching is case-insensitive and searches for a substring.
+     */
+    hasNotText?: string|RegExp;
 
     /**
      * Matches elements containing specified text somewhere inside, possibly in a child or a descendant element. When
@@ -10358,13 +11701,13 @@ export interface Locator {
   first(): Locator;
 
   /**
-   * Calls [focus](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/focus) on the element.
+   * Calls [focus](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/focus) on the matching element.
    * @param options
    */
   focus(options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10372,29 +11715,33 @@ export interface Locator {
   }): Promise<void>;
 
   /**
-   * **Usage**
+   * When working with iframes, you can create a frame locator that will enter the iframe and allow locating elements in
+   * that iframe:
    *
-   * When working with iframes, you can create a frame locator that will enter the iframe and allow selecting elements
-   * in that iframe:
+   * **Usage**
    *
    * ```js
    * const locator = page.frameLocator('iframe').getByText('Submit');
    * await locator.click();
    * ```
    *
-   * @param selector A selector to use when resolving DOM element. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to use when resolving DOM element.
    */
   frameLocator(selector: string): FrameLocator;
 
   /**
-   * Returns element attribute value.
+   * Returns the matching element's attribute value.
+   *
+   * **NOTE** If you need to assert an element's attribute, prefer
+   * [expect(locator).toHaveAttribute(name, value[, options])](https://playwright.dev/docs/api/class-locatorassertions#locator-assertions-to-have-attribute)
+   * to avoid flakiness. See [assertions guide](https://playwright.dev/docs/test-assertions) for more details.
    * @param name Attribute name to get the value for.
    * @param options
    */
   getAttribute(name: string, options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10402,10 +11749,18 @@ export interface Locator {
   }): Promise<null|string>;
 
   /**
-   * Allows locating elements by their alt text. For example, this method will find the image by alt text "Castle":
+   * Allows locating elements by their alt text.
+   *
+   * **Usage**
+   *
+   * For example, this method will find the image by alt text "Playwright logo":
    *
    * ```html
-   * <img alt='Castle'>
+   * <img alt='Playwright logo'>
+   * ```
+   *
+   * ```js
+   * await page.getByAltText('Playwright logo').click();
    * ```
    *
    * @param text Text to locate the element for.
@@ -10420,12 +11775,22 @@ export interface Locator {
   }): Locator;
 
   /**
-   * Allows locating input elements by the text of the associated label. For example, this method will find the input by
-   * label text "Password" in the following DOM:
+   * Allows locating input elements by the text of the associated `<label>` or `aria-labelledby` element, or by the
+   * `aria-label` attribute.
+   *
+   * **Usage**
+   *
+   * For example, this method will find inputs by label "Username" and "Password" in the following DOM:
    *
    * ```html
+   * <input aria-label="Username">
    * <label for="password-input">Password:</label>
    * <input id="password-input">
+   * ```
+   *
+   * ```js
+   * await page.getByLabel('Username').fill('john');
+   * await page.getByLabel('Password').fill('secret');
    * ```
    *
    * @param text Text to locate the element for.
@@ -10440,11 +11805,22 @@ export interface Locator {
   }): Locator;
 
   /**
-   * Allows locating input elements by the placeholder text. For example, this method will find the input by placeholder
-   * "Country":
+   * Allows locating input elements by the placeholder text.
+   *
+   * **Usage**
+   *
+   * For example, consider the following DOM structure.
    *
    * ```html
-   * <input placeholder="Country">
+   * <input type="email" placeholder="name@example.com" />
+   * ```
+   *
+   * You can fill the input after locating it by the placeholder text:
+   *
+   * ```js
+   * await page
+   *     .getByPlaceholder('name@example.com')
+   *     .fill('playwright@microsoft.com');
    * ```
    *
    * @param text Text to locate the element for.
@@ -10461,14 +11837,40 @@ export interface Locator {
   /**
    * Allows locating elements by their [ARIA role](https://www.w3.org/TR/wai-aria-1.2/#roles),
    * [ARIA attributes](https://www.w3.org/TR/wai-aria-1.2/#aria-attributes) and
-   * [accessible name](https://w3c.github.io/accname/#dfn-accessible-name). Note that role selector **does not replace**
-   * accessibility audits and conformance tests, but rather gives early feedback about the ARIA guidelines.
+   * [accessible name](https://w3c.github.io/accname/#dfn-accessible-name).
    *
-   * Note that many html elements have an implicitly
-   * [defined role](https://w3c.github.io/html-aam/#html-element-role-mappings) that is recognized by the role selector.
-   * You can find all the [supported roles here](https://www.w3.org/TR/wai-aria-1.2/#role_definitions). ARIA guidelines
-   * **do not recommend** duplicating implicit roles and attributes by setting `role` and/or `aria-*` attributes to
-   * default values.
+   * **Usage**
+   *
+   * Consider the following DOM structure.
+   *
+   * ```html
+   * <h3>Sign up</h3>
+   * <label>
+   *   <input type="checkbox" /> Subscribe
+   * </label>
+   * <br/>
+   * <button>Submit</button>
+   * ```
+   *
+   * You can locate each element by it's implicit role:
+   *
+   * ```js
+   * await expect(page.getByRole('heading', { name: 'Sign up' })).toBeVisible();
+   *
+   * await page.getByRole('checkbox', { name: 'Subscribe' }).check();
+   *
+   * await page.getByRole('button', { name: /submit/i }).click();
+   * ```
+   *
+   * **Details**
+   *
+   * Role selector **does not replace** accessibility audits and conformance tests, but rather gives early feedback
+   * about the ARIA guidelines.
+   *
+   * Many html elements have an implicitly [defined role](https://w3c.github.io/html-aam/#html-element-role-mappings)
+   * that is recognized by the role selector. You can find all the
+   * [supported roles here](https://www.w3.org/TR/wai-aria-1.2/#role_definitions). ARIA guidelines **do not recommend**
+   * duplicating implicit roles and attributes by setting `role` and/or `aria-*` attributes to default values.
    * @param role Required aria role.
    * @param options
    */
@@ -10541,23 +11943,52 @@ export interface Locator {
   }): Locator;
 
   /**
-   * Locate element by the test id. By default, the `data-testid` attribute is used as a test id. Use
+   * Locate element by the test id.
+   *
+   * **Usage**
+   *
+   * Consider the following DOM structure.
+   *
+   * ```html
+   * <button data-testid="directions">Itinéraire</button>
+   * ```
+   *
+   * You can locate the element by it's test id:
+   *
+   * ```js
+   * await page.getByTestId('directions').click();
+   * ```
+   *
+   * **Details**
+   *
+   * By default, the `data-testid` attribute is used as a test id. Use
    * [selectors.setTestIdAttribute(attributeName)](https://playwright.dev/docs/api/class-selectors#selectors-set-test-id-attribute)
    * to configure a different test id attribute if necessary.
    *
    * ```js
    * // Set custom test id attribute from @playwright/test config:
-   * use: {
-   *   testIdAttribute: 'data-pw'
-   * }
+   * import { defineConfig } from '@playwright/test';
+   *
+   * export default defineConfig({
+   *   use: {
+   *     testIdAttribute: 'data-pw'
+   *   },
+   * });
    * ```
    *
    * @param testId Id to locate the element by.
    */
-  getByTestId(testId: string): Locator;
+  getByTestId(testId: string|RegExp): Locator;
 
   /**
-   * Allows locating elements that contain given text. Consider the following DOM structure:
+   * Allows locating elements that contain given text.
+   *
+   * See also [locator.filter([options])](https://playwright.dev/docs/api/class-locator#locator-filter) that allows to
+   * match by another criteria, like an accessible role, and then filter by the text content.
+   *
+   * **Usage**
+   *
+   * Consider the following DOM structure:
    *
    * ```html
    * <div>Hello <span>world</span></div>
@@ -10568,29 +11999,28 @@ export interface Locator {
    *
    * ```js
    * // Matches <span>
-   * page.getByText('world')
+   * page.getByText('world');
    *
    * // Matches first <div>
-   * page.getByText('Hello world')
+   * page.getByText('Hello world');
    *
    * // Matches second <div>
-   * page.getByText('Hello', { exact: true })
+   * page.getByText('Hello', { exact: true });
    *
    * // Matches both <div>s
-   * page.getByText(/Hello/)
+   * page.getByText(/Hello/);
    *
    * // Matches second <div>
-   * page.getByText(/^hello$/i)
+   * page.getByText(/^hello$/i);
    * ```
    *
-   * See also [locator.filter([options])](https://playwright.dev/docs/api/class-locator#locator-filter) that allows to
-   * match by another criteria, like an accessible role, and then filter by the text content.
+   * **Details**
    *
-   * **NOTE** Matching by text always normalizes whitespace, even with exact match. For example, it turns multiple
-   * spaces into one, turns line breaks into spaces and ignores leading and trailing whitespace.
+   * Matching by text always normalizes whitespace, even with exact match. For example, it turns multiple spaces into
+   * one, turns line breaks into spaces and ignores leading and trailing whitespace.
    *
-   * **NOTE** Input elements of the type `button` and `submit` are matched by their `value` instead of the text content.
-   * For example, locating by text `"Log in"` matches `<input type=button value="Log in">`.
+   * Input elements of the type `button` and `submit` are matched by their `value` instead of the text content. For
+   * example, locating by text `"Log in"` matches `<input type=button value="Log in">`.
    * @param text Text to locate the element for.
    * @param options
    */
@@ -10603,11 +12033,20 @@ export interface Locator {
   }): Locator;
 
   /**
-   * Allows locating elements by their title. For example, this method will find the button by its title "Place the
-   * order":
+   * Allows locating elements by their title attribute.
+   *
+   * **Usage**
+   *
+   * Consider the following DOM structure.
    *
    * ```html
-   * <button title='Place the order'>Order Now</button>
+   * <span title='Issues count'>25 issues</span>
+   * ```
+   *
+   * You can check the issues count after locating it by the title text:
+   *
+   * ```js
+   * await expect(page.getByTitle('Issues count')).toHaveText('25 issues');
    * ```
    *
    * @param text Text to locate the element for.
@@ -10628,6 +12067,16 @@ export interface Locator {
   highlight(): Promise<void>;
 
   /**
+   * Hover over the matching element.
+   *
+   * **Usage**
+   *
+   * ```js
+   * await page.getByRole('link').hover();
+   * ```
+   *
+   * **Details**
+   *
    * This method hovers over the element by performing the following steps:
    * 1. Wait for [actionability](https://playwright.dev/docs/actionability) checks on the element, unless `force` option is set.
    * 1. Scroll the element into view if needed.
@@ -10637,8 +12086,8 @@ export interface Locator {
    *
    * If the element is detached from the DOM at any moment during the action, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param options
    */
   hover(options?: {
@@ -10649,9 +12098,10 @@ export interface Locator {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -10671,8 +12121,8 @@ export interface Locator {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10686,13 +12136,13 @@ export interface Locator {
   }): Promise<void>;
 
   /**
-   * Returns the `element.innerHTML`.
+   * Returns the [`element.innerHTML`](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML).
    * @param options
    */
   innerHTML(options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10700,13 +12150,17 @@ export interface Locator {
   }): Promise<string>;
 
   /**
-   * Returns the `element.innerText`.
+   * Returns the [`element.innerText`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/innerText).
+   *
+   * **NOTE** If you need to assert text on the page, prefer
+   * [expect(locator).toHaveText(expected[, options])](https://playwright.dev/docs/api/class-locatorassertions#locator-assertions-to-have-text)
+   * with `useInnerText` option to avoid flakiness. See [assertions guide](https://playwright.dev/docs/test-assertions) for more details.
    * @param options
    */
   innerText(options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10714,17 +12168,30 @@ export interface Locator {
   }): Promise<string>;
 
   /**
-   * Returns `input.value` for the selected `<input>` or `<textarea>` or `<select>` element.
+   * Returns the value for the matching `<input>` or `<textarea>` or `<select>` element.
    *
-   * Throws for non-input elements. However, if the element is inside the `<label>` element that has an associated
+   * **NOTE** If you need to assert input value, prefer
+   * [expect(locator).toHaveValue(value[, options])](https://playwright.dev/docs/api/class-locatorassertions#locator-assertions-to-have-value)
+   * to avoid flakiness. See [assertions guide](https://playwright.dev/docs/test-assertions) for more details.
+   *
+   * **Usage**
+   *
+   * ```js
+   * const value = await page.getByRole('textbox').inputValue();
+   * ```
+   *
+   * **Details**
+   *
+   * Throws elements that are not an input, textarea or a select. However, if the element is inside the `<label>`
+   * element that has an associated
    * [control](https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control), returns the value of the
    * control.
    * @param options
    */
   inputValue(options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10733,12 +12200,23 @@ export interface Locator {
 
   /**
    * Returns whether the element is checked. Throws if the element is not a checkbox or radio input.
+   *
+   * **NOTE** If you need to assert that checkbox is checked, prefer
+   * [expect(locator).toBeChecked([options])](https://playwright.dev/docs/api/class-locatorassertions#locator-assertions-to-be-checked)
+   * to avoid flakiness. See [assertions guide](https://playwright.dev/docs/test-assertions) for more details.
+   *
+   * **Usage**
+   *
+   * ```js
+   * const checked = await page.getByRole('checkbox').isChecked();
+   * ```
+   *
    * @param options
    */
   isChecked(options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10747,12 +12225,23 @@ export interface Locator {
 
   /**
    * Returns whether the element is disabled, the opposite of [enabled](https://playwright.dev/docs/actionability#enabled).
+   *
+   * **NOTE** If you need to assert that an element is disabled, prefer
+   * [expect(locator).toBeDisabled([options])](https://playwright.dev/docs/api/class-locatorassertions#locator-assertions-to-be-disabled)
+   * to avoid flakiness. See [assertions guide](https://playwright.dev/docs/test-assertions) for more details.
+   *
+   * **Usage**
+   *
+   * ```js
+   * const disabled = await page.getByRole('button').isDisabled();
+   * ```
+   *
    * @param options
    */
   isDisabled(options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10761,12 +12250,23 @@ export interface Locator {
 
   /**
    * Returns whether the element is [editable](https://playwright.dev/docs/actionability#editable).
+   *
+   * **NOTE** If you need to assert that an element is editable, prefer
+   * [expect(locator).toBeEditable([options])](https://playwright.dev/docs/api/class-locatorassertions#locator-assertions-to-be-editable)
+   * to avoid flakiness. See [assertions guide](https://playwright.dev/docs/test-assertions) for more details.
+   *
+   * **Usage**
+   *
+   * ```js
+   * const editable = await page.getByRole('textbox').isEditable();
+   * ```
+   *
    * @param options
    */
   isEditable(options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10775,12 +12275,23 @@ export interface Locator {
 
   /**
    * Returns whether the element is [enabled](https://playwright.dev/docs/actionability#enabled).
+   *
+   * **NOTE** If you need to assert that an element is enabled, prefer
+   * [expect(locator).toBeEnabled([options])](https://playwright.dev/docs/api/class-locatorassertions#locator-assertions-to-be-enabled)
+   * to avoid flakiness. See [assertions guide](https://playwright.dev/docs/test-assertions) for more details.
+   *
+   * **Usage**
+   *
+   * ```js
+   * const enabled = await page.getByRole('button').isEnabled();
+   * ```
+   *
    * @param options
    */
   isEnabled(options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10789,30 +12300,61 @@ export interface Locator {
 
   /**
    * Returns whether the element is hidden, the opposite of [visible](https://playwright.dev/docs/actionability#visible).
+   *
+   * **NOTE** If you need to assert that element is hidden, prefer
+   * [expect(locator).toBeHidden([options])](https://playwright.dev/docs/api/class-locatorassertions#locator-assertions-to-be-hidden)
+   * to avoid flakiness. See [assertions guide](https://playwright.dev/docs/test-assertions) for more details.
+   *
+   * **Usage**
+   *
+   * ```js
+   * const hidden = await page.getByRole('button').isHidden();
+   * ```
+   *
    * @param options
    */
   isHidden(options?: {
     /**
-     * @deprecated This option is ignored. [`method: Locator.isHidden`] does not wait for the element to become hidden and returns
-     * immediately.
+     * @deprecated This option is ignored.
+     * [locator.isHidden([options])](https://playwright.dev/docs/api/class-locator#locator-is-hidden) does not wait for
+     * the element to become hidden and returns immediately.
      */
     timeout?: number;
   }): Promise<boolean>;
 
   /**
    * Returns whether the element is [visible](https://playwright.dev/docs/actionability#visible).
+   *
+   * **NOTE** If you need to assert that element is visible, prefer
+   * [expect(locator).toBeVisible([options])](https://playwright.dev/docs/api/class-locatorassertions#locator-assertions-to-be-visible)
+   * to avoid flakiness. See [assertions guide](https://playwright.dev/docs/test-assertions) for more details.
+   *
+   * **Usage**
+   *
+   * ```js
+   * const visible = await page.getByRole('button').isVisible();
+   * ```
+   *
    * @param options
    */
   isVisible(options?: {
     /**
-     * @deprecated This option is ignored. [`method: Locator.isVisible`] does not wait for the element to become visible and returns
-     * immediately.
+     * @deprecated This option is ignored.
+     * [locator.isVisible([options])](https://playwright.dev/docs/api/class-locator#locator-is-visible) does not wait for
+     * the element to become visible and returns immediately.
      */
     timeout?: number;
   }): Promise<boolean>;
 
   /**
    * Returns locator to the last matching element.
+   *
+   * **Usage**
+   *
+   * ```js
+   * const banana = await page.getByRole('listitem').last();
+   * ```
+   *
    */
   last(): Locator;
 
@@ -10822,17 +12364,38 @@ export interface Locator {
    * method.
    *
    * [Learn more about locators](https://playwright.dev/docs/locators).
-   * @param selector A selector to use when resolving DOM element. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selectorOrLocator A selector or locator to use when resolving DOM element.
    * @param options
    */
-  locator(selector: string, options?: {
+  locator(selectorOrLocator: string|Locator, options?: {
     /**
-     * Matches elements containing an element that matches an inner locator. Inner locator is queried against the outer
-     * one. For example, `article` that has `text=Playwright` matches `<article><div>Playwright</div></article>`.
+     * Narrows down the results of the method to those which contain elements matching this relative locator. For example,
+     * `article` that has `text=Playwright` matches `<article><div>Playwright</div></article>`.
      *
-     * Note that outer and inner locators must belong to the same frame. Inner locator must not contain [FrameLocator]s.
+     * Inner locator **must be relative** to the outer locator and is queried starting with the outer locator match, not
+     * the document root. For example, you can find `content` that has `div` in
+     * `<article><content><div>Playwright</div></content></article>`. However, looking for `content` that has `article
+     * div` will fail, because the inner locator must be relative and should not use any elements outside the `content`.
+     *
+     * Note that outer and inner locators must belong to the same frame. Inner locator must not contain {@link
+     * FrameLocator}s.
      */
     has?: Locator;
+
+    /**
+     * Matches elements that do not contain an element that matches an inner locator. Inner locator is queried against the
+     * outer one. For example, `article` that does not have `div` matches `<article><span>Playwright</span></article>`.
+     *
+     * Note that outer and inner locators must belong to the same frame. Inner locator must not contain {@link
+     * FrameLocator}s.
+     */
+    hasNot?: Locator;
+
+    /**
+     * Matches elements that do not contain specified text somewhere inside, possibly in a child or a descendant element.
+     * When passed a [string], matching is case-insensitive and searches for a substring.
+     */
+    hasNotText?: string|RegExp;
 
     /**
      * Matches elements containing specified text somewhere inside, possibly in a child or a descendant element. When
@@ -10844,9 +12407,37 @@ export interface Locator {
 
   /**
    * Returns locator to the n-th matching element. It's zero based, `nth(0)` selects the first element.
+   *
+   * **Usage**
+   *
+   * ```js
+   * const banana = await page.getByRole('listitem').nth(2);
+   * ```
+   *
    * @param index
    */
   nth(index: number): Locator;
+
+  /**
+   * Creates a locator that matches either of the two locators.
+   *
+   * **Usage**
+   *
+   * Consider a scenario where you'd like to click on a "New email" button, but sometimes a security settings dialog
+   * shows up instead. In this case, you can wait for either a "New email" button, or a dialog and act accordingly.
+   *
+   * ```js
+   * const newEmail = page.getByRole('button', { name: 'New' });
+   * const dialog = page.getByText('Confirm security settings');
+   * await expect(newEmail.or(dialog)).toBeVisible();
+   * if (await dialog.isVisible())
+   *   await page.getByRole('button', { name: 'Dismiss' }).click();
+   * await newEmail.click();
+   * ```
+   *
+   * @param locator Alternative locator to match.
+   */
+  or(locator: Locator): Locator;
 
   /**
    * A page this locator belongs to.
@@ -10854,6 +12445,16 @@ export interface Locator {
   page(): Page;
 
   /**
+   * Focuses the matching element and presses a combination of the keys.
+   *
+   * **Usage**
+   *
+   * ```js
+   * await page.getByRole('textbox').press('Backspace');
+   * ```
+   *
+   * **Details**
+   *
    * Focuses the element, and then uses
    * [keyboard.down(key)](https://playwright.dev/docs/api/class-keyboard#keyboard-down) and
    * [keyboard.up(key)](https://playwright.dev/docs/api/class-keyboard#keyboard-up).
@@ -10867,15 +12468,16 @@ export interface Locator {
    * `Delete`, `Escape`, `ArrowDown`, `End`, `Enter`, `Home`, `Insert`, `PageDown`, `PageUp`, `ArrowRight`, `ArrowUp`,
    * etc.
    *
-   * Following modification shortcuts are also supported: `Shift`, `Control`, `Alt`, `Meta`, `ShiftLeft`.
+   * Following modification shortcuts are also supported: `Shift`, `Control`, `Alt`, `Meta`, `ShiftLeft`,
+   * `ControlOrMeta`. `ControlOrMeta` resolves to `Control` on Windows and Linux and to `Meta` on macOS.
    *
    * Holding down `Shift` will type the text that corresponds to the `key` in the upper case.
    *
    * If `key` is a single character, it is case-sensitive, so the values `a` and `A` will generate different respective
    * texts.
    *
-   * Shortcuts such as `key: "Control+o"` or `key: "Control+Shift+T"` are supported as well. When specified with the
-   * modifier, modifier is pressed and being held while the subsequent key is being pressed.
+   * Shortcuts such as `key: "Control+o"`, `key: "Control++` or `key: "Control+Shift+T"` are supported as well. When
+   * specified with the modifier, modifier is pressed and being held while the subsequent key is being pressed.
    * @param key Name of the key to press or a character to generate, such as `ArrowLeft` or `a`.
    * @param options
    */
@@ -10893,8 +12495,8 @@ export interface Locator {
     noWaitAfter?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10902,6 +12504,73 @@ export interface Locator {
   }): Promise<void>;
 
   /**
+   * **NOTE** In most cases, you should use
+   * [locator.fill(value[, options])](https://playwright.dev/docs/api/class-locator#locator-fill) instead. You only need
+   * to press keys one by one if there is special keyboard handling on the page.
+   *
+   * Focuses the element, and then sends a `keydown`, `keypress`/`input`, and `keyup` event for each character in the
+   * text.
+   *
+   * To press a special key, like `Control` or `ArrowDown`, use
+   * [locator.press(key[, options])](https://playwright.dev/docs/api/class-locator#locator-press).
+   *
+   * **Usage**
+   *
+   * ```js
+   * await locator.pressSequentially('Hello'); // Types instantly
+   * await locator.pressSequentially('World', { delay: 100 }); // Types slower, like a user
+   * ```
+   *
+   * An example of typing into a text field and then submitting the form:
+   *
+   * ```js
+   * const locator = page.getByLabel('Password');
+   * await locator.pressSequentially('my password');
+   * await locator.press('Enter');
+   * ```
+   *
+   * @param text String of characters to sequentially press into a focused element.
+   * @param options
+   */
+  pressSequentially(text: string, options?: {
+    /**
+     * Time to wait between key presses in milliseconds. Defaults to 0.
+     */
+    delay?: number;
+
+    /**
+     * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
+     * can opt out of waiting via setting this flag. You would only need this option in the exceptional cases such as
+     * navigating to inaccessible pages. Defaults to `false`.
+     */
+    noWaitAfter?: boolean;
+
+    /**
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
+     * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
+     * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
+     */
+    timeout?: number;
+  }): Promise<void>;
+
+  /**
+   * Take a screenshot of the element matching the locator.
+   *
+   * **Usage**
+   *
+   * ```js
+   * await page.getByRole('link').screenshot();
+   * ```
+   *
+   * Disable animations and save screenshot to a file:
+   *
+   * ```js
+   * await page.getByRole('link').screenshot({ animations: 'disabled', path: 'link.png' });
+   * ```
+   *
+   * **Details**
+   *
    * This method captures a screenshot of the page, clipped to the size and position of a particular element matching
    * the locator. If the element is covered by other elements, it will not be actually visible on the screenshot. If the
    * element is a scrollable container, only the currently scrolled content will be visible on the screenshot.
@@ -10918,12 +12587,14 @@ export interface Locator {
    * This method waits for [actionability](https://playwright.dev/docs/actionability) checks, then tries to scroll element into view, unless
    * it is completely visible as defined by
    * [IntersectionObserver](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API)'s `ratio`.
+   *
+   * See [scrolling](https://playwright.dev/docs/input#scrolling) for alternative ways to scroll.
    * @param options
    */
   scrollIntoViewIfNeeded(options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -10931,6 +12602,10 @@ export interface Locator {
   }): Promise<void>;
 
   /**
+   * Selects option or options in `<select>`.
+   *
+   * **Details**
+   *
    * This method waits for [actionability](https://playwright.dev/docs/actionability) checks, waits until all specified options are present in
    * the `<select>` element and selects these options.
    *
@@ -10945,23 +12620,31 @@ export interface Locator {
    *
    * **Usage**
    *
+   * ```html
+   * <select multiple>
+   *   <option value="red">Red</div>
+   *   <option value="green">Green</div>
+   *   <option value="blue">Blue</div>
+   * </select>
+   * ```
+   *
    * ```js
-   * // single selection matching the value
+   * // single selection matching the value or label
    * element.selectOption('blue');
    *
    * // single selection matching the label
    * element.selectOption({ label: 'Blue' });
    *
-   * // multiple selection
+   * // multiple selection for red, green and blue options
    * element.selectOption(['red', 'green', 'blue']);
    * ```
    *
    * @param values Options to select. If the `<select>` has the `multiple` attribute, all matching options are selected, otherwise
-   * only the first option matching one of the passed options is selected. String values are equivalent to
-   * `{value:'string'}`. Option is considered matching if all specified properties match.
+   * only the first option matching one of the passed options is selected. String values are matching both values and
+   * labels. Option is considered matching if all specified properties match.
    * @param options
    */
-  selectOption(values: null|string|ElementHandle|Array<string>|{
+  selectOption(values: null|string|ElementHandle|ReadonlyArray<string>|{
     /**
      * Matches by `option.value`. Optional.
      */
@@ -10976,7 +12659,7 @@ export interface Locator {
      * Matches by the index. Optional.
      */
     index?: number;
-  }|Array<ElementHandle>|Array<{
+  }|ReadonlyArray<ElementHandle>|ReadonlyArray<{
     /**
      * Matches by `option.value`. Optional.
      */
@@ -11005,8 +12688,8 @@ export interface Locator {
     noWaitAfter?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -11029,8 +12712,8 @@ export interface Locator {
     force?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -11038,6 +12721,16 @@ export interface Locator {
   }): Promise<void>;
 
   /**
+   * Set the state of a checkbox or a radio element.
+   *
+   * **Usage**
+   *
+   * ```js
+   * await page.getByRole('checkbox').setChecked(true);
+   * ```
+   *
+   * **Details**
+   *
    * This method checks or unchecks an element by performing the following steps:
    * 1. Ensure that matched element is a checkbox or a radio input. If not, this method throws.
    * 1. If the element already has the right checked state, this method returns immediately.
@@ -11049,8 +12742,8 @@ export interface Locator {
    * 1. Wait for initiated navigations to either succeed or fail, unless `noWaitAfter` option is set.
    * 1. Ensure that the element is now checked or unchecked. If not, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param checked Whether to check or uncheck the checkbox.
    * @param options
    */
@@ -11078,8 +12771,8 @@ export interface Locator {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -11093,17 +12786,44 @@ export interface Locator {
   }): Promise<void>;
 
   /**
+   * Upload file or multiple files into `<input type=file>`.
+   *
+   * **Usage**
+   *
+   * ```js
+   * // Select one file
+   * await page.getByLabel('Upload file').setInputFiles(path.join(__dirname, 'myfile.pdf'));
+   *
+   * // Select multiple files
+   * await page.getByLabel('Upload files').setInputFiles([
+   *   path.join(__dirname, 'file1.txt'),
+   *   path.join(__dirname, 'file2.txt'),
+   * ]);
+   *
+   * // Remove all the selected files
+   * await page.getByLabel('Upload file').setInputFiles([]);
+   *
+   * // Upload buffer from memory
+   * await page.getByLabel('Upload file').setInputFiles({
+   *   name: 'file.txt',
+   *   mimeType: 'text/plain',
+   *   buffer: Buffer.from('this is test')
+   * });
+   * ```
+   *
+   * **Details**
+   *
    * Sets the value of the file input to these file paths or files. If some of the `filePaths` are relative paths, then
    * they are resolved relative to the current working directory. For empty array, clears the selected files.
    *
-   * This method expects [Locator] to point to an
+   * This method expects {@link Locator} to point to an
    * [input element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input). However, if the element is inside
    * the `<label>` element that has an associated
    * [control](https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control), targets the control instead.
    * @param files
    * @param options
    */
-  setInputFiles(files: string|Array<string>|{
+  setInputFiles(files: string|ReadonlyArray<string>|{
     /**
      * File name
      */
@@ -11118,7 +12838,7 @@ export interface Locator {
      * File content
      */
     buffer: Buffer;
-  }|Array<{
+  }|ReadonlyArray<{
     /**
      * File name
      */
@@ -11142,8 +12862,8 @@ export interface Locator {
     noWaitAfter?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -11151,6 +12871,10 @@ export interface Locator {
   }): Promise<void>;
 
   /**
+   * Perform a tap gesture on the element matching the locator.
+   *
+   * **Details**
+   *
    * This method taps the element by performing the following steps:
    * 1. Wait for [actionability](https://playwright.dev/docs/actionability) checks on the element, unless `force` option is set.
    * 1. Scroll the element into view if needed.
@@ -11160,8 +12884,8 @@ export interface Locator {
    *
    * If the element is detached from the DOM at any moment during the action, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    *
    * **NOTE** `element.tap()` requires that the `hasTouch` option of the browser context be set to true.
    * @param options
@@ -11174,9 +12898,10 @@ export interface Locator {
 
     /**
      * Modifier keys to press. Ensures that only these modifiers are pressed during the operation, and then restores
-     * current modifiers back. If not specified, currently pressed modifiers are used.
+     * current modifiers back. If not specified, currently pressed modifiers are used. "ControlOrMeta" resolves to
+     * "Control" on Windows and Linux and to "Meta" on macOS.
      */
-    modifiers?: Array<"Alt"|"Control"|"Meta"|"Shift">;
+    modifiers?: Array<"Alt"|"Control"|"ControlOrMeta"|"Meta"|"Shift">;
 
     /**
      * Actions that initiate navigations are waiting for these navigations to happen and for pages to start loading. You
@@ -11196,8 +12921,8 @@ export interface Locator {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -11211,13 +12936,17 @@ export interface Locator {
   }): Promise<void>;
 
   /**
-   * Returns the `node.textContent`.
+   * Returns the [`node.textContent`](https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent).
+   *
+   * **NOTE** If you need to assert text on the page, prefer
+   * [expect(locator).toHaveText(expected[, options])](https://playwright.dev/docs/api/class-locatorassertions#locator-assertions-to-have-text)
+   * to avoid flakiness. See [assertions guide](https://playwright.dev/docs/test-assertions) for more details.
    * @param options
    */
   textContent(options?: {
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -11232,20 +12961,10 @@ export interface Locator {
    * [locator.press(key[, options])](https://playwright.dev/docs/api/class-locator#locator-press).
    *
    * **Usage**
-   *
-   * ```js
-   * await element.type('Hello'); // Types instantly
-   * await element.type('World', {delay: 100}); // Types slower, like a user
-   * ```
-   *
-   * An example of typing into a text field and then submitting the form:
-   *
-   * ```js
-   * const element = page.getByLabel('Password');
-   * await element.type('my password');
-   * await element.press('Enter');
-   * ```
-   *
+   * @deprecated In most cases, you should use
+   * [locator.fill(value[, options])](https://playwright.dev/docs/api/class-locator#locator-fill) instead. You only need
+   * to press keys one by one if there is special keyboard handling on the page - in this case use
+   * [locator.pressSequentially(text[, options])](https://playwright.dev/docs/api/class-locator#locator-press-sequentially).
    * @param text A text to type into a focused element.
    * @param options
    */
@@ -11263,8 +12982,8 @@ export interface Locator {
     noWaitAfter?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -11272,7 +12991,17 @@ export interface Locator {
   }): Promise<void>;
 
   /**
-   * This method checks the element by performing the following steps:
+   * Ensure that checkbox or radio element is unchecked.
+   *
+   * **Usage**
+   *
+   * ```js
+   * await page.getByRole('checkbox').uncheck();
+   * ```
+   *
+   * **Details**
+   *
+   * This method unchecks the element by performing the following steps:
    * 1. Ensure that element is a checkbox or a radio input. If not, this method throws. If the element is already
    *    unchecked, this method returns immediately.
    * 1. Wait for [actionability](https://playwright.dev/docs/actionability) checks on the element, unless `force` option is set.
@@ -11284,8 +13013,8 @@ export interface Locator {
    *
    * If the element is detached from the DOM at any moment during the action, this method throws.
    *
-   * When all steps combined have not finished during the specified `timeout`, this method throws a [TimeoutError].
-   * Passing zero timeout disables this.
+   * When all steps combined have not finished during the specified `timeout`, this method throws a {@link
+   * TimeoutError}. Passing zero timeout disables this.
    * @param options
    */
   uncheck(options?: {
@@ -11312,8 +13041,8 @@ export interface Locator {
     };
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -11354,13 +13083,14 @@ export interface Locator {
     state?: "attached"|"detached"|"visible"|"hidden";
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
     timeout?: number;
-  }): Promise<void>;}
+  }): Promise<void>;
+}
 
 /**
  * BrowserType provides methods to launch a specific browser instance or connect to an existing one. The following is
@@ -11503,8 +13233,10 @@ export interface BrowserType<Unused = {}> {
     acceptDownloads?: boolean;
 
     /**
+     * **NOTE** Use custom browser args at your own risk, as some of them may break Playwright functionality.
+     *
      * Additional arguments to pass to the browser instance. The list of Chromium flags can be found
-     * [here](http://peter.sh/experiments/chromium-command-line-switches/).
+     * [here](https://peter.sh/experiments/chromium-command-line-switches/).
      */
     args?: Array<string>;
 
@@ -11517,7 +13249,7 @@ export interface BrowserType<Unused = {}> {
      * [page.waitForResponse(urlOrPredicate[, options])](https://playwright.dev/docs/api/class-page#page-wait-for-response)
      * it takes the base URL in consideration by using the
      * [`URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor for building the corresponding URL.
-     * Examples:
+     * Unset by default. Examples:
      * - baseURL: `http://localhost:3000` and navigating to `/bar.html` results in `http://localhost:3000/bar.html`
      * - baseURL: `http://localhost:3000/foo/` and navigating to `./bar.html` results in
      *   `http://localhost:3000/foo/bar.html`
@@ -11527,7 +13259,7 @@ export interface BrowserType<Unused = {}> {
     baseURL?: string;
 
     /**
-     * Toggles bypassing page's Content-Security-Policy.
+     * Toggles bypassing page's Content-Security-Policy. Defaults to `false`.
      */
     bypassCSP?: boolean;
 
@@ -11551,13 +13283,15 @@ export interface BrowserType<Unused = {}> {
     colorScheme?: null|"light"|"dark"|"no-preference";
 
     /**
-     * Specify device scale factor (can be thought of as dpr). Defaults to `1`.
+     * Specify device scale factor (can be thought of as dpr). Defaults to `1`. Learn more about
+     * [emulating devices with device scale factor](https://playwright.dev/docs/emulation#devices).
      */
     deviceScaleFactor?: number;
 
     /**
      * **Chromium-only** Whether to auto-open a Developer Tools panel for each tab. If this option is `true`, the
      * `headless` option will be set `false`.
+     * @deprecated Use [debugging tools](https://playwright.dev/docs/debug) instead.
      */
     devtools?: boolean;
 
@@ -11581,9 +13315,15 @@ export interface BrowserType<Unused = {}> {
     executablePath?: string;
 
     /**
-     * An object containing additional HTTP headers to be sent with every request.
+     * An object containing additional HTTP headers to be sent with every request. Defaults to none.
      */
     extraHTTPHeaders?: { [key: string]: string; };
+
+    /**
+     * Firefox user preferences. Learn more about the Firefox user preferences at
+     * [`about:config`](https://support.mozilla.org/en-US/kb/about-config-editor-firefox).
+     */
+    firefoxUserPrefs?: { [key: string]: string|number|boolean; };
 
     /**
      * Emulates `'forced-colors'` media feature, supported values are `'active'`, `'none'`. See
@@ -11625,7 +13365,8 @@ export interface BrowserType<Unused = {}> {
     handleSIGTERM?: boolean;
 
     /**
-     * Specifies if viewport supports touch events. Defaults to false.
+     * Specifies if viewport supports touch events. Defaults to false. Learn more about
+     * [mobile emulation](https://playwright.dev/docs/emulation#devices).
      */
     hasTouch?: boolean;
 
@@ -11638,12 +13379,26 @@ export interface BrowserType<Unused = {}> {
     headless?: boolean;
 
     /**
-     * Credentials for [HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication).
+     * Credentials for [HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication). If no
+     * origin is specified, the username and password are sent to any servers upon unauthorized responses.
      */
     httpCredentials?: {
       username: string;
 
       password: string;
+
+      /**
+       * Restrain sending http credentials on specific origin (scheme://host:port).
+       */
+      origin?: string;
+
+      /**
+       * This option only applies to the requests sent from corresponding {@link APIRequestContext} and does not affect
+       * requests sent from the browser. `'always'` - `Authorization` header with basic authentication credentials will be
+       * sent with the each API request. `'unauthorized` - the credentials are only sent when 401 (Unauthorized) response
+       * with `WWW-Authenticate` header is received. Defaults to `'unauthorized'`.
+       */
+      send?: "unauthorized"|"always";
     };
 
     /**
@@ -11658,19 +13413,22 @@ export interface BrowserType<Unused = {}> {
     ignoreHTTPSErrors?: boolean;
 
     /**
-     * Whether the `meta viewport` tag is taken into account and touch events are enabled. Defaults to `false`. Not
-     * supported in Firefox.
+     * Whether the `meta viewport` tag is taken into account and touch events are enabled. isMobile is a part of device,
+     * so you don't actually need to set it manually. Defaults to `false` and is not supported in Firefox. Learn more
+     * about [mobile emulation](https://playwright.dev/docs/emulation#ismobile).
      */
     isMobile?: boolean;
 
     /**
-     * Whether or not to enable JavaScript in the context. Defaults to `true`.
+     * Whether or not to enable JavaScript in the context. Defaults to `true`. Learn more about
+     * [disabling JavaScript](https://playwright.dev/docs/emulation#javascript-enabled).
      */
     javaScriptEnabled?: boolean;
 
     /**
      * Specify user locale, for example `en-GB`, `de-DE`, etc. Locale will affect `navigator.language` value,
-     * `Accept-Language` request header value as well as number and date formatting rules.
+     * `Accept-Language` request header value as well as number and date formatting rules. Defaults to the system default
+     * locale. Learn more about emulation in our [emulation guide](https://playwright.dev/docs/emulation#locale--timezone).
      */
     locale?: string;
 
@@ -11680,14 +13438,15 @@ export interface BrowserType<Unused = {}> {
     logger?: Logger;
 
     /**
-     * Whether to emulate network being offline. Defaults to `false`.
+     * Whether to emulate network being offline. Defaults to `false`. Learn more about
+     * [network emulation](https://playwright.dev/docs/emulation#offline).
      */
     offline?: boolean;
 
     /**
      * A list of permissions to grant to all pages in this context. See
      * [browserContext.grantPermissions(permissions[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-grant-permissions)
-     * for more details.
+     * for more details. Defaults to none.
      */
     permissions?: Array<string>;
 
@@ -11720,8 +13479,8 @@ export interface BrowserType<Unused = {}> {
     /**
      * Enables [HAR](http://www.softwareishard.com/blog/har-12-spec) recording for all pages into `recordHar.path` file.
      * If not specified, the HAR is not recorded. Make sure to await
-     * [browserContext.close()](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for the HAR to
-     * be saved.
+     * [browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for
+     * the HAR to be saved.
      */
     recordHar?: {
       /**
@@ -11753,7 +13512,7 @@ export interface BrowserType<Unused = {}> {
       /**
        * A glob or regex pattern to filter requests that are stored in the HAR. When a `baseURL` via the context options was
        * provided and the passed URL is a path, it gets merged via the
-       * [`new URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor.
+       * [`new URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor. Defaults to none.
        */
       urlFilter?: string|RegExp;
     };
@@ -11761,8 +13520,8 @@ export interface BrowserType<Unused = {}> {
     /**
      * Enables video recording for all pages into `recordVideo.dir` directory. If not specified videos are not recorded.
      * Make sure to await
-     * [browserContext.close()](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for videos to
-     * be saved.
+     * [browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for
+     * videos to be saved.
      */
     recordVideo?: {
       /**
@@ -11826,9 +13585,10 @@ export interface BrowserType<Unused = {}> {
     slowMo?: number;
 
     /**
-     * If specified, enables strict selectors mode for this context. In the strict selectors mode all operations on
-     * selectors that imply single target DOM element will throw when more than one element matches the selector. See
-     * [Locator] to learn more about the strict mode.
+     * If set to true, enables strict selectors mode for this context. In the strict selectors mode all operations on
+     * selectors that imply single target DOM element will throw when more than one element matches the selector. This
+     * option does not affect any Locator APIs (Locators are always strict). Defaults to `false`. See {@link Locator} to
+     * learn more about the strict mode.
      */
     strictSelectors?: boolean;
 
@@ -11841,7 +13601,7 @@ export interface BrowserType<Unused = {}> {
     /**
      * Changes the timezone of the context. See
      * [ICU's metaZones.txt](https://cs.chromium.org/chromium/src/third_party/icu/source/data/misc/metaZones.txt?rcl=faee8bc70570192d82d2978a71e2a615788597d1)
-     * for a list of supported timezone IDs.
+     * for a list of supported timezone IDs. Defaults to the system timezone.
      */
     timezoneId?: string;
 
@@ -11856,7 +13616,7 @@ export interface BrowserType<Unused = {}> {
     userAgent?: string;
 
     /**
-     * @deprecated Use [`option: recordVideo`] instead.
+     * @deprecated Use `recordVideo` instead.
      */
     videoSize?: {
       /**
@@ -11871,12 +13631,16 @@ export interface BrowserType<Unused = {}> {
     };
 
     /**
-     * @deprecated Use [`option: recordVideo`] instead.
+     * @deprecated Use `recordVideo` instead.
      */
     videosPath?: string;
 
     /**
-     * Emulates consistent viewport for each page. Defaults to an 1280x720 viewport. `null` disables the default viewport.
+     * Emulates consistent viewport for each page. Defaults to an 1280x720 viewport. Use `null` to disable the consistent
+     * viewport emulation. Learn more about [viewport emulation](https://playwright.dev/docs/emulation#viewport).
+     *
+     * **NOTE** The `null` value opts out from the default presets, makes viewport depend on the host window size defined
+     * by the operating system. It makes the execution of the tests non-deterministic.
      */
     viewport?: null|{
       /**
@@ -11918,8 +13682,10 @@ export interface BrowserType<Unused = {}> {
    */
   launchServer(options?: {
     /**
+     * **NOTE** Use custom browser args at your own risk, as some of them may break Playwright functionality.
+     *
      * Additional arguments to pass to the browser instance. The list of Chromium flags can be found
-     * [here](http://peter.sh/experiments/chromium-command-line-switches/).
+     * [here](https://peter.sh/experiments/chromium-command-line-switches/).
      */
     args?: Array<string>;
 
@@ -11938,6 +13704,7 @@ export interface BrowserType<Unused = {}> {
     /**
      * **Chromium-only** Whether to auto-open a Developer Tools panel for each tab. If this option is `true`, the
      * `headless` option will be set `false`.
+     * @deprecated Use [debugging tools](https://playwright.dev/docs/debug) instead.
      */
     devtools?: boolean;
 
@@ -11988,6 +13755,13 @@ export interface BrowserType<Unused = {}> {
      * `devtools` option is `true`.
      */
     headless?: boolean;
+
+    /**
+     * Host to use for the web socket. It is optional and if it is omitted, the server will accept connections on the
+     * unspecified IPv6 address (::) when IPv6 is available, or the unspecified IPv4 address (0.0.0.0) otherwise. Consider
+     * hardening it with picking a specific interface.
+     */
+    host?: string;
 
     /**
      * If `true`, Playwright does not pass its own configurations args and only uses the ones from `args`. If an array is
@@ -12054,7 +13828,8 @@ export interface BrowserType<Unused = {}> {
   /**
    * Returns browser name. For example: `'chromium'`, `'webkit'` or `'firefox'`.
    */
-  name(): string;}
+  name(): string;
+}
 
 /**
  * - extends: [EventEmitter]
@@ -12099,7 +13874,8 @@ export interface CDPSession {
    * Detaches the CDPSession from the target. Once detached, the CDPSession object won't emit any events and can't be
    * used to send messages.
    */
-  detach(): Promise<void>;}
+  detach(): Promise<void>;
+}
 
 type DeviceDescriptor = {
   viewport: ViewportSize;
@@ -12115,8 +13891,9 @@ export namespace errors {
 /**
  * - extends: [Error]
  *
- * TimeoutError is emitted whenever certain operations are terminated due to timeout, e.g. [`method: Locator.waitFor`]
- * or [browserType.launch([options])](https://playwright.dev/docs/api/class-browsertype#browser-type-launch).
+ * TimeoutError is emitted whenever certain operations are terminated due to timeout, e.g.
+ * [locator.waitFor([options])](https://playwright.dev/docs/api/class-locator#locator-wait-for) or
+ * [browserType.launch([options])](https://playwright.dev/docs/api/class-browsertype#browser-type-launch).
  *
  * ```js
  * const playwright = require('playwright');
@@ -12126,19 +13903,20 @@ export namespace errors {
  *   const context = await browser.newContext();
  *   const page = await context.newPage();
  *   try {
- *     await page.locator("text=Foo").click({
+ *     await page.locator('text=Foo').click({
  *       timeout: 100,
- *     })
+ *     });
  *   } catch (error) {
  *     if (error instanceof playwright.errors.TimeoutError)
- *       console.log("Timeout!")
+ *       console.log('Timeout!');
  *   }
  *   await browser.close();
  * })();
  * ```
  *
  */
-class TimeoutError extends Error {}
+class TimeoutError extends Error {
+}
 
 }
 
@@ -12200,6 +13978,7 @@ export interface Accessibility {
    * @param options
    */
   snapshot(options?: AccessibilitySnapshotOptions): Promise<null|AccessibilityNode>;
+
 }
 
 type AccessibilityNode = {
@@ -12288,7 +14067,7 @@ export interface ElectronApplication {
    * [electronApplication.evaluate(pageFunction[, arg])](https://playwright.dev/docs/api/class-electronapplication#electron-application-evaluate)
    * returns `undefined`. Playwright also supports transferring some additional values that are not serializable by
    * `JSON`: `-0`, `NaN`, `Infinity`, `-Infinity`.
-   * @param pageFunction Function to be evaluated in the worker context.
+   * @param pageFunction Function to be evaluated in the main Electron process.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   evaluate<R, Arg>(pageFunction: PageFunctionOn<ElectronType, Arg, R>, arg: Arg): Promise<R>;
@@ -12307,13 +14086,13 @@ export interface ElectronApplication {
    * [electronApplication.evaluate(pageFunction[, arg])](https://playwright.dev/docs/api/class-electronapplication#electron-application-evaluate)
    * returns `undefined`. Playwright also supports transferring some additional values that are not serializable by
    * `JSON`: `-0`, `NaN`, `Infinity`, `-Infinity`.
-   * @param pageFunction Function to be evaluated in the worker context.
+   * @param pageFunction Function to be evaluated in the main Electron process.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   evaluate<R>(pageFunction: PageFunctionOn<ElectronType, void, R>, arg?: any): Promise<R>;
 
   /**
-   * Returns the return value of `pageFunction` as a [JSHandle].
+   * Returns the return value of `pageFunction` as a {@link JSHandle}.
    *
    * The only difference between
    * [electronApplication.evaluate(pageFunction[, arg])](https://playwright.dev/docs/api/class-electronapplication#electron-application-evaluate)
@@ -12321,19 +14100,19 @@ export interface ElectronApplication {
    * [electronApplication.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-electronapplication#electron-application-evaluate-handle)
    * is that
    * [electronApplication.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-electronapplication#electron-application-evaluate-handle)
-   * returns [JSHandle].
+   * returns {@link JSHandle}.
    *
    * If the function passed to the
    * [electronApplication.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-electronapplication#electron-application-evaluate-handle)
    * returns a [Promise], then
    * [electronApplication.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-electronapplication#electron-application-evaluate-handle)
    * would wait for the promise to resolve and return its value.
-   * @param pageFunction Function to be evaluated in the worker context.
+   * @param pageFunction Function to be evaluated in the main Electron process.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   evaluateHandle<R, Arg>(pageFunction: PageFunctionOn<ElectronType, Arg, R>, arg: Arg): Promise<SmartHandle<R>>;
   /**
-   * Returns the return value of `pageFunction` as a [JSHandle].
+   * Returns the return value of `pageFunction` as a {@link JSHandle}.
    *
    * The only difference between
    * [electronApplication.evaluate(pageFunction[, arg])](https://playwright.dev/docs/api/class-electronapplication#electron-application-evaluate)
@@ -12341,79 +14120,157 @@ export interface ElectronApplication {
    * [electronApplication.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-electronapplication#electron-application-evaluate-handle)
    * is that
    * [electronApplication.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-electronapplication#electron-application-evaluate-handle)
-   * returns [JSHandle].
+   * returns {@link JSHandle}.
    *
    * If the function passed to the
    * [electronApplication.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-electronapplication#electron-application-evaluate-handle)
    * returns a [Promise], then
    * [electronApplication.evaluateHandle(pageFunction[, arg])](https://playwright.dev/docs/api/class-electronapplication#electron-application-evaluate-handle)
    * would wait for the promise to resolve and return its value.
-   * @param pageFunction Function to be evaluated in the worker context.
+   * @param pageFunction Function to be evaluated in the main Electron process.
    * @param arg Optional argument to pass to `pageFunction`.
    */
   evaluateHandle<R>(pageFunction: PageFunctionOn<ElectronType, void, R>, arg?: any): Promise<SmartHandle<R>>;
   /**
-   * This event is issued when the application closes.
+   * This event is issued when the application process has been terminated.
    */
-  on(event: 'close', listener: () => void): this;
+  on(event: 'close', listener: () => any): this;
 
   /**
-   * This event is issued for every window that is created **and loaded** in Electron. It contains a [Page] that can be
-   * used for Playwright automation.
+   * Emitted when JavaScript within the Electron main process calls one of console API methods, e.g. `console.log` or
+   * `console.dir`.
+   *
+   * The arguments passed into `console.log` are available on the {@link ConsoleMessage} event handler argument.
+   *
+   * **Usage**
+   *
+   * ```js
+   * electronApp.on('console', async msg => {
+   *   const values = [];
+   *   for (const arg of msg.args())
+   *     values.push(await arg.jsonValue());
+   *   console.log(...values);
+   * });
+   * await electronApp.evaluate(() => console.log('hello', 5, { foo: 'bar' }));
+   * ```
+   *
    */
-  on(event: 'window', listener: (page: Page) => void): this;
+  on(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
+
+  /**
+   * This event is issued for every window that is created **and loaded** in Electron. It contains a {@link Page} that
+   * can be used for Playwright automation.
+   */
+  on(event: 'window', listener: (page: Page) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'close', listener: () => void): this;
+  once(event: 'close', listener: () => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'window', listener: (page: Page) => void): this;
+  once(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
 
   /**
-   * This event is issued when the application closes.
+   * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  addListener(event: 'close', listener: () => void): this;
+  once(event: 'window', listener: (page: Page) => any): this;
 
   /**
-   * This event is issued for every window that is created **and loaded** in Electron. It contains a [Page] that can be
-   * used for Playwright automation.
+   * This event is issued when the application process has been terminated.
    */
-  addListener(event: 'window', listener: (page: Page) => void): this;
+  addListener(event: 'close', listener: () => any): this;
+
+  /**
+   * Emitted when JavaScript within the Electron main process calls one of console API methods, e.g. `console.log` or
+   * `console.dir`.
+   *
+   * The arguments passed into `console.log` are available on the {@link ConsoleMessage} event handler argument.
+   *
+   * **Usage**
+   *
+   * ```js
+   * electronApp.on('console', async msg => {
+   *   const values = [];
+   *   for (const arg of msg.args())
+   *     values.push(await arg.jsonValue());
+   *   console.log(...values);
+   * });
+   * await electronApp.evaluate(() => console.log('hello', 5, { foo: 'bar' }));
+   * ```
+   *
+   */
+  addListener(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
+
+  /**
+   * This event is issued for every window that is created **and loaded** in Electron. It contains a {@link Page} that
+   * can be used for Playwright automation.
+   */
+  addListener(event: 'window', listener: (page: Page) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'close', listener: () => void): this;
+  removeListener(event: 'close', listener: () => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'window', listener: (page: Page) => void): this;
+  removeListener(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'close', listener: () => void): this;
+  removeListener(event: 'window', listener: (page: Page) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'window', listener: (page: Page) => void): this;
+  off(event: 'close', listener: () => any): this;
 
   /**
-   * This event is issued when the application closes.
+   * Removes an event listener added by `on` or `addListener`.
    */
-  prependListener(event: 'close', listener: () => void): this;
+  off(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
 
   /**
-   * This event is issued for every window that is created **and loaded** in Electron. It contains a [Page] that can be
-   * used for Playwright automation.
+   * Removes an event listener added by `on` or `addListener`.
    */
-  prependListener(event: 'window', listener: (page: Page) => void): this;
+  off(event: 'window', listener: (page: Page) => any): this;
+
+  /**
+   * This event is issued when the application process has been terminated.
+   */
+  prependListener(event: 'close', listener: () => any): this;
+
+  /**
+   * Emitted when JavaScript within the Electron main process calls one of console API methods, e.g. `console.log` or
+   * `console.dir`.
+   *
+   * The arguments passed into `console.log` are available on the {@link ConsoleMessage} event handler argument.
+   *
+   * **Usage**
+   *
+   * ```js
+   * electronApp.on('console', async msg => {
+   *   const values = [];
+   *   for (const arg of msg.args())
+   *     values.push(await arg.jsonValue());
+   *   console.log(...values);
+   * });
+   * await electronApp.evaluate(() => console.log('hello', 5, { foo: 'bar' }));
+   * ```
+   *
+   */
+  prependListener(event: 'console', listener: (consoleMessage: ConsoleMessage) => any): this;
+
+  /**
+   * This event is issued for every window that is created **and loaded** in Electron. It contains a {@link Page} that
+   * can be used for Playwright automation.
+   */
+  prependListener(event: 'window', listener: (page: Page) => any): this;
 
   /**
    * Returns the BrowserWindow object that corresponds to the given Playwright page.
@@ -12437,15 +14294,23 @@ export interface ElectronApplication {
    * **Usage**
    *
    * ```js
-   *   const electronApp = await electron.launch({
-   *     args: ['main.js']
-   *   });
-   *   const window = await electronApp.firstWindow();
-   *   // ...
+   * const electronApp = await electron.launch({
+   *   args: ['main.js']
+   * });
+   * const window = await electronApp.firstWindow();
+   * // ...
    * ```
    *
+   * @param options
    */
-  firstWindow(): Promise<Page>;
+  firstWindow(options?: {
+    /**
+     * Maximum time to wait for in milliseconds. Defaults to `30000` (30 seconds). Pass `0` to disable timeout. The
+     * default value can be changed by using the
+     * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout).
+     */
+    timeout?: number;
+  }): Promise<Page>;
 
   /**
    * Returns the main process for this Electron Application.
@@ -12453,13 +14318,34 @@ export interface ElectronApplication {
   process(): ChildProcess;
 
   /**
-   * This event is issued when the application closes.
+   * This event is issued when the application process has been terminated.
    */
   waitForEvent(event: 'close', optionsOrPredicate?: { predicate?: () => boolean | Promise<boolean>, timeout?: number } | (() => boolean | Promise<boolean>)): Promise<void>;
 
   /**
-   * This event is issued for every window that is created **and loaded** in Electron. It contains a [Page] that can be
-   * used for Playwright automation.
+   * Emitted when JavaScript within the Electron main process calls one of console API methods, e.g. `console.log` or
+   * `console.dir`.
+   *
+   * The arguments passed into `console.log` are available on the {@link ConsoleMessage} event handler argument.
+   *
+   * **Usage**
+   *
+   * ```js
+   * electronApp.on('console', async msg => {
+   *   const values = [];
+   *   for (const arg of msg.args())
+   *     values.push(await arg.jsonValue());
+   *   console.log(...values);
+   * });
+   * await electronApp.evaluate(() => console.log('hello', 5, { foo: 'bar' }));
+   * ```
+   *
+   */
+  waitForEvent(event: 'console', optionsOrPredicate?: { predicate?: (consoleMessage: ConsoleMessage) => boolean | Promise<boolean>, timeout?: number } | ((consoleMessage: ConsoleMessage) => boolean | Promise<boolean>)): Promise<ConsoleMessage>;
+
+  /**
+   * This event is issued for every window that is created **and loaded** in Electron. It contains a {@link Page} that
+   * can be used for Playwright automation.
    */
   waitForEvent(event: 'window', optionsOrPredicate?: { predicate?: (page: Page) => boolean | Promise<boolean>, timeout?: number } | ((page: Page) => boolean | Promise<boolean>)): Promise<Page>;
 
@@ -12467,7 +14353,10 @@ export interface ElectronApplication {
   /**
    * Convenience method that returns all the opened windows.
    */
-  windows(): Array<Page>;}
+  windows(): Array<Page>;
+
+  [Symbol.asyncDispose](): Promise<void>;
+}
 
 export type AndroidElementInfo = {
   clazz: string;
@@ -12606,8 +14495,12 @@ export {};
  *     const webview = await device.webView({ pkg: 'org.chromium.webview_shell' });
  *
  *     // Fill the input box.
- *     await device.fill({ res: 'org.chromium.webview_shell:id/url_field' }, 'github.com/microsoft/playwright');
- *     await device.press({ res: 'org.chromium.webview_shell:id/url_field' }, 'Enter');
+ *     await device.fill({
+ *       res: 'org.chromium.webview_shell:id/url_field',
+ *     }, 'github.com/microsoft/playwright');
+ *     await device.press({
+ *       res: 'org.chromium.webview_shell:id/url_field',
+ *     }, 'Enter');
  *
  *     // Work with WebView's page as usual.
  *     const page = await webview.page();
@@ -12634,13 +14527,6 @@ export {};
  *   // Close the device.
  *   await device.close();
  * })();
- * ```
- *
- * Note that since you don't need Playwright to install web browsers when testing Android, you can omit browser
- * download via setting the following environment variable when installing Playwright:
- *
- * ```bash
- * PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm i -D playwright
  * ```
  *
  */
@@ -12754,6 +14640,13 @@ export interface Android {
     deviceSerialNumber?: string;
 
     /**
+     * Host to use for the web socket. It is optional and if it is omitted, the server will accept connections on the
+     * unspecified IPv6 address (::) when IPv6 is available, or the unspecified IPv4 address (0.0.0.0) otherwise. Consider
+     * hardening it with picking a specific interface.
+     */
+    host?: string;
+
+    /**
      * Prevents automatic playwright driver installation on attach. Assumes that the drivers have been installed already.
      */
     omitDriverInstall?: boolean;
@@ -12780,69 +14673,69 @@ export interface Android {
 }
 
 /**
- * [AndroidDevice] represents a connected device, either real hardware or emulated. Devices can be obtained using
- * [android.devices([options])](https://playwright.dev/docs/api/class-android#android-devices).
+ * {@link AndroidDevice} represents a connected device, either real hardware or emulated. Devices can be obtained
+ * using [android.devices([options])](https://playwright.dev/docs/api/class-android#android-devices).
  */
 export interface AndroidDevice {
   /**
    * Emitted when the device connection gets closed.
    */
-  on(event: 'close', listener: (androidDevice: AndroidDevice) => void): this;
+  on(event: 'close', listener: (androidDevice: AndroidDevice) => any): this;
 
   /**
    * Emitted when a new WebView instance is detected.
    */
-  on(event: 'webview', listener: (androidWebView: AndroidWebView) => void): this;
+  on(event: 'webview', listener: (androidWebView: AndroidWebView) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'close', listener: (androidDevice: AndroidDevice) => void): this;
+  once(event: 'close', listener: (androidDevice: AndroidDevice) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'webview', listener: (androidWebView: AndroidWebView) => void): this;
+  once(event: 'webview', listener: (androidWebView: AndroidWebView) => any): this;
 
   /**
    * Emitted when the device connection gets closed.
    */
-  addListener(event: 'close', listener: (androidDevice: AndroidDevice) => void): this;
+  addListener(event: 'close', listener: (androidDevice: AndroidDevice) => any): this;
 
   /**
    * Emitted when a new WebView instance is detected.
    */
-  addListener(event: 'webview', listener: (androidWebView: AndroidWebView) => void): this;
+  addListener(event: 'webview', listener: (androidWebView: AndroidWebView) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'close', listener: (androidDevice: AndroidDevice) => void): this;
+  removeListener(event: 'close', listener: (androidDevice: AndroidDevice) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'webview', listener: (androidWebView: AndroidWebView) => void): this;
+  removeListener(event: 'webview', listener: (androidWebView: AndroidWebView) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'close', listener: (androidDevice: AndroidDevice) => void): this;
+  off(event: 'close', listener: (androidDevice: AndroidDevice) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'webview', listener: (androidWebView: AndroidWebView) => void): this;
+  off(event: 'webview', listener: (androidWebView: AndroidWebView) => any): this;
 
   /**
    * Emitted when the device connection gets closed.
    */
-  prependListener(event: 'close', listener: (androidDevice: AndroidDevice) => void): this;
+  prependListener(event: 'close', listener: (androidDevice: AndroidDevice) => any): this;
 
   /**
    * Emitted when a new WebView instance is detected.
    */
-  prependListener(event: 'webview', listener: (androidWebView: AndroidWebView) => void): this;
+  prependListener(event: 'webview', listener: (androidWebView: AndroidWebView) => any): this;
 
   /**
    * Disconnects from the device.
@@ -12917,8 +14810,6 @@ export interface AndroidDevice {
    */
   info(selector: AndroidSelector): Promise<AndroidElementInfo>;
 
-  input: AndroidInput;
-
   /**
    * Installs an apk on the device.
    * @param file Either a path to the apk file, or apk file content.
@@ -12942,6 +14833,14 @@ export interface AndroidDevice {
     acceptDownloads?: boolean;
 
     /**
+     * **NOTE** Use custom browser args at your own risk, as some of them may break Playwright functionality.
+     *
+     * Additional arguments to pass to the browser instance. The list of Chromium flags can be found
+     * [here](https://peter.sh/experiments/chromium-command-line-switches/).
+     */
+    args?: Array<string>;
+
+    /**
      * When using [page.goto(url[, options])](https://playwright.dev/docs/api/class-page#page-goto),
      * [page.route(url, handler[, options])](https://playwright.dev/docs/api/class-page#page-route),
      * [page.waitForURL(url[, options])](https://playwright.dev/docs/api/class-page#page-wait-for-url),
@@ -12950,7 +14849,7 @@ export interface AndroidDevice {
      * [page.waitForResponse(urlOrPredicate[, options])](https://playwright.dev/docs/api/class-page#page-wait-for-response)
      * it takes the base URL in consideration by using the
      * [`URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor for building the corresponding URL.
-     * Examples:
+     * Unset by default. Examples:
      * - baseURL: `http://localhost:3000` and navigating to `/bar.html` results in `http://localhost:3000/bar.html`
      * - baseURL: `http://localhost:3000/foo/` and navigating to `./bar.html` results in
      *   `http://localhost:3000/foo/bar.html`
@@ -12960,7 +14859,7 @@ export interface AndroidDevice {
     baseURL?: string;
 
     /**
-     * Toggles bypassing page's Content-Security-Policy.
+     * Toggles bypassing page's Content-Security-Policy. Defaults to `false`.
      */
     bypassCSP?: boolean;
 
@@ -12977,12 +14876,13 @@ export interface AndroidDevice {
     command?: string;
 
     /**
-     * Specify device scale factor (can be thought of as dpr). Defaults to `1`.
+     * Specify device scale factor (can be thought of as dpr). Defaults to `1`. Learn more about
+     * [emulating devices with device scale factor](https://playwright.dev/docs/emulation#devices).
      */
     deviceScaleFactor?: number;
 
     /**
-     * An object containing additional HTTP headers to be sent with every request.
+     * An object containing additional HTTP headers to be sent with every request. Defaults to none.
      */
     extraHTTPHeaders?: { [key: string]: string; };
 
@@ -13011,17 +14911,32 @@ export interface AndroidDevice {
     };
 
     /**
-     * Specifies if viewport supports touch events. Defaults to false.
+     * Specifies if viewport supports touch events. Defaults to false. Learn more about
+     * [mobile emulation](https://playwright.dev/docs/emulation#devices).
      */
     hasTouch?: boolean;
 
     /**
-     * Credentials for [HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication).
+     * Credentials for [HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication). If no
+     * origin is specified, the username and password are sent to any servers upon unauthorized responses.
      */
     httpCredentials?: {
       username: string;
 
       password: string;
+
+      /**
+       * Restrain sending http credentials on specific origin (scheme://host:port).
+       */
+      origin?: string;
+
+      /**
+       * This option only applies to the requests sent from corresponding {@link APIRequestContext} and does not affect
+       * requests sent from the browser. `'always'` - `Authorization` header with basic authentication credentials will be
+       * sent with the each API request. `'unauthorized` - the credentials are only sent when 401 (Unauthorized) response
+       * with `WWW-Authenticate` header is received. Defaults to `'unauthorized'`.
+       */
+      send?: "unauthorized"|"always";
     };
 
     /**
@@ -13030,19 +14945,22 @@ export interface AndroidDevice {
     ignoreHTTPSErrors?: boolean;
 
     /**
-     * Whether the `meta viewport` tag is taken into account and touch events are enabled. Defaults to `false`. Not
-     * supported in Firefox.
+     * Whether the `meta viewport` tag is taken into account and touch events are enabled. isMobile is a part of device,
+     * so you don't actually need to set it manually. Defaults to `false` and is not supported in Firefox. Learn more
+     * about [mobile emulation](https://playwright.dev/docs/emulation#ismobile).
      */
     isMobile?: boolean;
 
     /**
-     * Whether or not to enable JavaScript in the context. Defaults to `true`.
+     * Whether or not to enable JavaScript in the context. Defaults to `true`. Learn more about
+     * [disabling JavaScript](https://playwright.dev/docs/emulation#javascript-enabled).
      */
     javaScriptEnabled?: boolean;
 
     /**
      * Specify user locale, for example `en-GB`, `de-DE`, etc. Locale will affect `navigator.language` value,
-     * `Accept-Language` request header value as well as number and date formatting rules.
+     * `Accept-Language` request header value as well as number and date formatting rules. Defaults to the system default
+     * locale. Learn more about emulation in our [emulation guide](https://playwright.dev/docs/emulation#locale--timezone).
      */
     locale?: string;
 
@@ -13052,22 +14970,49 @@ export interface AndroidDevice {
     logger?: Logger;
 
     /**
-     * Whether to emulate network being offline. Defaults to `false`.
+     * Whether to emulate network being offline. Defaults to `false`. Learn more about
+     * [network emulation](https://playwright.dev/docs/emulation#offline).
      */
     offline?: boolean;
 
     /**
      * A list of permissions to grant to all pages in this context. See
      * [browserContext.grantPermissions(permissions[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-grant-permissions)
-     * for more details.
+     * for more details. Defaults to none.
      */
     permissions?: Array<string>;
 
     /**
+     * Network proxy settings.
+     */
+    proxy?: {
+      /**
+       * Proxy to be used for all requests. HTTP and SOCKS proxies are supported, for example `http://myproxy.com:3128` or
+       * `socks5://myproxy.com:3128`. Short form `myproxy.com:3128` is considered an HTTP proxy.
+       */
+      server: string;
+
+      /**
+       * Optional comma-separated domains to bypass proxy, for example `".com, chromium.org, .domain.com"`.
+       */
+      bypass?: string;
+
+      /**
+       * Optional username to use if HTTP proxy requires authentication.
+       */
+      username?: string;
+
+      /**
+       * Optional password to use if HTTP proxy requires authentication.
+       */
+      password?: string;
+    };
+
+    /**
      * Enables [HAR](http://www.softwareishard.com/blog/har-12-spec) recording for all pages into `recordHar.path` file.
      * If not specified, the HAR is not recorded. Make sure to await
-     * [browserContext.close()](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for the HAR to
-     * be saved.
+     * [browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for
+     * the HAR to be saved.
      */
     recordHar?: {
       /**
@@ -13099,7 +15044,7 @@ export interface AndroidDevice {
       /**
        * A glob or regex pattern to filter requests that are stored in the HAR. When a `baseURL` via the context options was
        * provided and the passed URL is a path, it gets merged via the
-       * [`new URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor.
+       * [`new URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor. Defaults to none.
        */
       urlFilter?: string|RegExp;
     };
@@ -13107,8 +15052,8 @@ export interface AndroidDevice {
     /**
      * Enables video recording for all pages into `recordVideo.dir` directory. If not specified videos are not recorded.
      * Make sure to await
-     * [browserContext.close()](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for videos to
-     * be saved.
+     * [browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for
+     * videos to be saved.
      */
     recordVideo?: {
       /**
@@ -13166,16 +15111,17 @@ export interface AndroidDevice {
     serviceWorkers?: "allow"|"block";
 
     /**
-     * If specified, enables strict selectors mode for this context. In the strict selectors mode all operations on
-     * selectors that imply single target DOM element will throw when more than one element matches the selector. See
-     * [Locator] to learn more about the strict mode.
+     * If set to true, enables strict selectors mode for this context. In the strict selectors mode all operations on
+     * selectors that imply single target DOM element will throw when more than one element matches the selector. This
+     * option does not affect any Locator APIs (Locators are always strict). Defaults to `false`. See {@link Locator} to
+     * learn more about the strict mode.
      */
     strictSelectors?: boolean;
 
     /**
      * Changes the timezone of the context. See
      * [ICU's metaZones.txt](https://cs.chromium.org/chromium/src/third_party/icu/source/data/misc/metaZones.txt?rcl=faee8bc70570192d82d2978a71e2a615788597d1)
-     * for a list of supported timezone IDs.
+     * for a list of supported timezone IDs. Defaults to the system timezone.
      */
     timezoneId?: string;
 
@@ -13185,7 +15131,7 @@ export interface AndroidDevice {
     userAgent?: string;
 
     /**
-     * @deprecated Use [`option: recordVideo`] instead.
+     * @deprecated Use `recordVideo` instead.
      */
     videoSize?: {
       /**
@@ -13200,12 +15146,16 @@ export interface AndroidDevice {
     };
 
     /**
-     * @deprecated Use [`option: recordVideo`] instead.
+     * @deprecated Use `recordVideo` instead.
      */
     videosPath?: string;
 
     /**
-     * Emulates consistent viewport for each page. Defaults to an 1280x720 viewport. `null` disables the default viewport.
+     * Emulates consistent viewport for each page. Defaults to an 1280x720 viewport. Use `null` to disable the consistent
+     * viewport emulation. Learn more about [viewport emulation](https://playwright.dev/docs/emulation#viewport).
+     *
+     * **NOTE** The `null` value opts out from the default presets, makes viewport depend on the host window size defined
+     * by the operating system. It makes the execution of the tests non-deterministic.
      */
     viewport?: null|{
       /**
@@ -13444,8 +15394,8 @@ export interface AndroidDevice {
 
 
   /**
-   * This method waits until [AndroidWebView] matching the `selector` is opened and returns it. If there is already an
-   * open [AndroidWebView] matching the `selector`, returns immediately.
+   * This method waits until {@link AndroidWebView} matching the `selector` is opened and returns it. If there is
+   * already an open {@link AndroidWebView} matching the `selector`, returns immediately.
    * @param selector
    * @param options
    */
@@ -13473,6 +15423,10 @@ export interface AndroidDevice {
    * Currently open WebViews.
    */
   webViews(): Array<AndroidWebView>;
+
+  input: AndroidInput;
+
+  [Symbol.asyncDispose](): Promise<void>;
 }
 
 export interface AndroidInput {
@@ -13509,7 +15463,7 @@ export interface AndroidInput {
     x: number;
 
     y: number;
-  }, segments: Array<{
+  }, segments: ReadonlyArray<{
     x: number;
 
     y: number;
@@ -13533,7 +15487,7 @@ export interface AndroidInput {
 }
 
 /**
- * [AndroidSocket] is a way to communicate with a process launched on the [AndroidDevice]. Use
+ * {@link AndroidSocket} is a way to communicate with a process launched on the {@link AndroidDevice}. Use
  * [androidDevice.open(command)](https://playwright.dev/docs/api/class-androiddevice#android-device-open) to open a
  * socket.
  */
@@ -13541,62 +15495,62 @@ export interface AndroidSocket {
   /**
    * Emitted when the socket is closed.
    */
-  on(event: 'close', listener: () => void): this;
+  on(event: 'close', listener: () => any): this;
 
   /**
    * Emitted when data is available to read from the socket.
    */
-  on(event: 'data', listener: (buffer: Buffer) => void): this;
+  on(event: 'data', listener: (buffer: Buffer) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'close', listener: () => void): this;
+  once(event: 'close', listener: () => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'data', listener: (buffer: Buffer) => void): this;
+  once(event: 'data', listener: (buffer: Buffer) => any): this;
 
   /**
    * Emitted when the socket is closed.
    */
-  addListener(event: 'close', listener: () => void): this;
+  addListener(event: 'close', listener: () => any): this;
 
   /**
    * Emitted when data is available to read from the socket.
    */
-  addListener(event: 'data', listener: (buffer: Buffer) => void): this;
+  addListener(event: 'data', listener: (buffer: Buffer) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'close', listener: () => void): this;
+  removeListener(event: 'close', listener: () => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'data', listener: (buffer: Buffer) => void): this;
+  removeListener(event: 'data', listener: (buffer: Buffer) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'close', listener: () => void): this;
+  off(event: 'close', listener: () => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'data', listener: (buffer: Buffer) => void): this;
+  off(event: 'data', listener: (buffer: Buffer) => any): this;
 
   /**
    * Emitted when the socket is closed.
    */
-  prependListener(event: 'close', listener: () => void): this;
+  prependListener(event: 'close', listener: () => any): this;
 
   /**
    * Emitted when data is available to read from the socket.
    */
-  prependListener(event: 'data', listener: (buffer: Buffer) => void): this;
+  prependListener(event: 'data', listener: (buffer: Buffer) => any): this;
 
   /**
    * Closes the socket.
@@ -13608,45 +15562,47 @@ export interface AndroidSocket {
    * @param data Data to write.
    */
   write(data: Buffer): Promise<void>;
+
+  [Symbol.asyncDispose](): Promise<void>;
 }
 
 /**
- * [AndroidWebView] represents a WebView open on the [AndroidDevice]. WebView is usually obtained using
+ * {@link AndroidWebView} represents a WebView open on the {@link AndroidDevice}. WebView is usually obtained using
  * [androidDevice.webView(selector[, options])](https://playwright.dev/docs/api/class-androiddevice#android-device-web-view).
  */
 export interface AndroidWebView {
   /**
    * Emitted when the WebView is closed.
    */
-  on(event: 'close', listener: () => void): this;
+  on(event: 'close', listener: () => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'close', listener: () => void): this;
+  once(event: 'close', listener: () => any): this;
 
   /**
    * Emitted when the WebView is closed.
    */
-  addListener(event: 'close', listener: () => void): this;
+  addListener(event: 'close', listener: () => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'close', listener: () => void): this;
+  removeListener(event: 'close', listener: () => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'close', listener: () => void): this;
+  off(event: 'close', listener: () => any): this;
 
   /**
    * Emitted when the WebView is closed.
    */
-  prependListener(event: 'close', listener: () => void): this;
+  prependListener(event: 'close', listener: () => any): this;
 
   /**
-   * Connects to the WebView and returns a regular Playwright [Page] to interact with.
+   * Connects to the WebView and returns a regular Playwright {@link Page} to interact with.
    */
   page(): Promise<Page>;
 
@@ -13662,14 +15618,14 @@ export interface AndroidWebView {
 }
 
 /**
- * Exposes API that can be used for the Web API testing. This class is used for creating [APIRequestContext] instance
- * which in turn can be used for sending web requests. An instance of this class can be obtained via
+ * Exposes API that can be used for the Web API testing. This class is used for creating {@link APIRequestContext}
+ * instance which in turn can be used for sending web requests. An instance of this class can be obtained via
  * [playwright.request](https://playwright.dev/docs/api/class-playwright#playwright-request). For more information see
- * [APIRequestContext].
+ * {@link APIRequestContext}.
  */
 export interface APIRequest {
   /**
-   * Creates new instances of [APIRequestContext].
+   * Creates new instances of {@link APIRequestContext}.
    * @param options
    */
   newContext(options?: {
@@ -13688,17 +15644,31 @@ export interface APIRequest {
     baseURL?: string;
 
     /**
-     * An object containing additional HTTP headers to be sent with every request.
+     * An object containing additional HTTP headers to be sent with every request. Defaults to none.
      */
     extraHTTPHeaders?: { [key: string]: string; };
 
     /**
-     * Credentials for [HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication).
+     * Credentials for [HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication). If no
+     * origin is specified, the username and password are sent to any servers upon unauthorized responses.
      */
     httpCredentials?: {
       username: string;
 
       password: string;
+
+      /**
+       * Restrain sending http credentials on specific origin (scheme://host:port).
+       */
+      origin?: string;
+
+      /**
+       * This option only applies to the requests sent from corresponding {@link APIRequestContext} and does not affect
+       * requests sent from the browser. `'always'` - `Authorization` header with basic authentication credentials will be
+       * sent with the each API request. `'unauthorized` - the credentials are only sent when 401 (Unauthorized) response
+       * with `WWW-Authenticate` header is received. Defaults to `'unauthorized'`.
+       */
+      send?: "unauthorized"|"always";
     };
 
     /**
@@ -13794,8 +15764,8 @@ export interface APIRequest {
  * This API is used for the Web API testing. You can use it to trigger API endpoints, configure micro-services,
  * prepare environment or the service to your e2e test.
  *
- * Each Playwright browser context has associated with it [APIRequestContext] instance which shares cookie storage
- * with the browser context and can be accessed via
+ * Each Playwright browser context has associated with it {@link APIRequestContext} instance which shares cookie
+ * storage with the browser context and can be accessed via
  * [browserContext.request](https://playwright.dev/docs/api/class-browsercontext#browser-context-request) or
  * [page.request](https://playwright.dev/docs/api/class-page#page-request). It is also possible to create a new
  * APIRequestContext instance manually by calling
@@ -13803,16 +15773,16 @@ export interface APIRequest {
  *
  * **Cookie management**
  *
- * [APIRequestContext] returned by
+ * {@link APIRequestContext} returned by
  * [browserContext.request](https://playwright.dev/docs/api/class-browsercontext#browser-context-request) and
  * [page.request](https://playwright.dev/docs/api/class-page#page-request) shares cookie storage with the
- * corresponding [BrowserContext]. Each API request will have `Cookie` header populated with the values from the
- * browser context. If the API response contains `Set-Cookie` header it will automatically update [BrowserContext]
- * cookies and requests made from the page will pick them up. This means that if you log in using this API, your e2e
- * test will be logged in and vice versa.
+ * corresponding {@link BrowserContext}. Each API request will have `Cookie` header populated with the values from the
+ * browser context. If the API response contains `Set-Cookie` header it will automatically update {@link
+ * BrowserContext} cookies and requests made from the page will pick them up. This means that if you log in using this
+ * API, your e2e test will be logged in and vice versa.
  *
- * If you want API requests to not interfere with the browser cookies you should create a new [APIRequestContext] by
- * calling
+ * If you want API requests to not interfere with the browser cookies you should create a new {@link
+ * APIRequestContext} by calling
  * [apiRequest.newContext([options])](https://playwright.dev/docs/api/class-apirequest#api-request-new-context). Such
  * `APIRequestContext` object will have its own isolated cookie storage.
  */
@@ -13846,7 +15816,8 @@ export interface APIRequestContext {
     form?: { [key: string]: string|number|boolean; };
 
     /**
-     * Allows to set HTTP headers.
+     * Allows to set HTTP headers. These headers will apply to the fetched request as well as any redirects initiated by
+     * it.
      */
     headers?: { [key: string]: string; };
 
@@ -13868,7 +15839,7 @@ export interface APIRequestContext {
      * [`fs.ReadStream`](https://nodejs.org/api/fs.html#fs_class_fs_readstream) or as file-like object containing file
      * name, mime-type and its content.
      */
-    multipart?: { [key: string]: string|number|boolean|ReadStream|{
+    multipart?: FormData|{ [key: string]: string|number|boolean|ReadStream|{
       /**
        * File name
        */
@@ -13900,19 +15871,24 @@ export interface APIRequestContext {
    * All responses returned by
    * [apiRequestContext.get(url[, options])](https://playwright.dev/docs/api/class-apirequestcontext#api-request-context-get)
    * and similar methods are stored in the memory, so that you can later call
-   * [apiResponse.body()](https://playwright.dev/docs/api/class-apiresponse#api-response-body). This method discards all
-   * stored responses, and makes
-   * [apiResponse.body()](https://playwright.dev/docs/api/class-apiresponse#api-response-body) throw "Response disposed"
-   * error.
+   * [apiResponse.body()](https://playwright.dev/docs/api/class-apiresponse#api-response-body).This method discards all
+   * its resources, calling any method on disposed {@link APIRequestContext} will throw an exception.
+   * @param options
    */
-  dispose(): Promise<void>;
+  dispose(options?: {
+    /**
+     * The reason to be reported to the operations interrupted by the context disposal.
+     */
+    reason?: string;
+  }): Promise<void>;
 
   /**
    * Sends HTTP(S) request and returns its response. The method will populate request cookies from the context and
-   * update context cookies from the response. The method will automatically follow redirects. JSON objects can be
-   * passed directly to the request.
+   * update context cookies from the response. The method will automatically follow redirects.
    *
    * **Usage**
+   *
+   * JSON objects can be passed directly to the request:
    *
    * ```js
    * await request.fetch('https://example.com/api/createBook', {
@@ -13924,29 +15900,18 @@ export interface APIRequestContext {
    * });
    * ```
    *
-   * The common way to send file(s) in the body of a request is to encode it as form fields with `multipart/form-data`
-   * encoding. You can achieve that with Playwright API like this:
+   * The common way to send file(s) in the body of a request is to upload them as form fields with `multipart/form-data`
+   * encoding. Use [FormData] to construct request body and pass it to the request as `multipart` parameter:
    *
    * ```js
-   * // Open file as a stream and pass it to the request:
-   * const stream = fs.createReadStream('team.csv');
-   * await request.fetch('https://example.com/api/uploadTeamList', {
-   *   method: 'post',
-   *   multipart: {
-   *     fileField: stream
-   *   }
-   * });
-   *
-   * // Or you can pass the file content directly as an object:
-   * await request.fetch('https://example.com/api/uploadScript', {
-   *   method: 'post',
-   *   multipart: {
-   *     fileField: {
-   *       name: 'f.js',
-   *       mimeType: 'text/javascript',
-   *       buffer: Buffer.from('console.log(2022);')
-   *     }
-   *   }
+   * const form = new FormData();
+   * form.set('name', 'John');
+   * form.append('name', 'Doe');
+   * // Send two file fields with the same name.
+   * form.append('file', new File(['console.log(2024);'], 'f1.js', { type: 'text/javascript' }));
+   * form.append('file', new File(['hello'], 'f2.txt', { type: 'text/plain' }));
+   * await request.fetch('https://example.com/api/uploadForm', {
+   *   multipart: form
    * });
    * ```
    *
@@ -13975,7 +15940,8 @@ export interface APIRequestContext {
     form?: { [key: string]: string|number|boolean; };
 
     /**
-     * Allows to set HTTP headers.
+     * Allows to set HTTP headers. These headers will apply to the fetched request as well as any redirects initiated by
+     * it.
      */
     headers?: { [key: string]: string; };
 
@@ -14003,7 +15969,7 @@ export interface APIRequestContext {
      * [`fs.ReadStream`](https://nodejs.org/api/fs.html#fs_class_fs_readstream) or as file-like object containing file
      * name, mime-type and its content.
      */
-    multipart?: { [key: string]: string|number|boolean|ReadStream|{
+    multipart?: FormData|{ [key: string]: string|number|boolean|ReadStream|{
       /**
        * File name
        */
@@ -14074,7 +16040,8 @@ export interface APIRequestContext {
     form?: { [key: string]: string|number|boolean; };
 
     /**
-     * Allows to set HTTP headers.
+     * Allows to set HTTP headers. These headers will apply to the fetched request as well as any redirects initiated by
+     * it.
      */
     headers?: { [key: string]: string; };
 
@@ -14096,7 +16063,7 @@ export interface APIRequestContext {
      * [`fs.ReadStream`](https://nodejs.org/api/fs.html#fs_class_fs_readstream) or as file-like object containing file
      * name, mime-type and its content.
      */
-    multipart?: { [key: string]: string|number|boolean|ReadStream|{
+    multipart?: FormData|{ [key: string]: string|number|boolean|ReadStream|{
       /**
        * File name
        */
@@ -14153,7 +16120,8 @@ export interface APIRequestContext {
     form?: { [key: string]: string|number|boolean; };
 
     /**
-     * Allows to set HTTP headers.
+     * Allows to set HTTP headers. These headers will apply to the fetched request as well as any redirects initiated by
+     * it.
      */
     headers?: { [key: string]: string; };
 
@@ -14175,7 +16143,7 @@ export interface APIRequestContext {
      * [`fs.ReadStream`](https://nodejs.org/api/fs.html#fs_class_fs_readstream) or as file-like object containing file
      * name, mime-type and its content.
      */
-    multipart?: { [key: string]: string|number|boolean|ReadStream|{
+    multipart?: FormData|{ [key: string]: string|number|boolean|ReadStream|{
       /**
        * File name
        */
@@ -14232,7 +16200,8 @@ export interface APIRequestContext {
     form?: { [key: string]: string|number|boolean; };
 
     /**
-     * Allows to set HTTP headers.
+     * Allows to set HTTP headers. These headers will apply to the fetched request as well as any redirects initiated by
+     * it.
      */
     headers?: { [key: string]: string; };
 
@@ -14254,7 +16223,7 @@ export interface APIRequestContext {
      * [`fs.ReadStream`](https://nodejs.org/api/fs.html#fs_class_fs_readstream) or as file-like object containing file
      * name, mime-type and its content.
      */
-    multipart?: { [key: string]: string|number|boolean|ReadStream|{
+    multipart?: FormData|{ [key: string]: string|number|boolean|ReadStream|{
       /**
        * File name
        */
@@ -14314,26 +16283,17 @@ export interface APIRequestContext {
    * ```
    *
    * The common way to send file(s) in the body of a request is to upload them as form fields with `multipart/form-data`
-   * encoding. You can achieve that with Playwright API like this:
+   * encoding. Use [FormData] to construct request body and pass it to the request as `multipart` parameter:
    *
    * ```js
-   * // Open file as a stream and pass it to the request:
-   * const stream = fs.createReadStream('team.csv');
-   * await request.post('https://example.com/api/uploadTeamList', {
-   *   multipart: {
-   *     fileField: stream
-   *   }
-   * });
-   *
-   * // Or you can pass the file content directly as an object:
-   * await request.post('https://example.com/api/uploadScript', {
-   *   multipart: {
-   *     fileField: {
-   *       name: 'f.js',
-   *       mimeType: 'text/javascript',
-   *       buffer: Buffer.from('console.log(2022);')
-   *     }
-   *   }
+   * const form = new FormData();
+   * form.set('name', 'John');
+   * form.append('name', 'Doe');
+   * // Send two file fields with the same name.
+   * form.append('file', new File(['console.log(2024);'], 'f1.js', { type: 'text/javascript' }));
+   * form.append('file', new File(['hello'], 'f2.txt', { type: 'text/plain' }));
+   * await request.post('https://example.com/api/uploadForm', {
+   *   multipart: form
    * });
    * ```
    *
@@ -14362,7 +16322,8 @@ export interface APIRequestContext {
     form?: { [key: string]: string|number|boolean; };
 
     /**
-     * Allows to set HTTP headers.
+     * Allows to set HTTP headers. These headers will apply to the fetched request as well as any redirects initiated by
+     * it.
      */
     headers?: { [key: string]: string; };
 
@@ -14384,7 +16345,7 @@ export interface APIRequestContext {
      * [`fs.ReadStream`](https://nodejs.org/api/fs.html#fs_class_fs_readstream) or as file-like object containing file
      * name, mime-type and its content.
      */
-    multipart?: { [key: string]: string|number|boolean|ReadStream|{
+    multipart?: FormData|{ [key: string]: string|number|boolean|ReadStream|{
       /**
        * File name
        */
@@ -14441,7 +16402,8 @@ export interface APIRequestContext {
     form?: { [key: string]: string|number|boolean; };
 
     /**
-     * Allows to set HTTP headers.
+     * Allows to set HTTP headers. These headers will apply to the fetched request as well as any redirects initiated by
+     * it.
      */
     headers?: { [key: string]: string; };
 
@@ -14463,7 +16425,7 @@ export interface APIRequestContext {
      * [`fs.ReadStream`](https://nodejs.org/api/fs.html#fs_class_fs_readstream) or as file-like object containing file
      * name, mime-type and its content.
      */
-    multipart?: { [key: string]: string|number|boolean|ReadStream|{
+    multipart?: FormData|{ [key: string]: string|number|boolean|ReadStream|{
       /**
        * File name
        */
@@ -14534,10 +16496,12 @@ export interface APIRequestContext {
       }>;
     }>;
   }>;
+
+  [Symbol.asyncDispose](): Promise<void>;
 }
 
 /**
- * [APIResponse] class represents responses returned by
+ * {@link APIResponse} class represents responses returned by
  * [apiRequestContext.get(url[, options])](https://playwright.dev/docs/api/class-apirequestcontext#api-request-context-get)
  * and similar methods.
  */
@@ -14604,6 +16568,8 @@ export interface APIResponse {
    * Contains the URL of the response.
    */
   url(): string;
+
+  [Symbol.asyncDispose](): Promise<void>;
 }
 
 /**
@@ -14611,7 +16577,7 @@ export interface APIResponse {
  *
  * A Browser is created via
  * [browserType.launch([options])](https://playwright.dev/docs/api/class-browsertype#browser-type-launch). An example
- * of using a [Browser] to create a [Page]:
+ * of using a {@link Browser} to create a {@link Page}:
  *
  * ```js
  * const { firefox } = require('playwright');  // Or 'chromium' or 'webkit'.
@@ -14630,40 +16596,40 @@ export interface Browser extends EventEmitter {
    * Emitted when Browser gets disconnected from the browser application. This might happen because of one of the
    * following:
    * - Browser application is closed or crashed.
-   * - The [browser.close()](https://playwright.dev/docs/api/class-browser#browser-close) method was called.
+   * - The [browser.close([options])](https://playwright.dev/docs/api/class-browser#browser-close) method was called.
    */
-  on(event: 'disconnected', listener: (browser: Browser) => void): this;
+  on(event: 'disconnected', listener: (browser: Browser) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'disconnected', listener: (browser: Browser) => void): this;
+  once(event: 'disconnected', listener: (browser: Browser) => any): this;
 
   /**
    * Emitted when Browser gets disconnected from the browser application. This might happen because of one of the
    * following:
    * - Browser application is closed or crashed.
-   * - The [browser.close()](https://playwright.dev/docs/api/class-browser#browser-close) method was called.
+   * - The [browser.close([options])](https://playwright.dev/docs/api/class-browser#browser-close) method was called.
    */
-  addListener(event: 'disconnected', listener: (browser: Browser) => void): this;
+  addListener(event: 'disconnected', listener: (browser: Browser) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'disconnected', listener: (browser: Browser) => void): this;
+  removeListener(event: 'disconnected', listener: (browser: Browser) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'disconnected', listener: (browser: Browser) => void): this;
+  off(event: 'disconnected', listener: (browser: Browser) => any): this;
 
   /**
    * Emitted when Browser gets disconnected from the browser application. This might happen because of one of the
    * following:
    * - Browser application is closed or crashed.
-   * - The [browser.close()](https://playwright.dev/docs/api/class-browser#browser-close) method was called.
+   * - The [browser.close([options])](https://playwright.dev/docs/api/class-browser#browser-close) method was called.
    */
-  prependListener(event: 'disconnected', listener: (browser: Browser) => void): this;
+  prependListener(event: 'disconnected', listener: (browser: Browser) => any): this;
 
   /**
    * Get the browser type (chromium, firefox or webkit) that the browser belongs to.
@@ -14679,14 +16645,20 @@ export interface Browser extends EventEmitter {
    * the browser server.
    *
    * **NOTE** This is similar to force quitting the browser. Therefore, you should call
-   * [browserContext.close()](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) on any
-   * [BrowserContext]'s you explicitly created earlier with
+   * [browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) on
+   * any {@link BrowserContext}'s you explicitly created earlier with
    * [browser.newContext([options])](https://playwright.dev/docs/api/class-browser#browser-new-context) **before**
-   * calling [browser.close()](https://playwright.dev/docs/api/class-browser#browser-close).
+   * calling [browser.close([options])](https://playwright.dev/docs/api/class-browser#browser-close).
    *
-   * The [Browser] object itself is considered to be disposed and cannot be used anymore.
+   * The {@link Browser} object itself is considered to be disposed and cannot be used anymore.
+   * @param options
    */
-  close(): Promise<void>;
+  close(options?: {
+    /**
+     * The reason to be reported to the operations interrupted by the browser closure.
+     */
+    reason?: string;
+  }): Promise<void>;
 
   /**
    * Returns an array of all open browser contexts. In a newly created browser, this will return zero browser contexts.
@@ -14719,12 +16691,12 @@ export interface Browser extends EventEmitter {
   /**
    * Creates a new browser context. It won't share cookies/cache with other browser contexts.
    *
-   * **NOTE** If directly using this method to create [BrowserContext]s, it is best practice to explicitly close the
-   * returned context via
-   * [browserContext.close()](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) when your code
-   * is done with the [BrowserContext], and before calling
-   * [browser.close()](https://playwright.dev/docs/api/class-browser#browser-close). This will ensure the `context` is
-   * closed gracefully and any artifacts—like HARs and videos—are fully flushed and saved.
+   * **NOTE** If directly using this method to create {@link BrowserContext}s, it is best practice to explicitly close
+   * the returned context via
+   * [browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) when
+   * your code is done with the {@link BrowserContext}, and before calling
+   * [browser.close([options])](https://playwright.dev/docs/api/class-browser#browser-close). This will ensure the
+   * `context` is closed gracefully and any artifacts—like HARs and videos—are fully flushed and saved.
    *
    * **Usage**
    *
@@ -14772,7 +16744,7 @@ export interface Browser extends EventEmitter {
      * [page.waitForResponse(urlOrPredicate[, options])](https://playwright.dev/docs/api/class-page#page-wait-for-response)
      * it takes the base URL in consideration by using the
      * [`URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor for building the corresponding URL.
-     * Examples:
+     * Unset by default. Examples:
      * - baseURL: `http://localhost:3000` and navigating to `/bar.html` results in `http://localhost:3000/bar.html`
      * - baseURL: `http://localhost:3000/foo/` and navigating to `./bar.html` results in
      *   `http://localhost:3000/foo/bar.html`
@@ -14782,7 +16754,7 @@ export interface Browser extends EventEmitter {
     baseURL?: string;
 
     /**
-     * Toggles bypassing page's Content-Security-Policy.
+     * Toggles bypassing page's Content-Security-Policy. Defaults to `false`.
      */
     bypassCSP?: boolean;
 
@@ -14794,12 +16766,13 @@ export interface Browser extends EventEmitter {
     colorScheme?: null|"light"|"dark"|"no-preference";
 
     /**
-     * Specify device scale factor (can be thought of as dpr). Defaults to `1`.
+     * Specify device scale factor (can be thought of as dpr). Defaults to `1`. Learn more about
+     * [emulating devices with device scale factor](https://playwright.dev/docs/emulation#devices).
      */
     deviceScaleFactor?: number;
 
     /**
-     * An object containing additional HTTP headers to be sent with every request.
+     * An object containing additional HTTP headers to be sent with every request. Defaults to none.
      */
     extraHTTPHeaders?: { [key: string]: string; };
 
@@ -14828,17 +16801,32 @@ export interface Browser extends EventEmitter {
     };
 
     /**
-     * Specifies if viewport supports touch events. Defaults to false.
+     * Specifies if viewport supports touch events. Defaults to false. Learn more about
+     * [mobile emulation](https://playwright.dev/docs/emulation#devices).
      */
     hasTouch?: boolean;
 
     /**
-     * Credentials for [HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication).
+     * Credentials for [HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication). If no
+     * origin is specified, the username and password are sent to any servers upon unauthorized responses.
      */
     httpCredentials?: {
       username: string;
 
       password: string;
+
+      /**
+       * Restrain sending http credentials on specific origin (scheme://host:port).
+       */
+      origin?: string;
+
+      /**
+       * This option only applies to the requests sent from corresponding {@link APIRequestContext} and does not affect
+       * requests sent from the browser. `'always'` - `Authorization` header with basic authentication credentials will be
+       * sent with the each API request. `'unauthorized` - the credentials are only sent when 401 (Unauthorized) response
+       * with `WWW-Authenticate` header is received. Defaults to `'unauthorized'`.
+       */
+      send?: "unauthorized"|"always";
     };
 
     /**
@@ -14847,19 +16835,22 @@ export interface Browser extends EventEmitter {
     ignoreHTTPSErrors?: boolean;
 
     /**
-     * Whether the `meta viewport` tag is taken into account and touch events are enabled. Defaults to `false`. Not
-     * supported in Firefox.
+     * Whether the `meta viewport` tag is taken into account and touch events are enabled. isMobile is a part of device,
+     * so you don't actually need to set it manually. Defaults to `false` and is not supported in Firefox. Learn more
+     * about [mobile emulation](https://playwright.dev/docs/emulation#ismobile).
      */
     isMobile?: boolean;
 
     /**
-     * Whether or not to enable JavaScript in the context. Defaults to `true`.
+     * Whether or not to enable JavaScript in the context. Defaults to `true`. Learn more about
+     * [disabling JavaScript](https://playwright.dev/docs/emulation#javascript-enabled).
      */
     javaScriptEnabled?: boolean;
 
     /**
      * Specify user locale, for example `en-GB`, `de-DE`, etc. Locale will affect `navigator.language` value,
-     * `Accept-Language` request header value as well as number and date formatting rules.
+     * `Accept-Language` request header value as well as number and date formatting rules. Defaults to the system default
+     * locale. Learn more about emulation in our [emulation guide](https://playwright.dev/docs/emulation#locale--timezone).
      */
     locale?: string;
 
@@ -14869,19 +16860,20 @@ export interface Browser extends EventEmitter {
     logger?: Logger;
 
     /**
-     * Whether to emulate network being offline. Defaults to `false`.
+     * Whether to emulate network being offline. Defaults to `false`. Learn more about
+     * [network emulation](https://playwright.dev/docs/emulation#offline).
      */
     offline?: boolean;
 
     /**
      * A list of permissions to grant to all pages in this context. See
      * [browserContext.grantPermissions(permissions[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-grant-permissions)
-     * for more details.
+     * for more details. Defaults to none.
      */
     permissions?: Array<string>;
 
     /**
-     * Network proxy settings to use with this context.
+     * Network proxy settings to use with this context. Defaults to none.
      *
      * **NOTE** For Chromium on Windows the browser needs to be launched with the global proxy for this option to work. If
      * all contexts override the proxy, global proxy will be never used and can be any string, for example `launch({
@@ -14913,8 +16905,8 @@ export interface Browser extends EventEmitter {
     /**
      * Enables [HAR](http://www.softwareishard.com/blog/har-12-spec) recording for all pages into `recordHar.path` file.
      * If not specified, the HAR is not recorded. Make sure to await
-     * [browserContext.close()](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for the HAR to
-     * be saved.
+     * [browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for
+     * the HAR to be saved.
      */
     recordHar?: {
       /**
@@ -14946,7 +16938,7 @@ export interface Browser extends EventEmitter {
       /**
        * A glob or regex pattern to filter requests that are stored in the HAR. When a `baseURL` via the context options was
        * provided and the passed URL is a path, it gets merged via the
-       * [`new URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor.
+       * [`new URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor. Defaults to none.
        */
       urlFilter?: string|RegExp;
     };
@@ -14954,8 +16946,8 @@ export interface Browser extends EventEmitter {
     /**
      * Enables video recording for all pages into `recordVideo.dir` directory. If not specified videos are not recorded.
      * Make sure to await
-     * [browserContext.close()](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for videos to
-     * be saved.
+     * [browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for
+     * videos to be saved.
      */
     recordVideo?: {
       /**
@@ -15013,14 +17005,15 @@ export interface Browser extends EventEmitter {
     serviceWorkers?: "allow"|"block";
 
     /**
+     * Learn more about [storage state and auth](https://playwright.dev/docs/auth).
+     *
      * Populates context with given storage state. This option can be used to initialize context with logged-in
      * information obtained via
      * [browserContext.storageState([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-storage-state).
-     * Either a path to the file with saved storage, or an object with the following fields:
      */
     storageState?: string|{
       /**
-       * cookies to set for context
+       * Cookies to set for context
        */
       cookies: Array<{
         name: string;
@@ -15028,12 +17021,13 @@ export interface Browser extends EventEmitter {
         value: string;
 
         /**
-         * domain and path are required
+         * Domain and path are required. For the cookie to apply to all subdomains as well, prefix domain with a dot, like
+         * this: ".example.com"
          */
         domain: string;
 
         /**
-         * domain and path are required
+         * Domain and path are required
          */
         path: string;
 
@@ -15067,16 +17061,17 @@ export interface Browser extends EventEmitter {
     };
 
     /**
-     * If specified, enables strict selectors mode for this context. In the strict selectors mode all operations on
-     * selectors that imply single target DOM element will throw when more than one element matches the selector. See
-     * [Locator] to learn more about the strict mode.
+     * If set to true, enables strict selectors mode for this context. In the strict selectors mode all operations on
+     * selectors that imply single target DOM element will throw when more than one element matches the selector. This
+     * option does not affect any Locator APIs (Locators are always strict). Defaults to `false`. See {@link Locator} to
+     * learn more about the strict mode.
      */
     strictSelectors?: boolean;
 
     /**
      * Changes the timezone of the context. See
      * [ICU's metaZones.txt](https://cs.chromium.org/chromium/src/third_party/icu/source/data/misc/metaZones.txt?rcl=faee8bc70570192d82d2978a71e2a615788597d1)
-     * for a list of supported timezone IDs.
+     * for a list of supported timezone IDs. Defaults to the system timezone.
      */
     timezoneId?: string;
 
@@ -15086,7 +17081,7 @@ export interface Browser extends EventEmitter {
     userAgent?: string;
 
     /**
-     * @deprecated Use [`option: recordVideo`] instead.
+     * @deprecated Use `recordVideo` instead.
      */
     videoSize?: {
       /**
@@ -15101,12 +17096,16 @@ export interface Browser extends EventEmitter {
     };
 
     /**
-     * @deprecated Use [`option: recordVideo`] instead.
+     * @deprecated Use `recordVideo` instead.
      */
     videosPath?: string;
 
     /**
-     * Emulates consistent viewport for each page. Defaults to an 1280x720 viewport. `null` disables the default viewport.
+     * Emulates consistent viewport for each page. Defaults to an 1280x720 viewport. Use `null` to disable the consistent
+     * viewport emulation. Learn more about [viewport emulation](https://playwright.dev/docs/emulation#viewport).
+     *
+     * **NOTE** The `null` value opts out from the default presets, makes viewport depend on the host window size defined
+     * by the operating system. It makes the execution of the tests non-deterministic.
      */
     viewport?: null|{
       /**
@@ -15135,7 +17134,7 @@ export interface Browser extends EventEmitter {
    * **Usage**
    *
    * ```js
-   * await browser.startTracing(page, {path: 'trace.json'});
+   * await browser.startTracing(page, { path: 'trace.json' });
    * await page.goto('https://www.google.com');
    * await browser.stopTracing();
    * ```
@@ -15174,38 +17173,40 @@ export interface Browser extends EventEmitter {
    * Returns the browser version.
    */
   version(): string;
+
+  [Symbol.asyncDispose](): Promise<void>;
 }
 
 export interface BrowserServer {
   /**
    * Emitted when the browser server closes.
    */
-  on(event: 'close', listener: () => void): this;
+  on(event: 'close', listener: () => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'close', listener: () => void): this;
+  once(event: 'close', listener: () => any): this;
 
   /**
    * Emitted when the browser server closes.
    */
-  addListener(event: 'close', listener: () => void): this;
+  addListener(event: 'close', listener: () => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'close', listener: () => void): this;
+  removeListener(event: 'close', listener: () => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'close', listener: () => void): this;
+  off(event: 'close', listener: () => any): this;
 
   /**
    * Emitted when the browser server closes.
    */
-  prependListener(event: 'close', listener: () => void): this;
+  prependListener(event: 'close', listener: () => any): this;
 
   /**
    * Closes the browser gracefully and makes sure the process is terminated.
@@ -15228,18 +17229,132 @@ export interface BrowserServer {
    * Browser websocket endpoint which can be used as an argument to
    * [browserType.connect(wsEndpoint[, options])](https://playwright.dev/docs/api/class-browsertype#browser-type-connect)
    * to establish connection to the browser.
+   *
+   * Note that if the listen `host` option in `launchServer` options is not specified, localhost will be output anyway,
+   * even if the actual listening address is an unspecified address.
    */
   wsEndpoint(): string;
+
+  [Symbol.asyncDispose](): Promise<void>;
 }
 
 /**
- * [ConsoleMessage] objects are dispatched by page via the
- * [page.on('console')](https://playwright.dev/docs/api/class-page#page-event-console) event. For each console
- * messages logged in the page there will be corresponding event in the Playwright context.
+ * Accurately simulating time-dependent behavior is essential for verifying the correctness of applications. Learn
+ * more about [clock emulation](https://playwright.dev/docs/clock).
+ *
+ * Note that clock is installed for the entire {@link BrowserContext}, so the time in all the pages and iframes is
+ * controlled by the same clock.
+ */
+export interface Clock {
+  /**
+   * Install fake implementations for the following time-related functions:
+   * - `setTimeout`
+   * - `clearTimeout`
+   * - `setInterval`
+   * - `clearInterval`
+   * - `requestAnimationFrame`
+   * - `cancelAnimationFrame`
+   * - `requestIdleCallback`
+   * - `cancelIdleCallback`
+   * - `performance`
+   *
+   * Fake timers are used to manually control the flow of time in tests. They allow you to advance time, fire timers,
+   * and control the behavior of time-dependent functions. See
+   * [clock.runFor(time)](https://playwright.dev/docs/api/class-clock#clock-run-for) and
+   * [clock.skipTime(time)](https://playwright.dev/docs/api/class-clock#clock-skip-time) for more information.
+   * @param time Install fake timers with the specified base time.
+   * @param options
+   */
+  installFakeTimers(time: number|Date, options?: {
+    /**
+     * The maximum number of timers that will be run in
+     * [clock.runAllTimers()](https://playwright.dev/docs/api/class-clock#clock-run-all-timers). Defaults to `1000`.
+     */
+    loopLimit?: number;
+  }): Promise<void>;
+
+  /**
+   * Runs all pending timers until there are none remaining. If new timers are added while it is executing they will be
+   * run as well. Fake timers must be installed. Returns fake milliseconds since the unix epoch.
+   *
+   * **Details**
+   *
+   * This makes it easier to run asynchronous tests to completion without worrying about the number of timers they use,
+   * or the delays in those timers. It runs a maximum of `loopLimit` times after which it assumes there is an infinite
+   * loop of timers and throws an error.
+   */
+  runAllTimers(): Promise<number>;
+
+  /**
+   * Advance the clock, firing callbacks if necessary. Returns fake milliseconds since the unix epoch. Fake timers must
+   * be installed. Returns fake milliseconds since the unix epoch.
+   *
+   * **Usage**
+   *
+   * ```js
+   * await page.clock.runFor(1000);
+   * await page.clock.runFor('30:00');
+   * ```
+   *
+   * @param time Time may be the number of milliseconds to advance the clock by or a human-readable string. Valid string formats are
+   * "08" for eight seconds, "01:00" for one minute and "02:34:10" for two hours, 34 minutes and ten seconds.
+   */
+  runFor(time: number|string): Promise<number>;
+
+  /**
+   * This takes note of the last scheduled timer when it is run, and advances the clock to that time firing callbacks as
+   * necessary. If new timers are added while it is executing they will be run only if they would occur before this
+   * time. This is useful when you want to run a test to completion, but the test recursively sets timers that would
+   * cause runAll to trigger an infinite loop warning. Fake timers must be installed. Returns fake milliseconds since
+   * the unix epoch.
+   */
+  runToLastTimer(): Promise<number>;
+
+  /**
+   * Advances the clock to the moment of the first scheduled timer, firing it. Fake timers must be installed. Returns
+   * fake milliseconds since the unix epoch.
+   */
+  runToNextTimer(): Promise<number>;
+
+  /**
+   * Set the clock to the specified time.
+   *
+   * When fake timers are installed, only fires timers at most once. This can be used to simulate the JS engine (such as
+   * a browser) being put to sleep and resumed later, skipping intermediary timers.
+   * @param time
+   */
+  setTime(time: number|Date): Promise<void>;
+
+  /**
+   * Advance the clock by jumping forward in time, equivalent to running
+   * [clock.setTime(time)](https://playwright.dev/docs/api/class-clock#clock-set-time) with the new target time.
+   *
+   * When fake timers are installed, [clock.skipTime(time)](https://playwright.dev/docs/api/class-clock#clock-skip-time)
+   * only fires due timers at most once, while
+   * [clock.runFor(time)](https://playwright.dev/docs/api/class-clock#clock-run-for) fires all the timers up to the
+   * current time. Returns fake milliseconds since the unix epoch.
+   *
+   * **Usage**
+   *
+   * ```js
+   * await page.clock.skipTime(1000);
+   * await page.clock.skipTime('30:00');
+   * ```
+   *
+   * @param time Time may be the number of milliseconds to advance the clock by or a human-readable string. Valid string formats are
+   * "08" for eight seconds, "01:00" for one minute and "02:34:10" for two hours, 34 minutes and ten seconds.
+   */
+  skipTime(time: number|string): Promise<number>;
+}
+
+/**
+ * {@link ConsoleMessage} objects are dispatched by page via the
+ * [page.on('console')](https://playwright.dev/docs/api/class-page#page-event-console) event. For each console message
+ * logged in the page there will be corresponding event in the Playwright context.
  *
  * ```js
  * // Listen for all console logs
- * page.on('console', msg => console.log(msg.text()))
+ * page.on('console', msg => console.log(msg.text()));
  *
  * // Listen for all console events and handle errors
  * page.on('console', msg => {
@@ -15255,8 +17370,8 @@ export interface BrowserServer {
  * const msg = await msgPromise;
  *
  * // Deconstruct console log arguments
- * await msg.args[0].jsonValue() // hello
- * await msg.args[1].jsonValue() // 42
+ * await msg.args()[0].jsonValue(); // hello
+ * await msg.args()[1].jsonValue(); // 42
  * ```
  *
  */
@@ -15285,6 +17400,11 @@ export interface ConsoleMessage {
   };
 
   /**
+   * The page that produced this console message, if any.
+   */
+  page(): null|Page;
+
+  /**
    * The text of the console message.
    */
   text(): string;
@@ -15308,7 +17428,7 @@ export interface ConsoleMessage {
  * const { chromium } = require('playwright');
  * const v8toIstanbul = require('v8-to-istanbul');
  *
- * (async() => {
+ * (async () => {
  *   const browser = await chromium.launch();
  *   const page = await browser.newPage();
  *   await page.coverage.startJSCoverage();
@@ -15431,7 +17551,7 @@ export interface Coverage {
 }
 
 /**
- * [Dialog] objects are dispatched by page via the
+ * {@link Dialog} objects are dispatched by page via the
  * [page.on('dialog')](https://playwright.dev/docs/api/class-page#page-event-dialog) event.
  *
  * An example of using `Dialog` class:
@@ -15482,18 +17602,23 @@ export interface Dialog {
   message(): string;
 
   /**
+   * The page that initiated this dialog, if available.
+   */
+  page(): null|Page;
+
+  /**
    * Returns dialog's type, can be one of `alert`, `beforeunload`, `confirm` or `prompt`.
    */
   type(): string;
 }
 
 /**
- * [Download] objects are dispatched by page via the
+ * {@link Download} objects are dispatched by page via the
  * [page.on('download')](https://playwright.dev/docs/api/class-page#page-event-download) event.
  *
  * All the downloaded files belonging to the browser context are deleted when the browser context is closed.
  *
- * Download event is emitted once the download starts. Download path becomes available once download completes:
+ * Download event is emitted once the download starts. Download path becomes available once download completes.
  *
  * ```js
  * // Start waiting for download before clicking. Note no await.
@@ -15501,8 +17626,8 @@ export interface Dialog {
  * await page.getByText('Download file').click();
  * const download = await downloadPromise;
  *
- * // Wait for the download process to complete.
- * console.log(await download.path());
+ * // Wait for the download process to complete and save the downloaded file somewhere.
+ * await download.saveAs('/path/to/save/at/' + download.suggestedFilename());
  * ```
  *
  */
@@ -15514,9 +17639,9 @@ export interface Download {
   cancel(): Promise<void>;
 
   /**
-   * Returns readable stream for current download or `null` if download failed.
+   * Returns a readable stream for a successful download, or throws for a failed/canceled download.
    */
-  createReadStream(): Promise<null|Readable>;
+  createReadStream(): Promise<Readable>;
 
   /**
    * Deletes the downloaded file. Will wait for the download to finish if necessary.
@@ -15534,18 +17659,25 @@ export interface Download {
   page(): Page;
 
   /**
-   * Returns path to the downloaded file in case of successful download. The method will wait for the download to finish
-   * if necessary. The method throws when connected remotely.
+   * Returns path to the downloaded file for a successful download, or throws for a failed/canceled download. The method
+   * will wait for the download to finish if necessary. The method throws when connected remotely.
    *
    * Note that the download's file name is a random GUID, use
    * [download.suggestedFilename()](https://playwright.dev/docs/api/class-download#download-suggested-filename) to get
    * suggested file name.
    */
-  path(): Promise<null|string>;
+  path(): Promise<string>;
 
   /**
    * Copy the download to a user-specified path. It is safe to call this method while the download is still in progress.
    * Will wait for the download to finish if necessary.
+   *
+   * **Usage**
+   *
+   * ```js
+   * await download.saveAs('/path/to/save/at/' + download.suggestedFilename());
+   * ```
+   *
    * @param path Path where the download should be copied.
    */
   saveAs(path: string): Promise<void>;
@@ -15603,17 +17735,17 @@ export interface Download {
  * })();
  * ```
  *
- * Note that since you don't need Playwright to install web browsers when testing Electron, you can omit browser
- * download via setting the following environment variable when installing Playwright:
- *
- * ```bash
- * PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm i -D playwright
- * ```
- *
  * **Supported Electron versions are:**
  * - v12.2.0+
  * - v13.4.0+
  * - v14+
+ *
+ * **Known issues:**
+ *
+ * If you are not able to launch Electron and it will end up in timeouts during launch, try the following:
+ * - Ensure that `nodeCliInspect`
+ *   ([FuseV1Options.EnableNodeCliInspectArguments](https://www.electronjs.org/docs/latest/tutorial/fuses#nodecliinspect))
+ *   fuse is **not** set to `false`.
  */
 export interface Electron {
   /**
@@ -15632,7 +17764,7 @@ export interface Electron {
     args?: Array<string>;
 
     /**
-     * Toggles bypassing page's Content-Security-Policy.
+     * Toggles bypassing page's Content-Security-Policy. Defaults to `false`.
      */
     bypassCSP?: boolean;
 
@@ -15660,7 +17792,7 @@ export interface Electron {
     executablePath?: string;
 
     /**
-     * An object containing additional HTTP headers to be sent with every request.
+     * An object containing additional HTTP headers to be sent with every request. Defaults to none.
      */
     extraHTTPHeaders?: { [key: string]: string; };
 
@@ -15682,12 +17814,26 @@ export interface Electron {
     };
 
     /**
-     * Credentials for [HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication).
+     * Credentials for [HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication). If no
+     * origin is specified, the username and password are sent to any servers upon unauthorized responses.
      */
     httpCredentials?: {
       username: string;
 
       password: string;
+
+      /**
+       * Restrain sending http credentials on specific origin (scheme://host:port).
+       */
+      origin?: string;
+
+      /**
+       * This option only applies to the requests sent from corresponding {@link APIRequestContext} and does not affect
+       * requests sent from the browser. `'always'` - `Authorization` header with basic authentication credentials will be
+       * sent with the each API request. `'unauthorized` - the credentials are only sent when 401 (Unauthorized) response
+       * with `WWW-Authenticate` header is received. Defaults to `'unauthorized'`.
+       */
+      send?: "unauthorized"|"always";
     };
 
     /**
@@ -15697,20 +17843,22 @@ export interface Electron {
 
     /**
      * Specify user locale, for example `en-GB`, `de-DE`, etc. Locale will affect `navigator.language` value,
-     * `Accept-Language` request header value as well as number and date formatting rules.
+     * `Accept-Language` request header value as well as number and date formatting rules. Defaults to the system default
+     * locale. Learn more about emulation in our [emulation guide](https://playwright.dev/docs/emulation#locale--timezone).
      */
     locale?: string;
 
     /**
-     * Whether to emulate network being offline. Defaults to `false`.
+     * Whether to emulate network being offline. Defaults to `false`. Learn more about
+     * [network emulation](https://playwright.dev/docs/emulation#offline).
      */
     offline?: boolean;
 
     /**
      * Enables [HAR](http://www.softwareishard.com/blog/har-12-spec) recording for all pages into `recordHar.path` file.
      * If not specified, the HAR is not recorded. Make sure to await
-     * [browserContext.close()](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for the HAR to
-     * be saved.
+     * [browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for
+     * the HAR to be saved.
      */
     recordHar?: {
       /**
@@ -15742,7 +17890,7 @@ export interface Electron {
       /**
        * A glob or regex pattern to filter requests that are stored in the HAR. When a `baseURL` via the context options was
        * provided and the passed URL is a path, it gets merged via the
-       * [`new URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor.
+       * [`new URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor. Defaults to none.
        */
       urlFilter?: string|RegExp;
     };
@@ -15750,8 +17898,8 @@ export interface Electron {
     /**
      * Enables video recording for all pages into `recordVideo.dir` directory. If not specified videos are not recorded.
      * Make sure to await
-     * [browserContext.close()](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for videos to
-     * be saved.
+     * [browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for
+     * videos to be saved.
      */
     recordVideo?: {
       /**
@@ -15786,14 +17934,19 @@ export interface Electron {
     /**
      * Changes the timezone of the context. See
      * [ICU's metaZones.txt](https://cs.chromium.org/chromium/src/third_party/icu/source/data/misc/metaZones.txt?rcl=faee8bc70570192d82d2978a71e2a615788597d1)
-     * for a list of supported timezone IDs.
+     * for a list of supported timezone IDs. Defaults to the system timezone.
      */
     timezoneId?: string;
+
+    /**
+     * If specified, traces are saved into this directory.
+     */
+    tracesDir?: string;
   }): Promise<ElectronApplication>;
 }
 
 /**
- * [FileChooser] objects are dispatched by the page in the
+ * {@link FileChooser} objects are dispatched by the page in the
  * [page.on('filechooser')](https://playwright.dev/docs/api/class-page#page-event-file-chooser) event.
  *
  * ```js
@@ -15801,7 +17954,7 @@ export interface Electron {
  * const fileChooserPromise = page.waitForEvent('filechooser');
  * await page.getByText('Upload file').click();
  * const fileChooser = await fileChooserPromise;
- * await fileChooser.setFiles('myfile.pdf');
+ * await fileChooser.setFiles(path.join(__dirname, 'myfile.pdf'));
  * ```
  *
  */
@@ -15827,7 +17980,7 @@ export interface FileChooser {
    * @param files
    * @param options
    */
-  setFiles(files: string|Array<string>|{
+  setFiles(files: string|ReadonlyArray<string>|{
     /**
      * File name
      */
@@ -15842,7 +17995,7 @@ export interface FileChooser {
      * File content
      */
     buffer: Buffer;
-  }|Array<{
+  }|ReadonlyArray<{
     /**
      * File name
      */
@@ -15866,8 +18019,8 @@ export interface FileChooser {
     noWaitAfter?: boolean;
 
     /**
-     * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-     * by using the
+     * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+     * option in the config, or by using the
      * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
      * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
      */
@@ -15901,13 +18054,13 @@ export interface FileChooser {
  *
  * **Converting Locator to FrameLocator**
  *
- * If you have a [Locator] object pointing to an `iframe` it can be converted to [FrameLocator] using
- * [`:scope`](https://developer.mozilla.org/en-US/docs/Web/CSS/:scope) CSS selector:
+ * If you have a {@link Locator} object pointing to an `iframe` it can be converted to {@link FrameLocator} using
+ * [locator.contentFrame()](https://playwright.dev/docs/api/class-locator#locator-content-frame).
  *
- * ```js
- * const frameLocator = locator.frameLocator(':scope');
- * ```
+ * **Converting FrameLocator to Locator**
  *
+ * If you have a {@link FrameLocator} object it can be converted to {@link Locator} pointing to the same `iframe`
+ * using [frameLocator.owner()](https://playwright.dev/docs/api/class-framelocator#frame-locator-owner).
  */
 export interface FrameLocator {
   /**
@@ -15918,15 +18071,23 @@ export interface FrameLocator {
   /**
    * When working with iframes, you can create a frame locator that will enter the iframe and allow selecting elements
    * in that iframe.
-   * @param selector A selector to use when resolving DOM element. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selector A selector to use when resolving DOM element.
    */
   frameLocator(selector: string): FrameLocator;
 
   /**
-   * Allows locating elements by their alt text. For example, this method will find the image by alt text "Castle":
+   * Allows locating elements by their alt text.
+   *
+   * **Usage**
+   *
+   * For example, this method will find the image by alt text "Playwright logo":
    *
    * ```html
-   * <img alt='Castle'>
+   * <img alt='Playwright logo'>
+   * ```
+   *
+   * ```js
+   * await page.getByAltText('Playwright logo').click();
    * ```
    *
    * @param text Text to locate the element for.
@@ -15941,12 +18102,22 @@ export interface FrameLocator {
   }): Locator;
 
   /**
-   * Allows locating input elements by the text of the associated label. For example, this method will find the input by
-   * label text "Password" in the following DOM:
+   * Allows locating input elements by the text of the associated `<label>` or `aria-labelledby` element, or by the
+   * `aria-label` attribute.
+   *
+   * **Usage**
+   *
+   * For example, this method will find inputs by label "Username" and "Password" in the following DOM:
    *
    * ```html
+   * <input aria-label="Username">
    * <label for="password-input">Password:</label>
    * <input id="password-input">
+   * ```
+   *
+   * ```js
+   * await page.getByLabel('Username').fill('john');
+   * await page.getByLabel('Password').fill('secret');
    * ```
    *
    * @param text Text to locate the element for.
@@ -15961,11 +18132,22 @@ export interface FrameLocator {
   }): Locator;
 
   /**
-   * Allows locating input elements by the placeholder text. For example, this method will find the input by placeholder
-   * "Country":
+   * Allows locating input elements by the placeholder text.
+   *
+   * **Usage**
+   *
+   * For example, consider the following DOM structure.
    *
    * ```html
-   * <input placeholder="Country">
+   * <input type="email" placeholder="name@example.com" />
+   * ```
+   *
+   * You can fill the input after locating it by the placeholder text:
+   *
+   * ```js
+   * await page
+   *     .getByPlaceholder('name@example.com')
+   *     .fill('playwright@microsoft.com');
    * ```
    *
    * @param text Text to locate the element for.
@@ -15982,14 +18164,40 @@ export interface FrameLocator {
   /**
    * Allows locating elements by their [ARIA role](https://www.w3.org/TR/wai-aria-1.2/#roles),
    * [ARIA attributes](https://www.w3.org/TR/wai-aria-1.2/#aria-attributes) and
-   * [accessible name](https://w3c.github.io/accname/#dfn-accessible-name). Note that role selector **does not replace**
-   * accessibility audits and conformance tests, but rather gives early feedback about the ARIA guidelines.
+   * [accessible name](https://w3c.github.io/accname/#dfn-accessible-name).
    *
-   * Note that many html elements have an implicitly
-   * [defined role](https://w3c.github.io/html-aam/#html-element-role-mappings) that is recognized by the role selector.
-   * You can find all the [supported roles here](https://www.w3.org/TR/wai-aria-1.2/#role_definitions). ARIA guidelines
-   * **do not recommend** duplicating implicit roles and attributes by setting `role` and/or `aria-*` attributes to
-   * default values.
+   * **Usage**
+   *
+   * Consider the following DOM structure.
+   *
+   * ```html
+   * <h3>Sign up</h3>
+   * <label>
+   *   <input type="checkbox" /> Subscribe
+   * </label>
+   * <br/>
+   * <button>Submit</button>
+   * ```
+   *
+   * You can locate each element by it's implicit role:
+   *
+   * ```js
+   * await expect(page.getByRole('heading', { name: 'Sign up' })).toBeVisible();
+   *
+   * await page.getByRole('checkbox', { name: 'Subscribe' }).check();
+   *
+   * await page.getByRole('button', { name: /submit/i }).click();
+   * ```
+   *
+   * **Details**
+   *
+   * Role selector **does not replace** accessibility audits and conformance tests, but rather gives early feedback
+   * about the ARIA guidelines.
+   *
+   * Many html elements have an implicitly [defined role](https://w3c.github.io/html-aam/#html-element-role-mappings)
+   * that is recognized by the role selector. You can find all the
+   * [supported roles here](https://www.w3.org/TR/wai-aria-1.2/#role_definitions). ARIA guidelines **do not recommend**
+   * duplicating implicit roles and attributes by setting `role` and/or `aria-*` attributes to default values.
    * @param role Required aria role.
    * @param options
    */
@@ -16062,23 +18270,52 @@ export interface FrameLocator {
   }): Locator;
 
   /**
-   * Locate element by the test id. By default, the `data-testid` attribute is used as a test id. Use
+   * Locate element by the test id.
+   *
+   * **Usage**
+   *
+   * Consider the following DOM structure.
+   *
+   * ```html
+   * <button data-testid="directions">Itinéraire</button>
+   * ```
+   *
+   * You can locate the element by it's test id:
+   *
+   * ```js
+   * await page.getByTestId('directions').click();
+   * ```
+   *
+   * **Details**
+   *
+   * By default, the `data-testid` attribute is used as a test id. Use
    * [selectors.setTestIdAttribute(attributeName)](https://playwright.dev/docs/api/class-selectors#selectors-set-test-id-attribute)
    * to configure a different test id attribute if necessary.
    *
    * ```js
    * // Set custom test id attribute from @playwright/test config:
-   * use: {
-   *   testIdAttribute: 'data-pw'
-   * }
+   * import { defineConfig } from '@playwright/test';
+   *
+   * export default defineConfig({
+   *   use: {
+   *     testIdAttribute: 'data-pw'
+   *   },
+   * });
    * ```
    *
    * @param testId Id to locate the element by.
    */
-  getByTestId(testId: string): Locator;
+  getByTestId(testId: string|RegExp): Locator;
 
   /**
-   * Allows locating elements that contain given text. Consider the following DOM structure:
+   * Allows locating elements that contain given text.
+   *
+   * See also [locator.filter([options])](https://playwright.dev/docs/api/class-locator#locator-filter) that allows to
+   * match by another criteria, like an accessible role, and then filter by the text content.
+   *
+   * **Usage**
+   *
+   * Consider the following DOM structure:
    *
    * ```html
    * <div>Hello <span>world</span></div>
@@ -16089,29 +18326,28 @@ export interface FrameLocator {
    *
    * ```js
    * // Matches <span>
-   * page.getByText('world')
+   * page.getByText('world');
    *
    * // Matches first <div>
-   * page.getByText('Hello world')
+   * page.getByText('Hello world');
    *
    * // Matches second <div>
-   * page.getByText('Hello', { exact: true })
+   * page.getByText('Hello', { exact: true });
    *
    * // Matches both <div>s
-   * page.getByText(/Hello/)
+   * page.getByText(/Hello/);
    *
    * // Matches second <div>
-   * page.getByText(/^hello$/i)
+   * page.getByText(/^hello$/i);
    * ```
    *
-   * See also [locator.filter([options])](https://playwright.dev/docs/api/class-locator#locator-filter) that allows to
-   * match by another criteria, like an accessible role, and then filter by the text content.
+   * **Details**
    *
-   * **NOTE** Matching by text always normalizes whitespace, even with exact match. For example, it turns multiple
-   * spaces into one, turns line breaks into spaces and ignores leading and trailing whitespace.
+   * Matching by text always normalizes whitespace, even with exact match. For example, it turns multiple spaces into
+   * one, turns line breaks into spaces and ignores leading and trailing whitespace.
    *
-   * **NOTE** Input elements of the type `button` and `submit` are matched by their `value` instead of the text content.
-   * For example, locating by text `"Log in"` matches `<input type=button value="Log in">`.
+   * Input elements of the type `button` and `submit` are matched by their `value` instead of the text content. For
+   * example, locating by text `"Log in"` matches `<input type=button value="Log in">`.
    * @param text Text to locate the element for.
    * @param options
    */
@@ -16124,11 +18360,20 @@ export interface FrameLocator {
   }): Locator;
 
   /**
-   * Allows locating elements by their title. For example, this method will find the button by its title "Place the
-   * order":
+   * Allows locating elements by their title attribute.
+   *
+   * **Usage**
+   *
+   * Consider the following DOM structure.
    *
    * ```html
-   * <button title='Place the order'>Order Now</button>
+   * <span title='Issues count'>25 issues</span>
+   * ```
+   *
+   * You can check the issues count after locating it by the title text:
+   *
+   * ```js
+   * await expect(page.getByTitle('Issues count')).toHaveText('25 issues');
    * ```
    *
    * @param text Text to locate the element for.
@@ -16153,17 +18398,38 @@ export interface FrameLocator {
    * method.
    *
    * [Learn more about locators](https://playwright.dev/docs/locators).
-   * @param selector A selector to use when resolving DOM element. See [working with selectors](https://playwright.dev/docs/selectors) for more details.
+   * @param selectorOrLocator A selector or locator to use when resolving DOM element.
    * @param options
    */
-  locator(selector: string, options?: {
+  locator(selectorOrLocator: string|Locator, options?: {
     /**
-     * Matches elements containing an element that matches an inner locator. Inner locator is queried against the outer
-     * one. For example, `article` that has `text=Playwright` matches `<article><div>Playwright</div></article>`.
+     * Narrows down the results of the method to those which contain elements matching this relative locator. For example,
+     * `article` that has `text=Playwright` matches `<article><div>Playwright</div></article>`.
      *
-     * Note that outer and inner locators must belong to the same frame. Inner locator must not contain [FrameLocator]s.
+     * Inner locator **must be relative** to the outer locator and is queried starting with the outer locator match, not
+     * the document root. For example, you can find `content` that has `div` in
+     * `<article><content><div>Playwright</div></content></article>`. However, looking for `content` that has `article
+     * div` will fail, because the inner locator must be relative and should not use any elements outside the `content`.
+     *
+     * Note that outer and inner locators must belong to the same frame. Inner locator must not contain {@link
+     * FrameLocator}s.
      */
     has?: Locator;
+
+    /**
+     * Matches elements that do not contain an element that matches an inner locator. Inner locator is queried against the
+     * outer one. For example, `article` that does not have `div` matches `<article><span>Playwright</span></article>`.
+     *
+     * Note that outer and inner locators must belong to the same frame. Inner locator must not contain {@link
+     * FrameLocator}s.
+     */
+    hasNot?: Locator;
+
+    /**
+     * Matches elements that do not contain specified text somewhere inside, possibly in a child or a descendant element.
+     * When passed a [string], matching is case-insensitive and searches for a substring.
+     */
+    hasNotText?: string|RegExp;
 
     /**
      * Matches elements containing specified text somewhere inside, possibly in a child or a descendant element. When
@@ -16178,6 +18444,27 @@ export interface FrameLocator {
    * @param index
    */
   nth(index: number): FrameLocator;
+
+  /**
+   * Returns a {@link Locator} object pointing to the same `iframe` as this frame locator.
+   *
+   * Useful when you have a {@link FrameLocator} object obtained somewhere, and later on would like to interact with the
+   * `iframe` element.
+   *
+   * For a reverse operation, use
+   * [locator.contentFrame()](https://playwright.dev/docs/api/class-locator#locator-content-frame).
+   *
+   * **Usage**
+   *
+   * ```js
+   * const frameLocator = page.frameLocator('iframe[name="embedded"]');
+   * // ...
+   * const locator = frameLocator.owner();
+   * await expect(locator).toBeVisible();
+   * ```
+   *
+   */
+  owner(): Locator;
 }
 
 /**
@@ -16236,7 +18523,8 @@ export interface Keyboard {
    * `Delete`, `Escape`, `ArrowDown`, `End`, `Enter`, `Home`, `Insert`, `PageDown`, `PageUp`, `ArrowRight`, `ArrowUp`,
    * etc.
    *
-   * Following modification shortcuts are also supported: `Shift`, `Control`, `Alt`, `Meta`, `ShiftLeft`.
+   * Following modification shortcuts are also supported: `Shift`, `Control`, `Alt`, `Meta`, `ShiftLeft`,
+   * `ControlOrMeta`. `ControlOrMeta` resolves to `Control` on Windows and Linux and to `Meta` on macOS.
    *
    * Holding down `Shift` will type the text that corresponds to the `key` in the upper case.
    *
@@ -16273,6 +18561,9 @@ export interface Keyboard {
   insertText(text: string): Promise<void>;
 
   /**
+   * **NOTE** In most cases, you should use
+   * [locator.press(key[, options])](https://playwright.dev/docs/api/class-locator#locator-press) instead.
+   *
    * `key` can specify the intended
    * [keyboardEvent.key](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key) value or a single character
    * to generate the text for. A superset of the `key` values can be found
@@ -16282,15 +18573,16 @@ export interface Keyboard {
    * `Delete`, `Escape`, `ArrowDown`, `End`, `Enter`, `Home`, `Insert`, `PageDown`, `PageUp`, `ArrowRight`, `ArrowUp`,
    * etc.
    *
-   * Following modification shortcuts are also supported: `Shift`, `Control`, `Alt`, `Meta`, `ShiftLeft`.
+   * Following modification shortcuts are also supported: `Shift`, `Control`, `Alt`, `Meta`, `ShiftLeft`,
+   * `ControlOrMeta`. `ControlOrMeta` resolves to `Control` on Windows and Linux and to `Meta` on macOS.
    *
    * Holding down `Shift` will type the text that corresponds to the `key` in the upper case.
    *
    * If `key` is a single character, it is case-sensitive, so the values `a` and `A` will generate different respective
    * texts.
    *
-   * Shortcuts such as `key: "Control+o"` or `key: "Control+Shift+T"` are supported as well. When specified with the
-   * modifier, modifier is pressed and being held while the subsequent key is being pressed.
+   * Shortcuts such as `key: "Control+o"`, `key: "Control++` or `key: "Control+Shift+T"` are supported as well. When
+   * specified with the modifier, modifier is pressed and being held while the subsequent key is being pressed.
    *
    * **Usage**
    *
@@ -16319,6 +18611,11 @@ export interface Keyboard {
   }): Promise<void>;
 
   /**
+   * **NOTE** In most cases, you should use
+   * [locator.fill(value[, options])](https://playwright.dev/docs/api/class-locator#locator-fill) instead. You only need
+   * to press keys one by one if there is special keyboard handling on the page - in this case use
+   * [locator.pressSequentially(text[, options])](https://playwright.dev/docs/api/class-locator#locator-press-sequentially).
+   *
    * Sends a `keydown`, `keypress`/`input`, and `keyup` event for each character in the text.
    *
    * To press a special key, like `Control` or `ArrowDown`, use
@@ -16328,7 +18625,7 @@ export interface Keyboard {
    *
    * ```js
    * await page.keyboard.type('Hello'); // Types instantly
-   * await page.keyboard.type('World', {delay: 100}); // Types slower, like a user
+   * await page.keyboard.type('World', { delay: 100 }); // Types slower, like a user
    * ```
    *
    * **NOTE** Modifier keys DO NOT effect `keyboard.type`. Holding down `Shift` will not type the text in upper case.
@@ -16360,11 +18657,11 @@ export interface Keyboard {
  * (async () => {
  *   const browser = await chromium.launch({
  *     logger: {
- *       isEnabled: (name, severity) => name === 'browser',
+ *       isEnabled: (name, severity) => name === 'api',
  *       log: (name, severity, message, args) => console.log(`${name} ${message}`)
  *     }
  *   });
- *   ...
+ *   // ...
  * })();
  * ```
  *
@@ -16384,7 +18681,7 @@ export interface Logger {
    * @param args message arguments
    * @param hints optional formatting hints
    */
-  log(name: string, severity: "verbose"|"info"|"warning"|"error", message: string|Error, args: Array<Object>, hints: {
+  log(name: string, severity: "verbose"|"info"|"warning"|"error", message: string|Error, args: ReadonlyArray<Object>, hints: {
     /**
      * Optional preferred logger color.
      */
@@ -16504,7 +18801,8 @@ export interface Mouse {
   }): Promise<void>;
 
   /**
-   * Dispatches a `wheel` event.
+   * Dispatches a `wheel` event. This method is usually used to manually scroll the page. See
+   * [scrolling](https://playwright.dev/docs/input#scrolling) for alternative ways to scroll.
    *
    * **NOTE** Wheel events may cause scrolling if they are not handled, and this method does not wait for the scrolling
    * to finish before returning.
@@ -16515,12 +18813,12 @@ export interface Mouse {
 }
 
 /**
- * This object can be used to launch or connect to Chromium, returning instances of [Browser].
+ * This object can be used to launch or connect to Chromium, returning instances of {@link Browser}.
  */
 export const chromium: BrowserType;
 
 /**
- * This object can be used to launch or connect to Firefox, returning instances of [Browser].
+ * This object can be used to launch or connect to Firefox, returning instances of {@link Browser}.
  */
 export const firefox: BrowserType;
 
@@ -16530,17 +18828,19 @@ export const firefox: BrowserType;
 export const request: APIRequest;
 
 /**
- * Selectors can be used to install custom selector engines. See [Working with selectors](https://playwright.dev/docs/selectors) for more
+ * Selectors can be used to install custom selector engines. See [extensibility](https://playwright.dev/docs/extensibility) for more
  * information.
  */
 export const selectors: Selectors;
 
 /**
- * This object can be used to launch or connect to WebKit, returning instances of [Browser].
+ * This object can be used to launch or connect to WebKit, returning instances of {@link Browser}.
  */
 export const webkit: BrowserType;
+
 /**
- * Whenever the page sends a request for a network resource the following sequence of events are emitted by [Page]:
+ * Whenever the page sends a request for a network resource the following sequence of events are emitted by {@link
+ * Page}:
  * - [page.on('request')](https://playwright.dev/docs/api/class-page#page-event-request) emitted when the request is
  *   issued by the page.
  * - [page.on('response')](https://playwright.dev/docs/api/class-page#page-event-response) emitted when/if the
@@ -16586,7 +18886,33 @@ export interface Request {
   };
 
   /**
-   * Returns the [Frame] that initiated this request.
+   * Returns the {@link Frame} that initiated this request.
+   *
+   * **Usage**
+   *
+   * ```js
+   * const frameUrl = request.frame().url();
+   * ```
+   *
+   * **Details**
+   *
+   * Note that in some cases the frame is not available, and this method will throw.
+   * - When request originates in the Service Worker. You can use `request.serviceWorker()` to check that.
+   * - When navigation request is issued before the corresponding frame is created. You can use
+   *   [request.isNavigationRequest()](https://playwright.dev/docs/api/class-request#request-is-navigation-request) to
+   *   check that.
+   *
+   * Here is an example that handles all the cases:
+   *
+   * ```js
+   * if (request.serviceWorker())
+   *   console.log(`request ${request.url()} from a service worker`);
+   * else if (request.isNavigationRequest())
+   *   console.log(`request ${request.url()} is a navigation request`);
+   * else
+   *   console.log(`request ${request.url()} from a frame ${request.frame().url()}`);
+   * ```
+   *
    */
   frame(): Frame;
 
@@ -16623,6 +18949,9 @@ export interface Request {
 
   /**
    * Whether this request is driving frame's navigation.
+   *
+   * Some navigation requests are issued before the corresponding frame is created, and therefore do not have
+   * [request.frame()](https://playwright.dev/docs/api/class-request#request-frame) available.
    */
   isNavigationRequest(): boolean;
 
@@ -16652,9 +18981,9 @@ export interface Request {
   /**
    * Request that was redirected by the server to this one, if any.
    *
-   * When the server responds with a redirect, Playwright creates a new [Request] object. The two requests are connected
-   * by `redirectedFrom()` and `redirectedTo()` methods. When multiple server redirects has happened, it is possible to
-   * construct the whole redirect chain by repeatedly calling `redirectedFrom()`.
+   * When the server responds with a redirect, Playwright creates a new {@link Request} object. The two requests are
+   * connected by `redirectedFrom()` and `redirectedTo()` methods. When multiple server redirects has happened, it is
+   * possible to construct the whole redirect chain by repeatedly calling `redirectedFrom()`.
    *
    * **Usage**
    *
@@ -16698,14 +19027,19 @@ export interface Request {
   resourceType(): string;
 
   /**
-   * Returns the matching [Response] object, or `null` if the response was not received due to error.
+   * Returns the matching {@link Response} object, or `null` if the response was not received due to error.
    */
   response(): Promise<null|Response>;
 
   /**
-   * **NOTE** This field is Chromium only. It's safe to call when using other browsers, but it will always be `null`.
+   * The Service {@link Worker} that is performing the request.
    *
-   * The Service [Worker] that is performing the request.
+   * **Details**
+   *
+   * This method is Chromium only. It's safe to call when using other browsers, but it will always be `null`.
+   *
+   * Requests originated in a Service Worker do not have a
+   * [request.frame()](https://playwright.dev/docs/api/class-request#request-frame) available.
    */
   serviceWorker(): null|Worker;
 
@@ -16794,8 +19128,8 @@ export interface Request {
     requestStart: number;
 
     /**
-     * Time immediately after the browser starts requesting the resource from the server, cache, or local resource. The
-     * value is given in milliseconds relative to `startTime`, -1 if not available.
+     * Time immediately after the browser receives the first byte of the response from the server, cache, or local
+     * resource. The value is given in milliseconds relative to `startTime`, -1 if not available.
      */
     responseStart: number;
 
@@ -16814,7 +19148,7 @@ export interface Request {
 }
 
 /**
- * [Response] class represents responses which are received by page.
+ * {@link Response} class represents responses which are received by page.
  */
 export interface Response {
   /**
@@ -16833,7 +19167,7 @@ export interface Response {
   finished(): Promise<null|Error>;
 
   /**
-   * Returns the [Frame] that initiated this response.
+   * Returns the {@link Frame} that initiated this response.
    */
   frame(): Frame;
 
@@ -16895,7 +19229,7 @@ export interface Response {
   ok(): boolean;
 
   /**
-   * Returns the matching [Request] object.
+   * Returns the matching {@link Request} object.
    */
   request(): Request;
 
@@ -17001,17 +19335,24 @@ export interface Route {
    * **Usage**
    *
    * ```js
-   * await page.route('**\/*', (route, request) => {
+   * await page.route('**\/*', async (route, request) => {
    *   // Override headers
    *   const headers = {
    *     ...request.headers(),
    *     foo: 'foo-value', // set "foo" header
    *     bar: undefined, // remove "bar" header
    *   };
-   *   route.continue({headers});
+   *   await route.continue({ headers });
    * });
    * ```
    *
+   * **Details**
+   *
+   * Note that any overrides such as `url` or `headers` only apply to the request being routed. If this request results
+   * in a redirect, overrides will not be applied to the new redirected request. If you want to propagate a header
+   * through redirects, use the combination of
+   * [route.fetch([options])](https://playwright.dev/docs/api/class-route#route-fetch) and
+   * [route.fulfill([options])](https://playwright.dev/docs/api/class-route#route-fulfill) instead.
    * @param options
    */
   continue(options?: {
@@ -17028,7 +19369,7 @@ export interface Route {
     /**
      * If set changes the post data of request.
      */
-    postData?: string|Buffer;
+    postData?: string|Buffer|Serializable;
 
     /**
      * If set changes the request URL. New URL must have same protocol as original one.
@@ -17045,17 +19386,17 @@ export interface Route {
    * **Usage**
    *
    * ```js
-   * await page.route('**\/*', route => {
+   * await page.route('**\/*', async route => {
    *   // Runs last.
-   *   route.abort();
+   *   await route.abort();
    * });
-   * await page.route('**\/*', route => {
+   * await page.route('**\/*', async route => {
    *   // Runs second.
-   *   route.fallback();
+   *   await route.fallback();
    * });
-   * await page.route('**\/*', route => {
+   * await page.route('**\/*', async route => {
    *   // Runs first.
-   *   route.fallback();
+   *   await route.fallback();
    * });
    * ```
    *
@@ -17064,9 +19405,9 @@ export interface Route {
    *
    * ```js
    * // Handle GET requests.
-   * await page.route('**\/*', route => {
+   * await page.route('**\/*', async route => {
    *   if (route.request().method() !== 'GET') {
-   *     route.fallback();
+   *     await route.fallback();
    *     return;
    *   }
    *   // Handling GET only.
@@ -17074,9 +19415,9 @@ export interface Route {
    * });
    *
    * // Handle POST requests.
-   * await page.route('**\/*', route => {
+   * await page.route('**\/*', async route => {
    *   if (route.request().method() !== 'POST') {
-   *     route.fallback();
+   *     await route.fallback();
    *     return;
    *   }
    *   // Handling POST only.
@@ -17088,14 +19429,14 @@ export interface Route {
    * modify url, method, headers and postData of the request.
    *
    * ```js
-   * await page.route('**\/*', (route, request) => {
+   * await page.route('**\/*', async (route, request) => {
    *   // Override headers
    *   const headers = {
    *     ...request.headers(),
    *     foo: 'foo-value', // set "foo" header
    *     bar: undefined, // remove "bar" header
    *   };
-   *   route.fallback({headers});
+   *   await route.fallback({ headers });
    * });
    * ```
    *
@@ -17115,7 +19456,7 @@ export interface Route {
     /**
      * If set changes the post data of request.
      */
-    postData?: string|Buffer;
+    postData?: string|Buffer|Serializable;
 
     /**
      * If set changes the request URL. New URL must have same protocol as original one. Changing the URL won't affect the
@@ -17139,25 +19480,41 @@ export interface Route {
    * });
    * ```
    *
+   * **Details**
+   *
+   * Note that `headers` option will apply to the fetched request as well as any redirects initiated by it. If you want
+   * to only apply `headers` to the original request, but not to redirects, look into
+   * [route.continue([options])](https://playwright.dev/docs/api/class-route#route-continue) instead.
    * @param options
    */
   fetch(options?: {
-    /**
-     * Allows to set post data of the request. If the data parameter is an object, it will be serialized to json string
-     * and `content-type` header will be set to `application/json` if not explicitly set. Otherwise the `content-type`
-     * header will be set to `application/octet-stream` if not explicitly set.
-     */
-    data?: string|Buffer|Serializable;
-
     /**
      * If set changes the request HTTP headers. Header values will be converted to a string.
      */
     headers?: { [key: string]: string; };
 
     /**
+     * Maximum number of request redirects that will be followed automatically. An error will be thrown if the number is
+     * exceeded. Defaults to `20`. Pass `0` to not follow redirects.
+     */
+    maxRedirects?: number;
+
+    /**
      * If set changes the request method (e.g. GET or POST).
      */
     method?: string;
+
+    /**
+     * Allows to set post data of the request. If the data parameter is an object, it will be serialized to json string
+     * and `content-type` header will be set to `application/json` if not explicitly set. Otherwise the `content-type`
+     * header will be set to `application/octet-stream` if not explicitly set.
+     */
+    postData?: string|Buffer|Serializable;
+
+    /**
+     * Request timeout in milliseconds. Defaults to `30000` (30 seconds). Pass `0` to disable timeout.
+     */
+    timeout?: number;
 
     /**
      * If set changes the request URL. New URL must have same protocol as original one.
@@ -17173,8 +19530,8 @@ export interface Route {
    * An example of fulfilling all requests with 404 responses:
    *
    * ```js
-   * await page.route('**\/*', route => {
-   *   route.fulfill({
+   * await page.route('**\/*', async route => {
+   *   await route.fulfill({
    *     status: 404,
    *     contentType: 'text/plain',
    *     body: 'Not Found!'
@@ -17208,18 +19565,6 @@ export interface Route {
 
     /**
      * JSON response. This method will set the content type to `application/json` if not set.
-     *
-     * **Usage**
-     *
-     * ```js
-     * await page.route('https://dog.ceo/api/breeds/list/all', async route => {
-     *   const json = {
-     *     message: { 'test_breed': [] }
-     *   };
-     *   await route.fulfill({ json });
-     * });
-     * ```
-     *
      */
     json?: Serializable;
 
@@ -17230,7 +19575,7 @@ export interface Route {
     path?: string;
 
     /**
-     * [APIResponse] to fulfill route's request with. Individual fields of the response (such as headers) can be
+     * {@link APIResponse} to fulfill route's request with. Individual fields of the response (such as headers) can be
      * overridden using fulfill options.
      */
     response?: APIResponse;
@@ -17248,17 +19593,19 @@ export interface Route {
 }
 
 /**
- * Selectors can be used to install custom selector engines. See [Working with selectors](https://playwright.dev/docs/selectors) for more
+ * Selectors can be used to install custom selector engines. See [extensibility](https://playwright.dev/docs/extensibility) for more
  * information.
  */
 export interface Selectors {
   /**
+   * Selectors must be registered before creating the page.
+   *
    * **Usage**
    *
    * An example of registering selector engine that queries elements based on a tag name:
    *
    * ```js
-   * const { selectors, firefox } = require('playwright');  // Or 'chromium' or 'webkit'.
+   * const { selectors, firefox } = require('@playwright/test');  // Or 'chromium' or 'webkit'.
    *
    * (async () => {
    *   // Must be a function that evaluates to a selector engine instance.
@@ -17283,8 +19630,8 @@ export interface Selectors {
    *
    *   // Use the selector prefixed with its name.
    *   const button = page.locator('tag=button');
-   *   // Combine it with other selector engines.
-   *   await page.locator('tag=div >> text="Click me"').click();
+   *   // We can combine it with built-in locators.
+   *   await page.locator('tag=div').getByText('Click me').click();
    *   // Can use it in any methods supporting selectors.
    *   const buttonCount = await page.locator('tag=button').count();
    *
@@ -17333,6 +19680,9 @@ export interface Selectors {
 export interface Touchscreen {
   /**
    * Dispatches a `touchstart` and `touchend` event with a single touch at the position (`x`,`y`).
+   *
+   * **NOTE** [page.tap(selector[, options])](https://playwright.dev/docs/api/class-page#page-tap) the method will throw
+   * if `hasTouch` option of the browser context is false.
    * @param x
    * @param y
    */
@@ -17372,9 +19722,11 @@ export interface Tracing {
    */
   start(options?: {
     /**
-     * If specified, the trace is going to be saved into the file with the given name inside the `tracesDir` folder
-     * specified in
-     * [browserType.launch([options])](https://playwright.dev/docs/api/class-browsertype#browser-type-launch).
+     * If specified, intermediate trace files are going to be saved into the files with the given name prefix inside the
+     * `tracesDir` folder specified in
+     * [browserType.launch([options])](https://playwright.dev/docs/api/class-browsertype#browser-type-launch). To specify
+     * the final trace zip file name, you need to pass `path` option to
+     * [tracing.stop([options])](https://playwright.dev/docs/api/class-tracing#tracing-stop) instead.
      */
     name?: string;
 
@@ -17402,7 +19754,7 @@ export interface Tracing {
   }): Promise<void>;
 
   /**
-   * Start a new trace chunk. If you'd like to record multiple traces on the same [BrowserContext], use
+   * Start a new trace chunk. If you'd like to record multiple traces on the same {@link BrowserContext}, use
    * [tracing.start([options])](https://playwright.dev/docs/api/class-tracing#tracing-start) once, and then create
    * multiple trace chunks with
    * [tracing.startChunk([options])](https://playwright.dev/docs/api/class-tracing#tracing-start-chunk) and
@@ -17429,6 +19781,15 @@ export interface Tracing {
    * @param options
    */
   startChunk(options?: {
+    /**
+     * If specified, intermediate trace files are going to be saved into the files with the given name prefix inside the
+     * `tracesDir` folder specified in
+     * [browserType.launch([options])](https://playwright.dev/docs/api/class-browsertype#browser-type-launch). To specify
+     * the final trace zip file name, you need to pass `path` option to
+     * [tracing.stopChunk([options])](https://playwright.dev/docs/api/class-tracing#tracing-stop-chunk) instead.
+     */
+    name?: string;
+
     /**
      * Trace name to be shown in the Trace Viewer.
      */
@@ -17491,188 +19852,216 @@ export interface Video {
 }
 
 /**
- * The [WebSocket] class represents websocket connections in the page.
+ * {@link WebError} class represents an unhandled exception thrown in the page. It is dispatched via the
+ * [browserContext.on('weberror')](https://playwright.dev/docs/api/class-browsercontext#browser-context-event-web-error)
+ * event.
+ *
+ * ```js
+ * // Log all uncaught errors to the terminal
+ * context.on('weberror', webError => {
+ *   console.log(`Uncaught exception: "${webError.error()}"`);
+ * });
+ *
+ * // Navigate to a page with an exception.
+ * await page.goto('data:text/html,<script>throw new Error("Test")</script>');
+ * ```
+ *
+ */
+export interface WebError {
+  /**
+   * Unhandled error that was thrown.
+   */
+  error(): Error;
+
+  /**
+   * The page that produced this unhandled exception, if any.
+   */
+  page(): null|Page;
+}
+
+/**
+ * The {@link WebSocket} class represents websocket connections in the page.
  */
 export interface WebSocket {
   /**
    * Fired when the websocket closes.
    */
-  on(event: 'close', listener: (webSocket: WebSocket) => void): this;
+  on(event: 'close', listener: (webSocket: WebSocket) => any): this;
 
   /**
    * Fired when the websocket receives a frame.
    */
   on(event: 'framereceived', listener: (data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => void): this;
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => any): this;
 
   /**
    * Fired when the websocket sends a frame.
    */
   on(event: 'framesent', listener: (data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => void): this;
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => any): this;
 
   /**
    * Fired when the websocket has an error.
    */
-  on(event: 'socketerror', listener: (string: String) => void): this;
+  on(event: 'socketerror', listener: (string: string) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'close', listener: (webSocket: WebSocket) => void): this;
+  once(event: 'close', listener: (webSocket: WebSocket) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
   once(event: 'framereceived', listener: (data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => void): this;
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
   once(event: 'framesent', listener: (data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => void): this;
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => any): this;
 
   /**
    * Adds an event listener that will be automatically removed after it is triggered once. See `addListener` for more information about this event.
    */
-  once(event: 'socketerror', listener: (string: String) => void): this;
+  once(event: 'socketerror', listener: (string: string) => any): this;
 
   /**
    * Fired when the websocket closes.
    */
-  addListener(event: 'close', listener: (webSocket: WebSocket) => void): this;
+  addListener(event: 'close', listener: (webSocket: WebSocket) => any): this;
 
   /**
    * Fired when the websocket receives a frame.
    */
   addListener(event: 'framereceived', listener: (data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => void): this;
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => any): this;
 
   /**
    * Fired when the websocket sends a frame.
    */
   addListener(event: 'framesent', listener: (data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => void): this;
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => any): this;
 
   /**
    * Fired when the websocket has an error.
    */
-  addListener(event: 'socketerror', listener: (string: String) => void): this;
+  addListener(event: 'socketerror', listener: (string: string) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'close', listener: (webSocket: WebSocket) => void): this;
+  removeListener(event: 'close', listener: (webSocket: WebSocket) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
   removeListener(event: 'framereceived', listener: (data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => void): this;
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
   removeListener(event: 'framesent', listener: (data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => void): this;
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  removeListener(event: 'socketerror', listener: (string: String) => void): this;
+  removeListener(event: 'socketerror', listener: (string: string) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'close', listener: (webSocket: WebSocket) => void): this;
+  off(event: 'close', listener: (webSocket: WebSocket) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
   off(event: 'framereceived', listener: (data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => void): this;
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
   off(event: 'framesent', listener: (data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => void): this;
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => any): this;
 
   /**
    * Removes an event listener added by `on` or `addListener`.
    */
-  off(event: 'socketerror', listener: (string: String) => void): this;
+  off(event: 'socketerror', listener: (string: string) => any): this;
 
   /**
    * Fired when the websocket closes.
    */
-  prependListener(event: 'close', listener: (webSocket: WebSocket) => void): this;
+  prependListener(event: 'close', listener: (webSocket: WebSocket) => any): this;
 
   /**
    * Fired when the websocket receives a frame.
    */
   prependListener(event: 'framereceived', listener: (data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => void): this;
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => any): this;
 
   /**
    * Fired when the websocket sends a frame.
    */
   prependListener(event: 'framesent', listener: (data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => void): this;
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => any): this;
 
   /**
    * Fired when the websocket has an error.
    */
-  prependListener(event: 'socketerror', listener: (string: String) => void): this;
+  prependListener(event: 'socketerror', listener: (string: string) => any): this;
 
   /**
    * Indicates that the web socket has been closed.
@@ -17693,46 +20082,46 @@ export interface WebSocket {
    * Fired when the websocket receives a frame.
    */
   waitForEvent(event: 'framereceived', optionsOrPredicate?: { predicate?: (data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => boolean | Promise<boolean>, timeout?: number } | ((data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => boolean | Promise<boolean>)): Promise<{
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}>;
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => boolean | Promise<boolean>, timeout?: number } | ((data: {
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => boolean | Promise<boolean>)): Promise<{
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }>;
 
   /**
    * Fired when the websocket sends a frame.
    */
   waitForEvent(event: 'framesent', optionsOrPredicate?: { predicate?: (data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => boolean | Promise<boolean>, timeout?: number } | ((data: {
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}) => boolean | Promise<boolean>)): Promise<{
-  /**
-   * frame payload
-   */
-  payload: string|Buffer;
-}>;
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => boolean | Promise<boolean>, timeout?: number } | ((data: {
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }) => boolean | Promise<boolean>)): Promise<{
+    /**
+     * frame payload
+     */
+    payload: string|Buffer;
+  }>;
 
   /**
    * Fired when the websocket has an error.
    */
-  waitForEvent(event: 'socketerror', optionsOrPredicate?: { predicate?: (string: String) => boolean | Promise<boolean>, timeout?: number } | ((string: String) => boolean | Promise<boolean>)): Promise<String>;
+  waitForEvent(event: 'socketerror', optionsOrPredicate?: { predicate?: (string: string) => boolean | Promise<boolean>, timeout?: number } | ((string: string) => boolean | Promise<boolean>)): Promise<string>;
 
 }
 
@@ -17751,7 +20140,7 @@ export interface BrowserContextOptions {
    * [page.waitForResponse(urlOrPredicate[, options])](https://playwright.dev/docs/api/class-page#page-wait-for-response)
    * it takes the base URL in consideration by using the
    * [`URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor for building the corresponding URL.
-   * Examples:
+   * Unset by default. Examples:
    * - baseURL: `http://localhost:3000` and navigating to `/bar.html` results in `http://localhost:3000/bar.html`
    * - baseURL: `http://localhost:3000/foo/` and navigating to `./bar.html` results in
    *   `http://localhost:3000/foo/bar.html`
@@ -17761,7 +20150,7 @@ export interface BrowserContextOptions {
   baseURL?: string;
 
   /**
-   * Toggles bypassing page's Content-Security-Policy.
+   * Toggles bypassing page's Content-Security-Policy. Defaults to `false`.
    */
   bypassCSP?: boolean;
 
@@ -17773,12 +20162,13 @@ export interface BrowserContextOptions {
   colorScheme?: null|"light"|"dark"|"no-preference";
 
   /**
-   * Specify device scale factor (can be thought of as dpr). Defaults to `1`.
+   * Specify device scale factor (can be thought of as dpr). Defaults to `1`. Learn more about
+   * [emulating devices with device scale factor](https://playwright.dev/docs/emulation#devices).
    */
   deviceScaleFactor?: number;
 
   /**
-   * An object containing additional HTTP headers to be sent with every request.
+   * An object containing additional HTTP headers to be sent with every request. Defaults to none.
    */
   extraHTTPHeaders?: { [key: string]: string; };
 
@@ -17792,12 +20182,14 @@ export interface BrowserContextOptions {
   geolocation?: Geolocation;
 
   /**
-   * Specifies if viewport supports touch events. Defaults to false.
+   * Specifies if viewport supports touch events. Defaults to false. Learn more about
+   * [mobile emulation](https://playwright.dev/docs/emulation#devices).
    */
   hasTouch?: boolean;
 
   /**
-   * Credentials for [HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication).
+   * Credentials for [HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication). If no
+   * origin is specified, the username and password are sent to any servers upon unauthorized responses.
    */
   httpCredentials?: HTTPCredentials;
 
@@ -17807,19 +20199,22 @@ export interface BrowserContextOptions {
   ignoreHTTPSErrors?: boolean;
 
   /**
-   * Whether the `meta viewport` tag is taken into account and touch events are enabled. Defaults to `false`. Not
-   * supported in Firefox.
+   * Whether the `meta viewport` tag is taken into account and touch events are enabled. isMobile is a part of device,
+   * so you don't actually need to set it manually. Defaults to `false` and is not supported in Firefox. Learn more
+   * about [mobile emulation](https://playwright.dev/docs/emulation#ismobile).
    */
   isMobile?: boolean;
 
   /**
-   * Whether or not to enable JavaScript in the context. Defaults to `true`.
+   * Whether or not to enable JavaScript in the context. Defaults to `true`. Learn more about
+   * [disabling JavaScript](https://playwright.dev/docs/emulation#javascript-enabled).
    */
   javaScriptEnabled?: boolean;
 
   /**
    * Specify user locale, for example `en-GB`, `de-DE`, etc. Locale will affect `navigator.language` value,
-   * `Accept-Language` request header value as well as number and date formatting rules.
+   * `Accept-Language` request header value as well as number and date formatting rules. Defaults to the system default
+   * locale. Learn more about emulation in our [emulation guide](https://playwright.dev/docs/emulation#locale--timezone).
    */
   locale?: string;
 
@@ -17829,19 +20224,20 @@ export interface BrowserContextOptions {
   logger?: Logger;
 
   /**
-   * Whether to emulate network being offline. Defaults to `false`.
+   * Whether to emulate network being offline. Defaults to `false`. Learn more about
+   * [network emulation](https://playwright.dev/docs/emulation#offline).
    */
   offline?: boolean;
 
   /**
    * A list of permissions to grant to all pages in this context. See
    * [browserContext.grantPermissions(permissions[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-grant-permissions)
-   * for more details.
+   * for more details. Defaults to none.
    */
   permissions?: Array<string>;
 
   /**
-   * Network proxy settings to use with this context.
+   * Network proxy settings to use with this context. Defaults to none.
    *
    * **NOTE** For Chromium on Windows the browser needs to be launched with the global proxy for this option to work. If
    * all contexts override the proxy, global proxy will be never used and can be any string, for example `launch({
@@ -17873,8 +20269,8 @@ export interface BrowserContextOptions {
   /**
    * Enables [HAR](http://www.softwareishard.com/blog/har-12-spec) recording for all pages into `recordHar.path` file.
    * If not specified, the HAR is not recorded. Make sure to await
-   * [browserContext.close()](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for the HAR to
-   * be saved.
+   * [browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for
+   * the HAR to be saved.
    */
   recordHar?: {
     /**
@@ -17906,7 +20302,7 @@ export interface BrowserContextOptions {
     /**
      * A glob or regex pattern to filter requests that are stored in the HAR. When a `baseURL` via the context options was
      * provided and the passed URL is a path, it gets merged via the
-     * [`new URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor.
+     * [`new URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor. Defaults to none.
      */
     urlFilter?: string|RegExp;
   };
@@ -17914,8 +20310,8 @@ export interface BrowserContextOptions {
   /**
    * Enables video recording for all pages into `recordVideo.dir` directory. If not specified videos are not recorded.
    * Make sure to await
-   * [browserContext.close()](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for videos to
-   * be saved.
+   * [browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for
+   * videos to be saved.
    */
   recordVideo?: {
     /**
@@ -17973,14 +20369,15 @@ export interface BrowserContextOptions {
   serviceWorkers?: "allow"|"block";
 
   /**
+   * Learn more about [storage state and auth](https://playwright.dev/docs/auth).
+   *
    * Populates context with given storage state. This option can be used to initialize context with logged-in
    * information obtained via
    * [browserContext.storageState([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-storage-state).
-   * Either a path to the file with saved storage, or an object with the following fields:
    */
   storageState?: string|{
     /**
-     * cookies to set for context
+     * Cookies to set for context
      */
     cookies: Array<{
       name: string;
@@ -17988,12 +20385,13 @@ export interface BrowserContextOptions {
       value: string;
 
       /**
-       * domain and path are required
+       * Domain and path are required. For the cookie to apply to all subdomains as well, prefix domain with a dot, like
+       * this: ".example.com"
        */
       domain: string;
 
       /**
-       * domain and path are required
+       * Domain and path are required
        */
       path: string;
 
@@ -18027,16 +20425,17 @@ export interface BrowserContextOptions {
   };
 
   /**
-   * If specified, enables strict selectors mode for this context. In the strict selectors mode all operations on
-   * selectors that imply single target DOM element will throw when more than one element matches the selector. See
-   * [Locator] to learn more about the strict mode.
+   * If set to true, enables strict selectors mode for this context. In the strict selectors mode all operations on
+   * selectors that imply single target DOM element will throw when more than one element matches the selector. This
+   * option does not affect any Locator APIs (Locators are always strict). Defaults to `false`. See {@link Locator} to
+   * learn more about the strict mode.
    */
   strictSelectors?: boolean;
 
   /**
    * Changes the timezone of the context. See
    * [ICU's metaZones.txt](https://cs.chromium.org/chromium/src/third_party/icu/source/data/misc/metaZones.txt?rcl=faee8bc70570192d82d2978a71e2a615788597d1)
-   * for a list of supported timezone IDs.
+   * for a list of supported timezone IDs. Defaults to the system timezone.
    */
   timezoneId?: string;
 
@@ -18046,7 +20445,7 @@ export interface BrowserContextOptions {
   userAgent?: string;
 
   /**
-   * @deprecated Use [`option: recordVideo`] instead.
+   * @deprecated Use `recordVideo` instead.
    */
   videoSize?: {
     /**
@@ -18061,12 +20460,16 @@ export interface BrowserContextOptions {
   };
 
   /**
-   * @deprecated Use [`option: recordVideo`] instead.
+   * @deprecated Use `recordVideo` instead.
    */
   videosPath?: string;
 
   /**
-   * Emulates consistent viewport for each page. Defaults to an 1280x720 viewport. `null` disables the default viewport.
+   * Emulates consistent viewport for each page. Defaults to an 1280x720 viewport. Use `null` to disable the consistent
+   * viewport emulation. Learn more about [viewport emulation](https://playwright.dev/docs/emulation#viewport).
+   *
+   * **NOTE** The `null` value opts out from the default presets, makes viewport depend on the host window size defined
+   * by the operating system. It makes the execution of the tests non-deterministic.
    */
   viewport?: null|ViewportSize;
 }
@@ -18087,6 +20490,19 @@ export interface HTTPCredentials {
   username: string;
 
   password: string;
+
+  /**
+   * Restrain sending http credentials on specific origin (scheme://host:port).
+   */
+  origin?: string;
+
+  /**
+   * This option only applies to the requests sent from corresponding {@link APIRequestContext} and does not affect
+   * requests sent from the browser. `'always'` - `Authorization` header with basic authentication credentials will be
+   * sent with the each API request. `'unauthorized` - the credentials are only sent when 401 (Unauthorized) response
+   * with `WWW-Authenticate` header is received. Defaults to `'unauthorized'`.
+   */
+  send?: "unauthorized"|"always";
 }
 
 export interface Geolocation {
@@ -18120,8 +20536,10 @@ interface AccessibilitySnapshotOptions {
 
 export interface LaunchOptions {
   /**
+   * **NOTE** Use custom browser args at your own risk, as some of them may break Playwright functionality.
+   *
    * Additional arguments to pass to the browser instance. The list of Chromium flags can be found
-   * [here](http://peter.sh/experiments/chromium-command-line-switches/).
+   * [here](https://peter.sh/experiments/chromium-command-line-switches/).
    */
   args?: Array<string>;
 
@@ -18140,6 +20558,7 @@ export interface LaunchOptions {
   /**
    * **Chromium-only** Whether to auto-open a Developer Tools panel for each tab. If this option is `true`, the
    * `headless` option will be set `false`.
+   * @deprecated Use [debugging tools](https://playwright.dev/docs/debug) instead.
    */
   devtools?: boolean;
 
@@ -18277,6 +20696,23 @@ export interface ConnectOverCDPOptions {
 
 export interface ConnectOptions {
   /**
+   * This option exposes network available on the connecting client to the browser being connected to. Consists of a
+   * list of rules separated by comma.
+   *
+   * Available rules:
+   * 1. Hostname pattern, for example: `example.com`, `*.org:99`, `x.*.y.com`, `*foo.org`.
+   * 1. IP literal, for example: `127.0.0.1`, `0.0.0.0:99`, `[::1]`, `[0:0::1]:99`.
+   * 1. `<loopback>` that matches local loopback interfaces: `localhost`, `*.localhost`, `127.0.0.1`, `[::1]`.
+   *
+   * Some common examples:
+   * 1. `"*"` to expose all network.
+   * 1. `"<loopback>"` to expose localhost network.
+   * 1. `"*.test.internal-domain,*.staging.internal-domain,<loopback>"` to expose test/staging deployments and
+   *    localhost.
+   */
+  exposeNetwork?: string;
+
+  /**
    * Additional HTTP headers to be sent with web socket connect request. Optional.
    */
   headers?: { [key: string]: string; };
@@ -18317,9 +20753,15 @@ export interface LocatorScreenshotOptions {
 
   /**
    * Specify locators that should be masked when the screenshot is taken. Masked elements will be overlaid with a pink
-   * box `#FF00FF` that completely covers its bounding box.
+   * box `#FF00FF` (customized by `maskColor`) that completely covers its bounding box.
    */
   mask?: Array<Locator>;
+
+  /**
+   * Specify the color of the overlay box for masked elements, in
+   * [CSS color format](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value). Default color is pink `#FF00FF`.
+   */
+  maskColor?: string;
 
   /**
    * Hides default white background and allows capturing screenshots with transparency. Not applicable to `jpeg` images.
@@ -18349,8 +20791,15 @@ export interface LocatorScreenshotOptions {
   scale?: "css"|"device";
 
   /**
-   * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-   * by using the
+   * Text of the stylesheet to apply while making the screenshot. This is where you can hide dynamic elements, make
+   * elements invisible or change their properties to help you creating repeatable screenshots. This stylesheet pierces
+   * the Shadow DOM and applies to the inner frames.
+   */
+  style?: string;
+
+  /**
+   * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+   * option in the config, or by using the
    * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
    * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
    */
@@ -18381,8 +20830,8 @@ interface ElementHandleWaitForSelectorOptions {
   strict?: boolean;
 
   /**
-   * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-   * by using the
+   * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+   * option in the config, or by using the
    * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
    * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
    */
@@ -18429,8 +20878,8 @@ interface PageWaitForSelectorOptions {
   strict?: boolean;
 
   /**
-   * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-   * by using the
+   * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+   * option in the config, or by using the
    * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
    * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
    */
@@ -18446,9 +20895,10 @@ interface PageWaitForFunctionOptions {
   polling?: number|"raf";
 
   /**
-   * maximum time to wait for in milliseconds. Defaults to `30000` (30 seconds). Pass `0` to disable timeout. The
-   * default value can be changed by using the
-   * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout).
+   * Maximum time to wait for in milliseconds. Defaults to `0` - no timeout. The default value can be changed via
+   * `actionTimeout` option in the config, or by using the
+   * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
+   * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
    */
   timeout?: number;
 }
@@ -18471,7 +20921,7 @@ export interface PageScreenshotOptions {
   caret?: "hide"|"initial";
 
   /**
-   * An object which specifies clipping of the resulting image. Should have the following fields:
+   * An object which specifies clipping of the resulting image.
    */
   clip?: {
     /**
@@ -18503,9 +20953,15 @@ export interface PageScreenshotOptions {
 
   /**
    * Specify locators that should be masked when the screenshot is taken. Masked elements will be overlaid with a pink
-   * box `#FF00FF` that completely covers its bounding box.
+   * box `#FF00FF` (customized by `maskColor`) that completely covers its bounding box.
    */
   mask?: Array<Locator>;
+
+  /**
+   * Specify the color of the overlay box for masked elements, in
+   * [CSS color format](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value). Default color is pink `#FF00FF`.
+   */
+  maskColor?: string;
 
   /**
    * Hides default white background and allows capturing screenshots with transparency. Not applicable to `jpeg` images.
@@ -18535,8 +20991,15 @@ export interface PageScreenshotOptions {
   scale?: "css"|"device";
 
   /**
-   * Maximum time in milliseconds, defaults to 30 seconds, pass `0` to disable timeout. The default value can be changed
-   * by using the
+   * Text of the stylesheet to apply while making the screenshot. This is where you can hide dynamic elements, make
+   * elements invisible or change their properties to help you creating repeatable screenshots. This stylesheet pierces
+   * the Shadow DOM and applies to the inner frames.
+   */
+  style?: string;
+
+  /**
+   * Maximum time in milliseconds. Defaults to `0` - no timeout. The default value can be changed via `actionTimeout`
+   * option in the config, or by using the
    * [browserContext.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-browsercontext#browser-context-set-default-timeout)
    * or [page.setDefaultTimeout(timeout)](https://playwright.dev/docs/api/class-page#page-set-default-timeout) methods.
    */
@@ -18567,6 +21030,8 @@ type Devices = {
   "Galaxy S9+ landscape": DeviceDescriptor;
   "Galaxy Tab S4": DeviceDescriptor;
   "Galaxy Tab S4 landscape": DeviceDescriptor;
+  "iPad (gen 5)": DeviceDescriptor;
+  "iPad (gen 5) landscape": DeviceDescriptor;
   "iPad (gen 6)": DeviceDescriptor;
   "iPad (gen 6) landscape": DeviceDescriptor;
   "iPad (gen 7)": DeviceDescriptor;
@@ -18615,6 +21080,14 @@ type Devices = {
   "iPhone 13 Pro Max landscape": DeviceDescriptor;
   "iPhone 13 Mini": DeviceDescriptor;
   "iPhone 13 Mini landscape": DeviceDescriptor;
+  "iPhone 14": DeviceDescriptor;
+  "iPhone 14 landscape": DeviceDescriptor;
+  "iPhone 14 Plus": DeviceDescriptor;
+  "iPhone 14 Plus landscape": DeviceDescriptor;
+  "iPhone 14 Pro": DeviceDescriptor;
+  "iPhone 14 Pro landscape": DeviceDescriptor;
+  "iPhone 14 Pro Max": DeviceDescriptor;
+  "iPhone 14 Pro Max landscape": DeviceDescriptor;
   "Kindle Fire HDX": DeviceDescriptor;
   "Kindle Fire HDX landscape": DeviceDescriptor;
   "LG Optimus L70": DeviceDescriptor;
@@ -18653,6 +21126,8 @@ type Devices = {
   "Pixel 4a (5G) landscape": DeviceDescriptor;
   "Pixel 5": DeviceDescriptor;
   "Pixel 5 landscape": DeviceDescriptor;
+  "Pixel 7": DeviceDescriptor;
+  "Pixel 7 landscape": DeviceDescriptor;
   "Moto G4": DeviceDescriptor;
   "Moto G4 landscape": DeviceDescriptor;
   "Desktop Chrome HiDPI": DeviceDescriptor;

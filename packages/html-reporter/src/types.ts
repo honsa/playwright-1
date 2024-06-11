@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { Metadata } from '@protocol/channels';
+import type { Metadata } from '@playwright/test';
 
 export type Stats = {
   total: number;
@@ -23,7 +23,11 @@ export type Stats = {
   flaky: number;
   skipped: number;
   ok: boolean;
-  duration: number;
+};
+
+export type FilteredStats = {
+  total: number,
+  duration: number,
 };
 
 export type Location = {
@@ -37,6 +41,9 @@ export type HTMLReport = {
   files: TestFileSummary[];
   stats: Stats;
   projectNames: string[];
+  startTime: number;
+  duration: number;
+  errors: string[];  // Top-level errors that are not attributed to any test.
 };
 
 export type TestFile = {
@@ -52,13 +59,16 @@ export type TestFileSummary = {
   stats: Stats;
 };
 
+export type TestCaseAnnotation = { type: string, description?: string, url?: string};
+
 export type TestCaseSummary = {
   testId: string,
   title: string;
   path: string[];
   projectName: string;
   location: Location;
-  annotations: { type: string, description?: string }[];
+  annotations: TestCaseAnnotation[];
+  tags: string[];
   outcome: 'skipped' | 'expected' | 'unexpected' | 'flaky';
   duration: number;
   ok: boolean;

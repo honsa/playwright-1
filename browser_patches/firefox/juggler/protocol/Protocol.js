@@ -15,6 +15,11 @@ browserTypes.TargetInfo = {
   openerId: t.Optional(t.String),
 };
 
+browserTypes.UserPreference = {
+  name: t.String,
+  value: t.Any,
+};
+
 browserTypes.CookieOptions = {
   name: t.String,
   value: t.String,
@@ -188,6 +193,7 @@ networkTypes.HTTPHeader = {
 networkTypes.HTTPCredentials = {
   username: t.String,
   password: t.String,
+  origin: t.Optional(t.String),
 };
 
 networkTypes.SecurityDetails = {
@@ -227,6 +233,7 @@ const Browser = {
       uuid: t.String,
       browserContextId: t.Optional(t.String),
       pageTargetId: t.String,
+      frameId: t.String,
       url: t.String,
       suggestedFileName: t.String,
     },
@@ -244,6 +251,7 @@ const Browser = {
     'enable': {
       params: {
         attachToDefaultContext: t.Boolean,
+        userPrefs: t.Optional(t.Array(browserTypes.UserPreference)),
       },
     },
     'createBrowserContext': {
@@ -280,6 +288,7 @@ const Browser = {
         headers: t.Array(networkTypes.HTTPHeader),
       },
     },
+    'clearCache': {},
     'setBrowserProxy': {
       params: {
         type: t.Enum(['http', 'https', 'socks', 'socks4']),
@@ -573,6 +582,8 @@ const Runtime = {
     'executionContextDestroyed': {
       executionContextId: t.String,
     },
+    'executionContextsCleared': {
+    },
     'console': {
       executionContextId: t.String,
       args: t.Array(runtimeTypes.RemoteObject),
@@ -656,7 +667,6 @@ const Page = {
     'navigationStarted': {
       frameId: t.String,
       navigationId: t.String,
-      url: t.String,
     },
     'navigationCommitted': {
       frameId: t.String,
@@ -820,7 +830,6 @@ const Page = {
       },
       returns: {
         navigationId: t.Nullable(t.String),
-        navigationURL: t.Nullable(t.String),
       }
     },
     'goBack': {
@@ -840,14 +849,13 @@ const Page = {
       },
     },
     'reload': {
-      params: {
-        frameId: t.String,
-      },
+      params: { },
     },
     'adoptNode': {
       params: {
         frameId: t.String,
-        objectId: t.String,
+        // Missing objectId adopts frame owner.
+        objectId: t.Optional(t.String),
         executionContextId: t.String,
       },
       returns: {
@@ -858,6 +866,7 @@ const Page = {
       params: {
         mimeType: t.Enum(['image/png', 'image/jpeg']),
         clip: pageTypes.Clip,
+        quality: t.Optional(t.Number),
         omitDeviceScaleFactor: t.Optional(t.Boolean),
       },
       returns: {
@@ -903,7 +912,7 @@ const Page = {
     },
     'dispatchMouseEvent': {
       params: {
-        type: t.String,
+        type: t.Enum(['mousedown', 'mousemove', 'mouseup']),
         button: t.Number,
         x: t.Number,
         y: t.Number,

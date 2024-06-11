@@ -3,8 +3,6 @@ id: testing-library
 title: "Migrating from Testing Library"
 ---
 
-<!-- TOC -->
-
 ## Migration principles
 
 This guide describes migration to Playwright's [Experimental Component Testing](./test-components) from [DOM Testing Library](https://testing-library.com/docs/dom-testing-library/intro/), [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/), [Vue Testing Library](https://testing-library.com/docs/vue-testing-library/intro) and [Svelte Testing Library](https://testing-library.com/docs/svelte-testing-library/intro).
@@ -15,20 +13,25 @@ If you use DOM Testing Library in the browser (for example, you bundle end-to-en
 
 ## Cheat Sheet
 
-| Testing Library                                         | Playwright                                    |
-|---------------------------------------------------------|-----------------------------------------------|
-| [screen](https://testing-library.com/docs/queries/about#screen) | [page](./api/class-page) and [component](./api/class-locator) |
-| [queries](https://testing-library.com/docs/queries/about) | [locators](./locators) |
-| [async helpers](https://testing-library.com/docs/dom-testing-library/api-async) | [assertions](./test-assertions) |
-| [user events](https://testing-library.com/docs/user-event/intro) | [actions](./api/class-locator) |
-| `await user.click(screen.getByText('Click me'))`        | `await component.getByText('Click me').click()` |
-| `await user.click(await screen.findByText('Click me'))` | `await component.getByText('Click me').click()` |
-| `await user.type(screen.getByLabel('Password'), 'secret')` | `await component.getByLabel('Password').fill('secret')` |
-| `expect(screen.getByLabel('Password')).toHaveValue('secret')` | `await expect(component.getByLabel('Password')).toHaveValue('secret')` |
-| `screen.findByText('...')`                              | `component.getByText('...')`                      |
-| `screen.getByTestId('...')`                             | `component.getByTestId('...')`                    |
-| `screen.queryByPlaceholderText('...')`                  | `component.getByPlaceholder('...')`            |
-| `screen.getByRole('button', { pressed: true })`         | `component.getByRole('button', { pressed: true })`|
+| Testing Library                                                                 | Playwright                                                             |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [screen](https://testing-library.com/docs/queries/about#screen)                 | [page](./api/class-page) and [component](./api/class-locator)          |
+| [queries](https://testing-library.com/docs/queries/about)                       | [locators](./locators)                                                 |
+| [async helpers](https://testing-library.com/docs/dom-testing-library/api-async) | [assertions](./test-assertions)                                        |
+| [user events](https://testing-library.com/docs/user-event/intro)                | [actions](./api/class-locator)                                         |
+| `await user.click(screen.getByText('Click me'))`                                | `await component.getByText('Click me').click()`                        |
+| `await user.click(await screen.findByText('Click me'))`                         | `await component.getByText('Click me').click()`                        |
+| `await user.type(screen.getByLabelText('Password'), 'secret')`                  | `await component.getByLabel('Password').fill('secret')`                |
+| `expect(screen.getByLabelText('Password')).toHaveValue('secret')`               | `await expect(component.getByLabel('Password')).toHaveValue('secret')` |
+| `screen.getByRole('button', { pressed: true })`                                 | `component.getByRole('button', { pressed: true })`                     |
+| `screen.getByLabelText('...')`                                                  | `component.getByLabel('...')`                                          |
+| `screen.queryByPlaceholderText('...')`                                          | `component.getByPlaceholder('...')`                                    |
+| `screen.findByText('...')`                                                      | `component.getByText('...')`                                           |
+| `screen.getByTestId('...')`                                                     | `component.getByTestId('...')`                                         |
+| `render(<Component />);`                                                        | `mount(<Component />);`                                                |
+| `const { unmount } = render(<Component />);`                                    | `const { unmount } = await mount(<Component />);`                      |
+| `const { rerender } = render(<Component />);`                                   | `const { update } = await mount(<Component />);`                       |
+
 
 ## Example
 
@@ -39,18 +42,18 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-test('should sign in', async () => {
+test('sign in', async () => {
   // Setup the page.
   const user = userEvent.setup();
   render(<SignInPage />);
 
   // Perform actions.
-  await user.type(screen.getByLabel('Username'), 'John');
-  await user.type(screen.getByLabel('Password'), 'secret');
-  await user.click(screen.getByText('Sign in'));
+  await user.type(screen.getByLabelText('Username'), 'John');
+  await user.type(screen.getByLabelText('Password'), 'secret');
+  await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
   // Verify signed in state by waiting until "Welcome" message appears.
-  await screen.findByText('Welcome, John');
+  expect(await screen.findByText('Welcome, John')).toBeInTheDocument();
 });
 ```
 
@@ -59,14 +62,14 @@ Line-by-line migration to Playwright Test:
 ```js
 const { test, expect } = require('@playwright/experimental-ct-react'); // 1
 
-test('should sign in', async ({ page, mount }) => { // 2
+test('sign in', async ({ mount }) => { // 2
   // Setup the page.
   const component = await mount(<SignInPage />); // 3
 
   // Perform actions.
-  await component.getByText('Username').fill('John'); // 4
-  await component.getByText('Password').fill('secret');
-  await component.getByText('Sign in').click();
+  await component.getByLabel('Username').fill('John'); // 4
+  await component.getByLabel('Password').fill('secret');
+  await component.getByRole('button', { name: 'Sign in' }).click();
 
   // Verify signed in state by waiting until "Welcome" message appears.
   await expect(component.getByText('Welcome, John')).toBeVisible(); // 5
@@ -92,16 +95,16 @@ Playwright includes [assertions](./test-assertions) that automatically wait for 
 ```js
 // Testing Library
 await waitFor(() => {
-  expect(getByText('the lion king')).toBeInTheDocument()
-})
-await waitForElementToBeRemoved(() => queryByText('the mummy'))
+  expect(getByText('the lion king')).toBeInTheDocument();
+});
+await waitForElementToBeRemoved(() => queryByText('the mummy'));
 
 // Playwright
-await expect(page.getByText('the lion king')).toBeVisible()
-await expect(page.getByText('the mummy')).toBeHidden()
+await expect(page.getByText('the lion king')).toBeVisible();
+await expect(page.getByText('the mummy')).toBeHidden();
 ```
 
-When you cannot find a suitable assertion, use [`expect.poll`](./test-assertions#polling) instead.
+When you cannot find a suitable assertion, use [`expect.poll`](./test-assertions#expectpoll) instead.
 
 ```js
 await expect.poll(async () => {
@@ -116,12 +119,12 @@ You can create a locator inside another locator with [`method: Locator.locator`]
 
 ```js
 // Testing Library
-const messages = document.getElementById('messages')
-const helloMessage = within(messages).getByText('hello')
+const messages = document.getElementById('messages');
+const helloMessage = within(messages).getByText('hello');
 
 // Playwright
-const messages = component.locator('id=messages')
-const helloMessage = messages.getByText('hello')
+const messages = component.getByTestId('messages');
+const helloMessage = messages.getByText('hello');
 ```
 
 ## Playwright Test Super Powers
@@ -132,12 +135,14 @@ Once you're on Playwright Test, you get a lot!
 - Run tests across **all web engines** (Chrome, Firefox, Safari) on **any popular operating system** (Windows, macOS, Ubuntu)
 - Full support for multiple origins, [(i)frames](./api/class-frame), [tabs and contexts](./pages)
 - Run tests in isolation in parallel across multiple browsers
-- Built-in test artifact collection: [video recording](./test-configuration#record-video), [screenshots](./test-configuration#automatic-screenshots) and [playwright traces](./test-configuration#record-test-trace)
+- Built-in test [artifact collection](./test-use-options.md#recording-options)
 
 You also get all these ✨ awesome tools ✨ that come bundled with Playwright Test:
-- [Playwright Inspector](./debug.md)
-- [Playwright Test Code generation](./auth#code-generation)
-- [Playwright Tracing](./trace-viewer) for post-mortem debugging
+- [Visual Studio Code integration](./getting-started-vscode.md)
+- [UI mode](./test-ui-mode.md) for debugging tests with a time travel experience complete with watch mode.
+- [Playwright Inspector](./debug.md#playwright-inspector)
+- [Playwright Test Code generation](./codegen-intro.md)
+- [Playwright Tracing](./trace-viewer.md) for post-mortem debugging
 
 ## Further Reading
 
@@ -145,7 +150,6 @@ Learn more about Playwright Test runner:
 
 - [Getting Started](./intro)
 - [Experimental Component Testing](./test-components)
-- [Locators](./api/class-locator)
-- [Selectors](./selectors)
+- [Locators](./locators.md)
 - [Assertions](./test-assertions)
 - [Auto-waiting](./actionability)

@@ -15,12 +15,10 @@
  * limitations under the License.
  */
 
-import { test as it, expect } from './pageTest';
+import type { Page } from '@playwright/test';
+import { test as it, expect, rafraf } from './pageTest';
 
-async function giveItAChanceToFill(page) {
-  for (let i = 0; i < 5; i++)
-    await page.evaluate(() => new Promise(f => requestAnimationFrame(() => requestAnimationFrame(f))));
-}
+const giveItAChanceToFill = (page: Page) => rafraf(page, 5);
 
 it('should fill textarea @smoke', async ({ page, server }) => {
   await page.goto(server.PREFIX + '/input/textarea.html');
@@ -40,7 +38,7 @@ it('should throw on unsupported inputs', async ({ page, server }) => {
     await page.$eval('input', (input, type) => input.setAttribute('type', type), type);
     let error = null;
     await page.fill('input', '').catch(e => error = e);
-    expect(error.message).toContain(`input of type "${type}" cannot be filled`);
+    expect(error.message).toContain(`Input of type "${type}" cannot be filled`);
   }
 });
 
@@ -88,6 +86,50 @@ it('should fill date input after clicking', async ({ page, server }) => {
   await page.fill('input', '2020-03-02');
   expect(await page.$eval('input', input => input.value)).toBe('2020-03-02');
 });
+
+for (const [type, value] of Object.entries({
+  'color': '#aaaaaa',
+  'date': '2020-03-02',
+  'time': '13:15',
+  'datetime-local': '2020-03-02T13:15:30',
+  'month': '2020-03',
+  'range': '42',
+  'week': '2020-W50'
+})) {
+  it(`input event.composed should be true and cross shadow dom boundary - ${type}`, async ({ page, server, browserName, isWindows }) => {
+    it.info().annotations.push({ type: 'issue', description: 'https://github.com/microsoft/playwright/issues/28726' });
+    it.skip(browserName !== 'chromium' && ['month', 'week'].includes(type), 'Some browser/platforms do not implement certain input types');
+    it.skip(browserName === 'webkit' && isWindows && ['color', 'date', 'time', 'datetime-local'].includes(type), 'Some browser/platforms do not implement certain input types');
+    await page.goto(server.EMPTY_PAGE);
+    await page.setContent(`<body><script>
+    const div = document.createElement('div');
+    const shadowRoot = div.attachShadow({mode: 'open'});
+    shadowRoot.innerHTML = '<input type=${type}></input>';
+    document.body.appendChild(div);
+  </script></body>`);
+    await page.locator('body').evaluate(select => {
+      (window as any).firedBodyEvents = [];
+      for (const event of ['input', 'change']) {
+        select.addEventListener(event, e => {
+          (window as any).firedBodyEvents.push(e.type + ':' + e.composed);
+        }, false);
+      }
+    });
+
+    await page.locator('input').evaluate(select => {
+      (window as any).firedEvents = [];
+      for (const event of ['input', 'change']) {
+        select.addEventListener(event, e => {
+          (window as any).firedEvents.push(e.type + ':' + e.composed);
+        }, false);
+      }
+    });
+    await page.locator('input').fill(value);
+
+    expect(await page.evaluate(() => window['firedEvents'])).toEqual(['input:true', 'change:false']);
+    expect(await page.evaluate(() => window['firedBodyEvents'])).toEqual(['input:true']);
+  });
+}
 
 it('should throw on incorrect date', async ({ page, browserName }) => {
   it.skip(browserName === 'webkit', 'WebKit does not support date inputs');
@@ -198,7 +240,7 @@ it('should throw nice error without injected script stack when element is not an
   let error = null;
   await page.goto(server.PREFIX + '/input/textarea.html');
   await page.fill('body', '').catch(e => error = e);
-  expect(error.message).toContain('page.fill: Error: Element is not an <input>, <textarea> or [contenteditable] element\n=========================== logs');
+  expect(error.message).toContain('page.fill: Error: Element is not an <input>, <textarea> or [contenteditable] element\nCall log:');
 });
 
 it('should throw if passed a non-string value', async ({ page, server }) => {

@@ -44,7 +44,7 @@ it('should respect routes from browser context', async function({ browser, serve
   await page.setContent('<a target=_blank rel=noopener href="empty.html">link</a>');
   let intercepted = false;
   await context.route('**/empty.html', route => {
-    route.continue();
+    void route.continue();
     intercepted = true;
   });
   await Promise.all([
@@ -136,9 +136,9 @@ it('should use viewport size from window features', async function({ browser, se
     page.evaluate(async () => {
       const win = window.open(window.location.href, 'Title', 'toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=600,height=300,top=0,left=0');
       await new Promise<void>(resolve => {
-        const interval = setInterval(() => {
+        const interval = window.builtinSetInterval(() => {
           if (win.innerWidth === 600 && win.innerHeight === 300) {
-            clearInterval(interval);
+            window.builtinClearInterval(interval);
             resolve();
           }
         }, 10);
@@ -161,7 +161,7 @@ it('should respect routes from browser context when using window.open', async fu
   await page.goto(server.EMPTY_PAGE);
   let intercepted = false;
   await context.route('**/empty.html', route => {
-    route.continue();
+    void route.continue();
     intercepted = true;
   });
   await Promise.all([
@@ -261,6 +261,19 @@ it('should not throttle rAF in the opener page', async ({ page, server }) => {
   ]);
 });
 
+it('should not throw when click closes popup', async ({ browserName, page, server }) => {
+  it.fixme(browserName === 'firefox');
+  await page.goto(server.EMPTY_PAGE);
+  const [popup] = await Promise.all([
+    page.waitForEvent('popup'),
+    page.evaluate(() => {
+      const w = window.open('about:blank');
+      w.document.body.innerHTML = `<button onclick="window.close()">close</button>`;
+    }),
+  ]);
+  await popup.getByRole('button').click();
+});
+
 async function waitForRafs(page: Page, count: number): Promise<void> {
   await page.evaluate(count => new Promise<void>(resolve => {
     const onRaf = () => {
@@ -268,8 +281,8 @@ async function waitForRafs(page: Page, count: number): Promise<void> {
       if (!count)
         resolve();
       else
-        requestAnimationFrame(onRaf);
+        window.builtinRequestAnimationFrame(onRaf);
     };
-    requestAnimationFrame(onRaf);
+    window.builtinRequestAnimationFrame(onRaf);
   }), count);
 }

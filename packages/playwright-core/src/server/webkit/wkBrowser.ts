@@ -30,10 +30,11 @@ import type { Protocol } from './protocol';
 import type { PageProxyMessageReceivedPayload } from './wkConnection';
 import { kPageProxyMessageReceived, WKConnection, WKSession } from './wkConnection';
 import { WKPage } from './wkPage';
-import { kBrowserClosedError } from '../../common/errors';
+import { TargetClosedError } from '../errors';
+import type { SdkObject } from '../instrumentation';
 
-const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15';
-const BROWSER_VERSION = '16.4';
+const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15';
+const BROWSER_VERSION = '17.4';
 
 export class WKBrowser extends Browser {
   private readonly _connection: WKConnection;
@@ -42,14 +43,15 @@ export class WKBrowser extends Browser {
   readonly _wkPages = new Map<string, WKPage>();
   private readonly _eventListeners: RegisteredListener[];
 
-  static async connect(transport: ConnectionTransport, options: BrowserOptions): Promise<WKBrowser> {
-    const browser = new WKBrowser(transport, options);
+  static async connect(parent: SdkObject, transport: ConnectionTransport, options: BrowserOptions): Promise<WKBrowser> {
+    const browser = new WKBrowser(parent, transport, options);
     if ((options as any).__testHookOnConnectToBrowser)
       await (options as any).__testHookOnConnectToBrowser();
     const promises: Promise<any>[] = [
       browser._browserSession.send('Playwright.enable'),
     ];
     if (options.persistent) {
+      options.persistent.userAgent ||= DEFAULT_USER_AGENT;
       browser._defaultContext = new WKBrowserContext(browser, undefined, options.persistent);
       promises.push((browser._defaultContext as WKBrowserContext)._initialize());
     }
@@ -57,8 +59,8 @@ export class WKBrowser extends Browser {
     return browser;
   }
 
-  constructor(transport: ConnectionTransport, options: BrowserOptions) {
-    super(options);
+  constructor(parent: SdkObject, transport: ConnectionTransport, options: BrowserOptions) {
+    super(parent, options);
     this._connection = new WKConnection(transport, this._onDisconnect.bind(this), options.protocolLogger, options.browserLogsCollector);
     this._browserSession = this._connection.browserSession;
     this._eventListeners = [
@@ -76,16 +78,19 @@ export class WKBrowser extends Browser {
 
   _onDisconnect() {
     for (const wkPage of this._wkPages.values())
-      wkPage.dispose(true);
+      wkPage.didClose();
+    this._wkPages.clear();
     for (const video of this._idToVideo.values())
-      video.artifact.reportFinished(kBrowserClosedError);
+      video.artifact.reportFinished(new TargetClosedError());
     this._idToVideo.clear();
     this._didClose();
   }
 
   async doCreateNewContext(options: channels.BrowserNewContextParams): Promise<BrowserContext> {
     const createOptions = options.proxy ? {
-      proxyServer: options.proxy.server,
+      // Enable socks5 hostname resolution on Windows. Workaround can be removed once fixed upstream.
+      // See https://github.com/microsoft/playwright/issues/20451
+      proxyServer: process.platform === 'win32' ? options.proxy.server.replace(/^socks5:\/\//, 'socks5h://') : options.proxy.server,
       proxyBypassList: options.proxy.bypass
     } : undefined;
     const { browserContextId } = await this._browserSession.send('Playwright.createContext', createOptions);
@@ -117,7 +122,7 @@ export class WKBrowser extends Browser {
     // here by simulating cancelled provisional load which matches downloads from network.
     //
     // TODO: this is racy, because download might be unrelated any navigation, and we will
-    // abort navgitation that is still running. We should be able to fix this by
+    // abort navigation that is still running. We should be able to fix this by
     // instrumenting policy decision start/proceed/cancel.
     page._page._frameManager.frameAbortedNavigation(payload.frameId, 'Download is starting');
     let originPage = page._initializedPage;
@@ -160,7 +165,7 @@ export class WKBrowser extends Browser {
       context = this._defaultContext as WKBrowserContext;
     if (!context)
       return;
-    const pageProxySession = new WKSession(this._connection, pageProxyId, `Target closed`, (message: any) => {
+    const pageProxySession = new WKSession(this._connection, pageProxyId, (message: any) => {
       this._connection.rawSend({ ...message, pageProxyId });
     });
     const opener = event.openerId ? this._wkPages.get(event.openerId) : undefined;
@@ -174,7 +179,6 @@ export class WKBrowser extends Browser {
     if (!wkPage)
       return;
     wkPage.didClose();
-    wkPage.dispose(false);
     this._wkPages.delete(pageProxyId);
   }
 
@@ -209,6 +213,7 @@ export class WKBrowserContext extends BrowserContext {
 
   constructor(browser: WKBrowser, browserContextId: string | undefined, options: channels.BrowserNewContextParams) {
     super(browser, options, browserContextId);
+    this._validateEmulatedViewport(options.viewport);
     this._authenticateProxyViaHeader();
   }
 
@@ -217,7 +222,7 @@ export class WKBrowserContext extends BrowserContext {
     const browserContextId = this._browserContextId;
     const promises: Promise<any>[] = [super._initialize()];
     promises.push(this._browser._browserSession.send('Playwright.setDownloadBehavior', {
-      behavior: this._options.acceptDownloads ? 'allow' : 'deny',
+      behavior: this._options.acceptDownloads === 'accept' ? 'allow' : 'deny',
       downloadPath: this._browser.options.downloadsPath,
       browserContextId
     }));
@@ -262,12 +267,12 @@ export class WKBrowserContext extends BrowserContext {
     const cc = network.rewriteCookies(cookies).map(c => ({
       ...c,
       session: c.expires === -1 || c.expires === undefined,
-      expires: c.expires && c.expires !== -1 ? c.expires * 1000 : c.expires
+      expires: c.expires && c.expires !== -1 ? c.expires * 1000 : c.expires,
     })) as Protocol.Playwright.SetCookieParam[];
     await this._browser._browserSession.send('Playwright.setCookies', { cookies: cc, browserContextId: this._browserContextId });
   }
 
-  async clearCookies() {
+  async doClearCookies() {
     await this._browser._browserSession.send('Playwright.deleteAllCookies', { browserContextId: this._browserContextId });
   }
 
@@ -337,11 +342,18 @@ export class WKBrowserContext extends BrowserContext {
 
   onClosePersistent() {}
 
-  async doClose() {
+  override async clearCache(): Promise<void> {
+    // We use ephemeral contexts so there is no disk cache.
+    await this._browser._browserSession.send('Playwright.clearMemoryCache', {
+      browserContextId: this._browserContextId!
+    });
+  }
+
+  async doClose(reason: string | undefined) {
     if (!this._browserContextId) {
       await Promise.all(this._wkPages().map(wkPage => wkPage._stopVideo()));
       // Closing persistent context should close the browser.
-      await this._browser.close();
+      await this._browser.close({ reason });
     } else {
       await this._browser._browserSession.send('Playwright.deleteContext', { browserContextId: this._browserContextId });
       this._browser._contexts.delete(this._browserContextId);
@@ -350,5 +362,12 @@ export class WKBrowserContext extends BrowserContext {
 
   async cancelDownload(uuid: string) {
     await this._browser._browserSession.send('Playwright.cancelDownload', { uuid });
+  }
+
+  _validateEmulatedViewport(viewportSize?: types.Size | null) {
+    if (!viewportSize)
+      return;
+    if (process.platform === 'win32' && this._browser.options.headful && (viewportSize.width < 250 || viewportSize.height < 240))
+      throw new Error(`WebKit on Windows has a minimal viewport of 250x240.`);
   }
 }

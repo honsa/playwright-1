@@ -44,14 +44,14 @@ Continues route's request with optional overrides.
 **Usage**
 
 ```js
-await page.route('**/*', (route, request) => {
+await page.route('**/*', async (route, request) => {
   // Override headers
   const headers = {
     ...request.headers(),
     foo: 'foo-value', // set "foo" header
     bar: undefined, // remove "bar" header
   };
-  route.continue({headers});
+  await route.continue({ headers });
 });
 ```
 
@@ -70,7 +70,7 @@ async def handle(route, request):
     # override headers
     headers = {
         **request.headers,
-        "foo": "foo-value" # set "foo" header
+        "foo": "foo-value", # set "foo" header
         "bar": None # remove "bar" header
     }
     await route.continue_(headers=headers)
@@ -83,7 +83,7 @@ def handle(route, request):
     # override headers
     headers = {
         **request.headers,
-        "foo": "foo-value" # set "foo" header
+        "foo": "foo-value", # set "foo" header
         "bar": None # remove "bar" header
     }
     route.continue_(headers=headers)
@@ -92,13 +92,17 @@ page.route("**/*", handle)
 ```
 
 ```csharp
-await page.RouteAsync("**/*", route =>
+await page.RouteAsync("**/*", async route =>
 {
     var headers = new Dictionary<string, string>(route.Request.Headers) { { "foo", "bar" } };
     headers.Remove("origin");
-    route.ContinueAsync(headers);
+    await route.ContinueAsync(new() { Headers = headers });
 });
 ```
+
+**Details**
+
+Note that any overrides such as [`option: url`] or [`option: headers`] only apply to the request being routed. If this request results in a redirect, overrides will not be applied to the new redirected request. If you want to propagate a header through redirects, use the combination of [`method: Route.fetch`] and [`method: Route.fulfill`] instead.
 
 ### option: Route.continue.url
 * since: v1.8
@@ -114,7 +118,14 @@ If set changes the request method (e.g. GET or POST).
 
 ### option: Route.continue.postData
 * since: v1.8
-* langs: js, python, java
+* langs: js, python
+- `postData` <[string]|[Buffer]|[Serializable]>
+
+If set changes the post data of request.
+
+### option: Route.continue.postData
+* since: v1.8
+* langs: java
 - `postData` <[string]|[Buffer]>
 
 If set changes the post data of request.
@@ -143,17 +154,17 @@ in the end will be aborted by the first registered route.
 **Usage**
 
 ```js
-await page.route('**/*', route => {
+await page.route('**/*', async route => {
   // Runs last.
-  route.abort();
+  await route.abort();
 });
-await page.route('**/*', route => {
+await page.route('**/*', async route => {
   // Runs second.
-  route.fallback();
+  await route.fallback();
 });
-await page.route('**/*', route => {
+await page.route('**/*', async route => {
   // Runs first.
-  route.fallback();
+  await route.fallback();
 });
 ```
 
@@ -209,9 +220,9 @@ GET requests vs POST requests as in the example below.
 
 ```js
 // Handle GET requests.
-await page.route('**/*', route => {
+await page.route('**/*', async route => {
   if (route.request().method() !== 'GET') {
-    route.fallback();
+    await route.fallback();
     return;
   }
   // Handling GET only.
@@ -219,9 +230,9 @@ await page.route('**/*', route => {
 });
 
 // Handle POST requests.
-await page.route('**/*', route => {
+await page.route('**/*', async route => {
   if (route.request().method() !== 'POST') {
-    route.fallback();
+    await route.fallback();
     return;
   }
   // Handling POST only.
@@ -253,17 +264,17 @@ page.route("**/*", route -> {
 
 ```python async
 # Handle GET requests.
-def handle_post(route):
+async def handle_get(route):
     if route.request.method != "GET":
-        route.fallback()
+        await route.fallback()
         return
   # Handling GET only.
   # ...
 
 # Handle POST requests.
-def handle_post(route):
+async def handle_post(route):
     if route.request.method != "POST":
-        route.fallback()
+        await route.fallback()
         return
   # Handling POST only.
   # ...
@@ -274,7 +285,7 @@ await page.route("**/*", handle_post)
 
 ```python sync
 # Handle GET requests.
-def handle_post(route):
+def handle_get(route):
     if route.request.method != "GET":
         route.fallback()
         return
@@ -319,14 +330,14 @@ One can also modify request while falling back to the subsequent handler, that w
 route handler can modify url, method, headers and postData of the request.
 
 ```js
-await page.route('**/*', (route, request) => {
+await page.route('**/*', async (route, request) => {
   // Override headers
   const headers = {
     ...request.headers(),
     foo: 'foo-value', // set "foo" header
     bar: undefined, // remove "bar" header
   };
-  route.fallback({headers});
+  await route.fallback({ headers });
 });
 ```
 
@@ -345,7 +356,7 @@ async def handle(route, request):
     # override headers
     headers = {
         **request.headers,
-        "foo": "foo-value" # set "foo" header
+        "foo": "foo-value", # set "foo" header
         "bar": None # remove "bar" header
     }
     await route.fallback(headers=headers)
@@ -358,7 +369,7 @@ def handle(route, request):
     # override headers
     headers = {
         **request.headers,
-        "foo": "foo-value" # set "foo" header
+        "foo": "foo-value", # set "foo" header
         "bar": None # remove "bar" header
     }
     route.fallback(headers=headers)
@@ -367,11 +378,11 @@ page.route("**/*", handle)
 ```
 
 ```csharp
-await page.RouteAsync("**/*", route =>
+await page.RouteAsync("**/*", async route =>
 {
     var headers = new Dictionary<string, string>(route.Request.Headers) { { "foo", "foo-value" } };
     headers.Remove("bar");
-    route.FallbackAsync(headers);
+    await route.FallbackAsync(new() { Headers = headers });
 });
 ```
 
@@ -390,7 +401,14 @@ If set changes the request method (e.g. GET or POST).
 
 ### option: Route.fallback.postData
 * since: v1.23
-* langs: js, python, java
+* langs: js, python
+- `postData` <[string]|[Buffer]|[Serializable]>
+
+If set changes the post data of request.
+
+### option: Route.fallback.postData
+* since: v1.23
+* langs: java
 - `postData` <[string]|[Buffer]>
 
 If set changes the post data of request.
@@ -440,7 +458,7 @@ page.route("https://dog.ceo/api/breeds/list/all", route -> {
 
 ```python async
 async def handle(route):
-    response = await route.fulfill()
+    response = await route.fetch()
     json = await response.json()
     json["message"]["big_red_dog"] = []
     await route.fulfill(response=response, json=json)
@@ -450,7 +468,7 @@ await page.route("https://dog.ceo/api/breeds/list/all", handle)
 
 ```python sync
 def handle(route):
-    response = route.fulfill()
+    response = route.fetch()
     json = response.json()
     json["message"]["big_red_dog"] = []
     route.fulfill(response=response, json=json)
@@ -468,11 +486,28 @@ await page.RouteAsync("https://dog.ceo/api/breeds/list/all", async route =>
 });
 ```
 
+**Details**
+
+Note that [`option: headers`] option will apply to the fetched request as well as any redirects initiated by it. If you want to only apply [`option: headers`] to the original request, but not to redirects, look into [`method: Route.continue`] instead.
+
 ### option: Route.fetch.url
 * since: v1.29
 - `url` <[string]>
 
 If set changes the request URL. New URL must have same protocol as original one.
+
+### option: Route.fetch.maxRedirects
+* since: v1.31
+- `maxRedirects` <[int]>
+
+Maximum number of request redirects that will be followed automatically. An error will be thrown if the number is exceeded.
+Defaults to `20`. Pass `0` to not follow redirects.
+
+### option: Route.fetch.timeout
+* since: v1.33
+- `timeout` <[float]>
+
+Request timeout in milliseconds. Defaults to `30000` (30 seconds). Pass `0` to disable timeout.
 
 ### option: Route.fetch.method
 * since: v1.29
@@ -480,10 +515,23 @@ If set changes the request URL. New URL must have same protocol as original one.
 
 If set changes the request method (e.g. GET or POST).
 
-### option: Route.fetch.postData = %%-js-python-csharp-fetch-option-data-%%
+### option: Route.fetch.postData
+* langs: js, python
 * since: v1.29
+- `postData` <[string]|[Buffer]|[Serializable]>
 
-### option: Route.fetch.data
+Allows to set post data of the request. If the data parameter is an object, it will be serialized to json string
+and `content-type` header will be set to `application/json` if not explicitly set. Otherwise the `content-type` header will be
+set to `application/octet-stream` if not explicitly set.
+
+### option: Route.fetch.postData
+* langs: java
+* since: v1.29
+- `postData` <[string]|[Buffer]>
+
+If set changes the post data of request.
+
+### option: Route.fetch.postData
 * since: v1.29
 * langs: csharp
 - `postData` <[Buffer]>
@@ -506,8 +554,8 @@ Fulfills route's request with given response.
 An example of fulfilling all requests with 404 responses:
 
 ```js
-await page.route('**/*', route => {
-  route.fulfill({
+await page.route('**/*', async route => {
+  await route.fulfill({
     status: 404,
     contentType: 'text/plain',
     body: 'Not Found!'
@@ -543,8 +591,8 @@ await page.RouteAsync("**/*", route => route.FulfillAsync(new ()
 {
     Status = 404,
     ContentType = "text/plain",
-    Body = "Not Found!")
-});
+    Body = "Not Found!"
+}));
 ```
 
 An example of serving static file:
@@ -611,54 +659,10 @@ Optional response body as raw bytes.
 
 ### option: Route.fulfill.json
 * since: v1.29
-* langs: js, python
+* langs: js, python, csharp
 - `json` <[Serializable]>
 
 JSON response. This method will set the content type to `application/json` if not set.
-
-**Usage**
-
-```js
-await page.route('https://dog.ceo/api/breeds/list/all', async route => {
-  const json = {
-    message: { 'test_breed': [] }
-  };
-  await route.fulfill({ json });
-});
-```
-
-```python async
-async def handle(route):
-    json = { "test_breed": [] }
-    await route.fulfill(json=json)
-
-await page.route("https://dog.ceo/api/breeds/list/all", handle)
-```
-
-```python sync
-async def handle(route):
-    json = { "test_breed": [] }
-    route.fulfill(json=json)
-
-page.route("https://dog.ceo/api/breeds/list/all", handle)
-```
-
-### option: Route.fulfill.json
-* since: v1.29
-* langs: csharp
-- `json` <[JsonElement]>
-
-JSON response. This method will set the content type to `application/json` if not set.
-
-**Usage**
-
-```csharp
-await page.RouteAsync("https://dog.ceo/api/breeds/list/all", async route =>
-{
-    var json = /* JsonElement with test payload */;
-    await route.FulfillAsync(new () { Json: json });
-});
-```
 
 ### option: Route.fulfill.path
 * since: v1.8

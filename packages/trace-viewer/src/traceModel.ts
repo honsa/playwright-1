@@ -14,233 +14,125 @@
  * limitations under the License.
  */
 
-import type { CallMetadata } from '@protocol/callMetadata';
 import type * as trace from '@trace/trace';
-import type zip from '@zip.js/zip.js';
-// @ts-ignore
-import zipImport from '@zip.js/zip.js/dist/zip-no-worker-inflate.min.js';
-import type { ContextEntry, PageEntry } from './entries';
+import { parseClientSideCallMetadata } from '../../../packages/playwright-core/src/utils/isomorphic/traceUtils';
+import type { ContextEntry } from './entries';
 import { createEmptyContext } from './entries';
-import { BaseSnapshotStorage } from './snapshotStorage';
+import { SnapshotStorage } from './snapshotStorage';
+import { TraceModernizer } from './traceModernizer';
 
-const zipjs = zipImport as typeof zip;
+export interface TraceModelBackend {
+  entryNames(): Promise<string[]>;
+  hasEntry(entryName: string): Promise<boolean>;
+  readText(entryName: string): Promise<string | undefined>;
+  readBlob(entryName: string): Promise<Blob | undefined>;
+  isLive(): boolean;
+  traceURL(): string;
+}
 
 export class TraceModel {
-  contextEntry: ContextEntry;
-  pageEntries = new Map<string, PageEntry>();
-  private _snapshotStorage: PersistentSnapshotStorage | undefined;
-  private _entries = new Map<string, zip.Entry>();
-  private _version: number | undefined;
-  private _zipReader: zip.ZipReader | undefined;
+  contextEntries: ContextEntry[] = [];
+  private _snapshotStorage: SnapshotStorage | undefined;
+  private _backend!: TraceModelBackend;
+  private _attachments = new Map<string, trace.AfterActionTraceEventAttachment>();
+  private _resourceToContentType = new Map<string, string>();
 
   constructor() {
-    this.contextEntry = createEmptyContext();
   }
 
-  private _formatUrl(trace: string) {
-    let url = trace.startsWith('http') || trace.startsWith('blob') ? trace : `file?path=${trace}`;
-    // Dropbox does not support cors.
-    if (url.startsWith('https://www.dropbox.com/'))
-      url = 'https://dl.dropboxusercontent.com/' + url.substring('https://www.dropbox.com/'.length);
-    return url;
-  }
+  async load(backend: TraceModelBackend, unzipProgress: (done: number, total: number) => void) {
+    this._backend = backend;
 
-  async load(traceURL: string, progress: (done: number, total: number) => void) {
-    this.contextEntry.traceUrl = traceURL;
-    this._zipReader = new zipjs.ZipReader( // @ts-ignore
-        new zipjs.HttpReader(this._formatUrl(traceURL), { mode: 'cors', preventHeadRequest: true }),
-        { useWebWorkers: false }) as zip.ZipReader;
-    let traceEntry: zip.Entry | undefined;
-    let networkEntry: zip.Entry | undefined;
-    for (const entry of await this._zipReader.getEntries({ onprogress: progress })) {
-      if (entry.filename.endsWith('.trace'))
-        traceEntry = entry;
-      if (entry.filename.endsWith('.network'))
-        networkEntry = entry;
-      if (entry.filename.includes('src@'))
-        this.contextEntry.hasSource = true;
-      this._entries.set(entry.filename, entry);
+    const ordinals: string[] = [];
+    let hasSource = false;
+    for (const entryName of await this._backend.entryNames()) {
+      const match = entryName.match(/(.+)\.trace/);
+      if (match)
+        ordinals.push(match[1] || '');
+      if (entryName.includes('src@'))
+        hasSource = true;
     }
-    if (!traceEntry)
+    if (!ordinals.length)
       throw new Error('Cannot find .trace file');
 
-    this._snapshotStorage = new PersistentSnapshotStorage(this._entries);
+    this._snapshotStorage = new SnapshotStorage();
 
-    const traceWriter = new zipjs.TextWriter() as zip.TextWriter;
-    await traceEntry.getData!(traceWriter);
-    for (const line of (await traceWriter.getData()).split('\n'))
-      this.appendEvent(line);
+    // 3 * ordinals progress increments below.
+    const total = ordinals.length * 3;
+    let done = 0;
+    for (const ordinal of ordinals) {
+      const contextEntry = createEmptyContext();
+      contextEntry.traceUrl = backend.traceURL();
+      contextEntry.hasSource = hasSource;
+      const modernizer = new TraceModernizer(contextEntry, this._snapshotStorage, this._attachments);
 
-    if (networkEntry) {
-      const networkWriter = new zipjs.TextWriter();
-      await networkEntry.getData!(networkWriter);
-      for (const line of (await networkWriter.getData()).split('\n'))
-        this.appendEvent(line);
+      const trace = await this._backend.readText(ordinal + '.trace') || '';
+      modernizer.appendTrace(trace);
+      unzipProgress(++done, total);
+
+      const network = await this._backend.readText(ordinal + '.network') || '';
+      modernizer.appendTrace(network);
+      unzipProgress(++done, total);
+
+      contextEntry.actions = modernizer.actions().sort((a1, a2) => a1.startTime - a2.startTime);
+      if (!backend.isLive()) {
+        // Terminate actions w/o after event gracefully.
+        // This would close after hooks event that has not been closed because
+        // the trace is usually saved before after hooks complete.
+        for (const action of contextEntry.actions.slice().reverse()) {
+          if (!action.endTime && !action.error) {
+            for (const a of contextEntry.actions) {
+              if (a.parentId === action.callId && action.endTime < a.endTime)
+                action.endTime = a.endTime;
+            }
+          }
+        }
+      }
+
+      const stacks = await this._backend.readText(ordinal + '.stacks');
+      if (stacks) {
+        const callMetadata = parseClientSideCallMetadata(JSON.parse(stacks));
+        for (const action of contextEntry.actions)
+          action.stack = action.stack || callMetadata.get(action.callId);
+      }
+      unzipProgress(++done, total);
+
+      for (const resource of contextEntry.resources) {
+        if (resource.request.postData?._sha1)
+          this._resourceToContentType.set(resource.request.postData._sha1, stripEncodingFromContentType(resource.request.postData.mimeType));
+        if (resource.response.content?._sha1)
+          this._resourceToContentType.set(resource.response.content._sha1, stripEncodingFromContentType(resource.response.content.mimeType));
+      }
+
+      this.contextEntries.push(contextEntry);
     }
-    this._build();
+
+    this._snapshotStorage!.finalize();
   }
 
   async hasEntry(filename: string): Promise<boolean> {
-    if (!this._zipReader)
-      return false;
-    for (const entry of await this._zipReader.getEntries()) {
-      if (entry.filename === filename)
-        return true;
-    }
-    return false;
+    return this._backend.hasEntry(filename);
   }
 
   async resourceForSha1(sha1: string): Promise<Blob | undefined> {
-    const entry = this._entries.get('resources/' + sha1);
-    if (!entry)
+    const blob = await this._backend.readBlob('resources/' + sha1);
+    if (!blob)
       return;
-    const blobWriter = new zipjs.BlobWriter() as zip.BlobWriter;
-    await entry!.getData!(blobWriter);
-    return await blobWriter.getData();
+    return new Blob([blob], { type: this._resourceToContentType.get(sha1) || 'application/octet-stream' });
   }
 
-  storage(): PersistentSnapshotStorage {
+  attachmentForSha1(sha1: string): trace.AfterActionTraceEventAttachment | undefined {
+    return this._attachments.get(sha1);
+  }
+
+  storage(): SnapshotStorage {
     return this._snapshotStorage!;
   }
-
-  private _build() {
-    this.contextEntry!.actions.sort((a1, a2) => a1.metadata.startTime - a2.metadata.startTime);
-    this.contextEntry!.resources = this._snapshotStorage!.resources();
-  }
-
-  private _pageEntry(pageId: string): PageEntry {
-    let pageEntry = this.pageEntries.get(pageId);
-    if (!pageEntry) {
-      pageEntry = {
-        screencastFrames: [],
-      };
-      this.pageEntries.set(pageId, pageEntry);
-      this.contextEntry.pages.push(pageEntry);
-    }
-    return pageEntry;
-  }
-
-  appendEvent(line: string) {
-    if (!line)
-      return;
-    const event = this._modernize(JSON.parse(line));
-    switch (event.type) {
-      case 'context-options': {
-        this.contextEntry.browserName = event.browserName;
-        this.contextEntry.title = event.title;
-        this.contextEntry.platform = event.platform;
-        this.contextEntry.wallTime = event.wallTime;
-        this.contextEntry.sdkLanguage = event.sdkLanguage;
-        this.contextEntry.options = event.options;
-        break;
-      }
-      case 'screencast-frame': {
-        this._pageEntry(event.pageId).screencastFrames.push(event);
-        break;
-      }
-      case 'action': {
-        const include = !isTracing(event.metadata) && (!event.metadata.internal || event.metadata.apiName);
-        if (include) {
-          if (!event.metadata.apiName)
-            event.metadata.apiName = event.metadata.type + '.' + event.metadata.method;
-          this.contextEntry!.actions.push(event);
-        }
-        break;
-      }
-      case 'event': {
-        const metadata = event.metadata;
-        if (metadata.pageId) {
-          if (metadata.method === '__create__')
-            this.contextEntry!.objects[metadata.params.guid] = metadata.params.initializer;
-          else
-            this.contextEntry!.events.push(event);
-        }
-        break;
-      }
-      case 'resource-snapshot':
-        this._snapshotStorage!.addResource(event.snapshot);
-        break;
-      case 'frame-snapshot':
-        this._snapshotStorage!.addFrameSnapshot(event.snapshot);
-        break;
-    }
-    if (event.type === 'action' || event.type === 'event') {
-      this.contextEntry!.startTime = Math.min(this.contextEntry!.startTime, event.metadata.startTime);
-      this.contextEntry!.endTime = Math.max(this.contextEntry!.endTime, event.metadata.endTime);
-    }
-    if (event.type === 'screencast-frame') {
-      this.contextEntry!.startTime = Math.min(this.contextEntry!.startTime, event.timestamp);
-      this.contextEntry!.endTime = Math.max(this.contextEntry!.endTime, event.timestamp);
-    }
-  }
-
-  private _modernize(event: any): trace.TraceEvent {
-    if (this._version === undefined)
-      return event;
-    for (let version = this._version; version < 3; ++version)
-      event = (this as any)[`_modernize_${version}_to_${version + 1}`].call(this, event);
-    return event;
-  }
-
-  _modernize_0_to_1(event: any): any {
-    if (event.type === 'action') {
-      if (typeof event.metadata.error === 'string')
-        event.metadata.error = { error: { name: 'Error', message: event.metadata.error } };
-    }
-    return event;
-  }
-
-  _modernize_1_to_2(event: any): any {
-    if (event.type === 'frame-snapshot' && event.snapshot.isMainFrame) {
-      // Old versions had completely wrong viewport.
-      event.snapshot.viewport = this.contextEntry.options.viewport || { width: 1280, height: 720 };
-    }
-    return event;
-  }
-
-  _modernize_2_to_3(event: any): any {
-    if (event.type === 'resource-snapshot' && !event.snapshot.request) {
-      // Migrate from old ResourceSnapshot to new har entry format.
-      const resource = event.snapshot;
-      event.snapshot = {
-        _frameref: resource.frameId,
-        request: {
-          url: resource.url,
-          method: resource.method,
-          headers: resource.requestHeaders,
-          postData: resource.requestSha1 ? { _sha1: resource.requestSha1 } : undefined,
-        },
-        response: {
-          status: resource.status,
-          headers: resource.responseHeaders,
-          content: {
-            mimeType: resource.contentType,
-            _sha1: resource.responseSha1,
-          },
-        },
-        _monotonicTime: resource.timestamp,
-      };
-    }
-    return event;
-  }
 }
 
-export class PersistentSnapshotStorage extends BaseSnapshotStorage {
-  private _entries: Map<string, zip.Entry>;
-
-  constructor(entries: Map<string, zip.Entry>) {
-    super();
-    this._entries = entries;
-  }
-
-  async resourceContent(sha1: string): Promise<Blob | undefined> {
-    const entry = this._entries.get('resources/' + sha1)!;
-    const writer = new zipjs.BlobWriter();
-    await entry.getData!(writer);
-    return writer.getData();
-  }
-}
-
-function isTracing(metadata: CallMetadata): boolean {
-  return metadata.method.startsWith('tracing');
+function stripEncodingFromContentType(contentType: string) {
+  const charset = contentType.match(/^(.*);\s*charset=.*$/);
+  if (charset)
+    return charset[1];
+  return contentType;
 }

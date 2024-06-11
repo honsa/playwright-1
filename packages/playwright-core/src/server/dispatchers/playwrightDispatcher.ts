@@ -20,7 +20,6 @@ import { GlobalAPIRequestContext } from '../fetch';
 import type { Playwright } from '../playwright';
 import type { SocksSocketClosedPayload, SocksSocketDataPayload, SocksSocketRequestedPayload } from '../../common/socksProxy';
 import { SocksProxy } from '../../common/socksProxy';
-import type * as types from '../types';
 import { AndroidDispatcher } from './androidDispatcher';
 import { BrowserTypeDispatcher } from './browserTypeDispatcher';
 import type { RootDispatcher } from './dispatcher';
@@ -33,15 +32,13 @@ import { ConnectedBrowserDispatcher } from './browserDispatcher';
 import { createGuid } from '../../utils';
 import type { AndroidDevice } from '../android/android';
 import { AndroidDeviceDispatcher } from './androidDispatcher';
+import { eventsHelper, type RegisteredListener } from '../../utils/eventsHelper';
 
 export class PlaywrightDispatcher extends Dispatcher<Playwright, channels.PlaywrightChannel, RootDispatcher> implements channels.PlaywrightChannel {
   _type_Playwright;
   private _browserDispatcher: ConnectedBrowserDispatcher | undefined;
 
   constructor(scope: RootDispatcher, playwright: Playwright, socksProxy?: SocksProxy, preLaunchedBrowser?: Browser, prelaunchedAndroidDevice?: AndroidDevice) {
-    const descriptors = require('../deviceDescriptors') as types.Devices;
-    const deviceDescriptors = Object.entries(descriptors)
-        .map(([name, descriptor]) => ({ name, descriptor }));
     const browserDispatcher = preLaunchedBrowser ? new ConnectedBrowserDispatcher(scope, preLaunchedBrowser) : undefined;
     const android = new AndroidDispatcher(scope, playwright.android);
     const prelaunchedAndroidDeviceDispatcher = prelaunchedAndroidDevice ? new AndroidDeviceDispatcher(android, prelaunchedAndroidDevice) : undefined;
@@ -51,8 +48,7 @@ export class PlaywrightDispatcher extends Dispatcher<Playwright, channels.Playwr
       webkit: new BrowserTypeDispatcher(scope, playwright.webkit),
       android,
       electron: new ElectronDispatcher(scope, playwright.electron),
-      utils: new LocalUtilsDispatcher(scope, playwright),
-      deviceDescriptors,
+      utils: playwright.options.isServer ? undefined : new LocalUtilsDispatcher(scope, playwright),
       selectors: new SelectorsDispatcher(scope, browserDispatcher?.selectors || playwright.selectors),
       preLaunchedBrowser: browserDispatcher,
       preConnectedAndroidDevice: prelaunchedAndroidDeviceDispatcher,
@@ -62,7 +58,7 @@ export class PlaywrightDispatcher extends Dispatcher<Playwright, channels.Playwr
     this._browserDispatcher = browserDispatcher;
   }
 
-  async newRequest(params: channels.PlaywrightNewRequestParams, metadata?: channels.Metadata): Promise<channels.PlaywrightNewRequestResult> {
+  async newRequest(params: channels.PlaywrightNewRequestParams): Promise<channels.PlaywrightNewRequestResult> {
     const request = new GlobalAPIRequestContext(this._object, params);
     return { request: APIRequestContextDispatcher.from(this.parentScope(), request) };
   }
@@ -76,14 +72,17 @@ export class PlaywrightDispatcher extends Dispatcher<Playwright, channels.Playwr
 class SocksSupportDispatcher extends Dispatcher<{ guid: string }, channels.SocksSupportChannel, RootDispatcher> implements channels.SocksSupportChannel {
   _type_SocksSupport: boolean;
   private _socksProxy: SocksProxy;
+  private _socksListeners: RegisteredListener[];
 
   constructor(scope: RootDispatcher, socksProxy: SocksProxy) {
     super(scope, { guid: 'socksSupport@' + createGuid() }, 'SocksSupport', {});
     this._type_SocksSupport = true;
     this._socksProxy = socksProxy;
-    socksProxy.on(SocksProxy.Events.SocksRequested, (payload: SocksSocketRequestedPayload) => this._dispatchEvent('socksRequested', payload));
-    socksProxy.on(SocksProxy.Events.SocksData, (payload: SocksSocketDataPayload) => this._dispatchEvent('socksData', payload));
-    socksProxy.on(SocksProxy.Events.SocksClosed, (payload: SocksSocketClosedPayload) => this._dispatchEvent('socksClosed', payload));
+    this._socksListeners = [
+      eventsHelper.addEventListener(socksProxy, SocksProxy.Events.SocksRequested, (payload: SocksSocketRequestedPayload) => this._dispatchEvent('socksRequested', payload)),
+      eventsHelper.addEventListener(socksProxy, SocksProxy.Events.SocksData, (payload: SocksSocketDataPayload) => this._dispatchEvent('socksData', payload)),
+      eventsHelper.addEventListener(socksProxy, SocksProxy.Events.SocksClosed, (payload: SocksSocketClosedPayload) => this._dispatchEvent('socksClosed', payload)),
+    ];
   }
 
   async socksConnected(params: channels.SocksSupportSocksConnectedParams): Promise<void> {
@@ -104,5 +103,9 @@ class SocksSupportDispatcher extends Dispatcher<{ guid: string }, channels.Socks
 
   async socksEnd(params: channels.SocksSupportSocksEndParams): Promise<void> {
     this._socksProxy?.sendSocketEnd(params);
+  }
+
+  override _onDispose() {
+    eventsHelper.removeEventListeners(this._socksListeners);
   }
 }

@@ -1,6 +1,7 @@
 /* eslint-disable notice/notice */
 
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 test.describe.configure({ mode: 'parallel' });
 
@@ -14,12 +15,10 @@ const TODO_ITEMS = [
   'book a doctors appointment'
 ];
 
-
 test.describe('New Todo', () => {
   test('should allow me to add todo items', async ({ page }) => {
     // create a new todo locator
     const newTodo = page.getByPlaceholder('What needs to be done?');
-
     // Create 1st todo.
     await newTodo.fill(TODO_ITEMS[0]);
     await newTodo.press('Enter');
@@ -36,7 +35,7 @@ test.describe('New Todo', () => {
     // Make sure the list now has two todo items.
     await expect(page.getByTestId('todo-title')).toHaveText([
       TODO_ITEMS[0],
-      TODO_ITEMS[1]
+      TODO_ITEMS[1],
     ]);
 
     await checkNumberOfTodosInLocalStorage(page, 2);
@@ -396,8 +395,7 @@ test.describe('Routing', () => {
     await expect(page.getByRole('link', { name: 'All' })).toHaveClass('selected');
     await page.getByRole('link', { name: 'Active' }).click();
     // Page change - active items.
-    await expect(page.getByRole('link', { name: 'Active' })).
-    toHaveClass('selected');
+    await expect(page.getByRole('link', { name: 'Active' })).toHaveClass('selected');
     await page.getByRole('link', { name: 'Completed' }).click();
     // Page change - completed items.
     await expect(page.getByRole('link', { name: 'Completed' })).toHaveClass('selected');

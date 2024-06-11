@@ -230,7 +230,7 @@ it('should not result in unhandled rejection', async ({ page, isAndroid, isWebVi
     await page.close();
   });
   await page.evaluate(() => {
-    setTimeout(() => (window as any).foo(), 0);
+    window.builtinSetTimeout(() => (window as any).foo(), 0);
     return undefined;
   });
   await closedPromise;
@@ -282,6 +282,21 @@ it('should serialize cycles', async ({ page }) => {
 it('should work with overridden console object', async ({ page }) => {
   await page.evaluate(() => window.console = null);
   expect(page.evaluate(() => window.console === null)).toBeTruthy();
+  await page.exposeFunction('add', (a, b) => a + b);
+  expect(await page.evaluate('add(5, 6)')).toBe(11);
+});
+
+it('should work with busted Array.prototype.map/push', async ({ page, server }) => {
+  server.setRoute('/test', (req, res) => {
+    res.writeHead(200, {
+      'content-type': 'text/html',
+    });
+    res.end(`<script>
+      Array.prototype.map = null;
+      Array.prototype.push = null;
+    </script>`);
+  });
+  await page.goto(server.PREFIX + '/test');
   await page.exposeFunction('add', (a, b) => a + b);
   expect(await page.evaluate('add(5, 6)')).toBe(11);
 });

@@ -21,9 +21,9 @@ import type { ActionInContext } from './codeGenerator';
 import type { Action } from './recorderActions';
 import type { MouseClickOptions } from './utils';
 import { toModifiers } from './utils';
-import deviceDescriptors from '../deviceDescriptors';
+import { deviceDescriptors } from '../deviceDescriptors';
 import { escapeWithQuotes } from '../../utils/isomorphic/stringUtils';
-import { asLocator } from '../isomorphic/locatorGenerators';
+import { asLocator } from '../../utils/isomorphic/locatorGenerators';
 
 export class JavaScriptLanguageGenerator implements LanguageGenerator {
   id: string;
@@ -56,13 +56,9 @@ export class JavaScriptLanguageGenerator implements LanguageGenerator {
     let subject: string;
     if (actionInContext.frame.isMainFrame) {
       subject = pageAlias;
-    } else if (actionInContext.frame.selectorsChain && action.name !== 'navigate') {
+    } else {
       const locators = actionInContext.frame.selectorsChain.map(selector => `.frameLocator(${quote(selector)})`);
       subject = `${pageAlias}${locators.join('')}`;
-    } else if (actionInContext.frame.name) {
-      subject = `${pageAlias}.frame(${formatObject({ name: actionInContext.frame.name })})`;
-    } else {
-      subject = `${pageAlias}.frame(${formatObject({ url: actionInContext.frame.url })})`;
     }
 
     const signals = toSignalMap(action);
@@ -74,43 +70,27 @@ export class JavaScriptLanguageGenerator implements LanguageGenerator {
   });`);
     }
 
-    const emitPromiseAll = signals.popup || signals.download;
-    if (emitPromiseAll) {
-      // Generate either await Promise.all([]) or
-      // const [popup1] = await Promise.all([]).
-      let leftHandSide = '';
-      if (signals.popup)
-        leftHandSide = `const [${signals.popup.popupAlias}] = `;
-      else if (signals.download)
-        leftHandSide = `const [download] = `;
-      formatter.add(`${leftHandSide}await Promise.all([`);
-    }
-
-    // Popup signals.
     if (signals.popup)
-      formatter.add(`${pageAlias}.waitForEvent('popup'),`);
-
-    // Download signals.
+      formatter.add(`const ${signals.popup.popupAlias}Promise = ${pageAlias}.waitForEvent('popup');`);
     if (signals.download)
-      formatter.add(`${pageAlias}.waitForEvent('download'),`);
+      formatter.add(`const download${signals.download.downloadAlias}Promise = ${pageAlias}.waitForEvent('download');`);
 
-    const prefix = (signals.popup || signals.download) ? '' : 'await ';
-    const actionCall = this._generateActionCall(action);
-    const suffix = emitPromiseAll ? '' : ';';
-    formatter.add(`${prefix}${subject}.${actionCall}${suffix}`);
+    formatter.add(this._generateActionCall(subject, action));
 
-    if (emitPromiseAll)
-      formatter.add(`]);`);
+    if (signals.popup)
+      formatter.add(`const ${signals.popup.popupAlias} = await ${signals.popup.popupAlias}Promise;`);
+    if (signals.download)
+      formatter.add(`const download${signals.download.downloadAlias} = await download${signals.download.downloadAlias}Promise;`);
 
     return formatter.format();
   }
 
-  private _generateActionCall(action: Action): string {
+  private _generateActionCall(subject: string, action: Action): string {
     switch (action.name) {
       case 'openPage':
         throw Error('Not reached');
       case 'closePage':
-        return 'close()';
+        return `await ${subject}.close();`;
       case 'click': {
         let method = 'click';
         if (action.clickCount === 2)
@@ -126,25 +106,35 @@ export class JavaScriptLanguageGenerator implements LanguageGenerator {
         if (action.position)
           options.position = action.position;
         const optionsString = formatOptions(options, false);
-        return this._asLocator(action.selector) + `.${method}(${optionsString})`;
+        return `await ${subject}.${this._asLocator(action.selector)}.${method}(${optionsString});`;
       }
       case 'check':
-        return this._asLocator(action.selector) + `.check()`;
+        return `await ${subject}.${this._asLocator(action.selector)}.check();`;
       case 'uncheck':
-        return this._asLocator(action.selector) + `.uncheck()`;
+        return `await ${subject}.${this._asLocator(action.selector)}.uncheck();`;
       case 'fill':
-        return this._asLocator(action.selector) + `.fill(${quote(action.text)})`;
+        return `await ${subject}.${this._asLocator(action.selector)}.fill(${quote(action.text)});`;
       case 'setInputFiles':
-        return this._asLocator(action.selector) + `.setInputFiles(${formatObject(action.files.length === 1 ? action.files[0] : action.files)})`;
+        return `await ${subject}.${this._asLocator(action.selector)}.setInputFiles(${formatObject(action.files.length === 1 ? action.files[0] : action.files)});`;
       case 'press': {
         const modifiers = toModifiers(action.modifiers);
         const shortcut = [...modifiers, action.key].join('+');
-        return this._asLocator(action.selector) + `.press(${quote(shortcut)})`;
+        return `await ${subject}.${this._asLocator(action.selector)}.press(${quote(shortcut)});`;
       }
       case 'navigate':
-        return `goto(${quote(action.url)})`;
+        return `await ${subject}.goto(${quote(action.url)});`;
       case 'select':
-        return this._asLocator(action.selector) + `.selectOption(${formatObject(action.options.length > 1 ? action.options : action.options[0])})`;
+        return `await ${subject}.${this._asLocator(action.selector)}.selectOption(${formatObject(action.options.length > 1 ? action.options : action.options[0])});`;
+      case 'assertText':
+        return `${this._isTest ? '' : '// '}await expect(${subject}.${this._asLocator(action.selector)}).${action.substring ? 'toContainText' : 'toHaveText'}(${quote(action.text)});`;
+      case 'assertChecked':
+        return `${this._isTest ? '' : '// '}await expect(${subject}.${this._asLocator(action.selector)})${action.checked ? '' : '.not'}.toBeChecked();`;
+      case 'assertVisible':
+        return `${this._isTest ? '' : '// '}await expect(${subject}.${this._asLocator(action.selector)}).toBeVisible();`;
+      case 'assertValue': {
+        const assertion = action.value ? `toHaveValue(${quote(action.value)})` : `toBeEmpty()`;
+        return `${this._isTest ? '' : '// '}await expect(${subject}.${this._asLocator(action.selector)}).${assertion};`;
+      }
     }
   }
 

@@ -8,6 +8,10 @@ export module Protocol {
       browserContextId?: string;
       openerId?: string;
     };
+    export type UserPreference = {
+      name: string;
+      value: any;
+    };
     export type CookieOptions = {
       name: string;
       value: string;
@@ -71,6 +75,10 @@ export module Protocol {
     }
     export type enableParameters = {
       attachToDefaultContext: boolean;
+      userPrefs?: {
+        name: string;
+        value: any;
+      }[];
     };
     export type enableReturnValue = void;
     export type createBrowserContextParameters = {
@@ -104,6 +112,8 @@ export module Protocol {
       }[];
     };
     export type setExtraHTTPHeadersReturnValue = void;
+    export type clearCacheParameters = void;
+    export type clearCacheReturnValue = void;
     export type setBrowserProxyParameters = {
       type: ("http"|"https"|"socks"|"socks4");
       bypass: string[];
@@ -128,6 +138,7 @@ export module Protocol {
       credentials: {
         username: string;
         password: string;
+        origin?: string;
       }|null;
     };
     export type setHTTPCredentialsReturnValue = void;
@@ -136,6 +147,11 @@ export module Protocol {
       enabled: boolean;
     };
     export type setRequestInterceptionReturnValue = void;
+    export type setCacheDisabledParameters = {
+      browserContextId?: string;
+      cacheDisabled: boolean;
+    };
+    export type setCacheDisabledReturnValue = void;
     export type setGeolocationOverrideParameters = {
       browserContextId?: string;
       geolocation: {
@@ -385,7 +401,6 @@ export module Protocol {
     export type navigationStartedPayload = {
       frameId: string;
       navigationId: string;
-      url: string;
     }
     export type navigationCommittedPayload = {
       frameId: string;
@@ -550,7 +565,6 @@ export module Protocol {
     };
     export type navigateReturnValue = {
       navigationId: string|null;
-      navigationURL: string|null;
     };
     export type goBackParameters = {
       frameId: string;
@@ -565,7 +579,6 @@ export module Protocol {
       success: boolean;
     };
     export type reloadParameters = {
-      frameId: string;
     };
     export type reloadReturnValue = void;
     export type adoptNodeParameters = {
@@ -590,6 +603,7 @@ export module Protocol {
         width: number;
         height: number;
       };
+      quality?: number;
       omitDeviceScaleFactor?: boolean;
     };
     export type screenshotReturnValue = {
@@ -651,7 +665,7 @@ export module Protocol {
     };
     export type dispatchTapEventReturnValue = void;
     export type dispatchMouseEventParameters = {
-      type: string;
+      type: ("mousedown"|"mousemove"|"mouseup");
       button: number;
       x: number;
       y: number;
@@ -845,6 +859,7 @@ export module Protocol {
     export type HTTPCredentials = {
       username: string;
       password: string;
+      origin?: string;
     };
     export type SecurityDetails = {
       protocol: string;
@@ -1084,10 +1099,12 @@ export module Protocol {
     "Browser.close": Browser.closeParameters;
     "Browser.getInfo": Browser.getInfoParameters;
     "Browser.setExtraHTTPHeaders": Browser.setExtraHTTPHeadersParameters;
+    "Browser.clearCache": Browser.clearCacheParameters;
     "Browser.setBrowserProxy": Browser.setBrowserProxyParameters;
     "Browser.setContextProxy": Browser.setContextProxyParameters;
     "Browser.setHTTPCredentials": Browser.setHTTPCredentialsParameters;
     "Browser.setRequestInterception": Browser.setRequestInterceptionParameters;
+    "Browser.setCacheDisabled": Browser.setCacheDisabledParameters;
     "Browser.setGeolocationOverride": Browser.setGeolocationOverrideParameters;
     "Browser.setUserAgentOverride": Browser.setUserAgentOverrideParameters;
     "Browser.setPlatformOverride": Browser.setPlatformOverrideParameters;
@@ -1163,10 +1180,12 @@ export module Protocol {
     "Browser.close": Browser.closeReturnValue;
     "Browser.getInfo": Browser.getInfoReturnValue;
     "Browser.setExtraHTTPHeaders": Browser.setExtraHTTPHeadersReturnValue;
+    "Browser.clearCache": Browser.clearCacheReturnValue;
     "Browser.setBrowserProxy": Browser.setBrowserProxyReturnValue;
     "Browser.setContextProxy": Browser.setContextProxyReturnValue;
     "Browser.setHTTPCredentials": Browser.setHTTPCredentialsReturnValue;
     "Browser.setRequestInterception": Browser.setRequestInterceptionReturnValue;
+    "Browser.setCacheDisabled": Browser.setCacheDisabledReturnValue;
     "Browser.setGeolocationOverride": Browser.setGeolocationOverrideReturnValue;
     "Browser.setUserAgentOverride": Browser.setUserAgentOverrideReturnValue;
     "Browser.setPlatformOverride": Browser.setPlatformOverrideReturnValue;

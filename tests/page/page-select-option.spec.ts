@@ -15,12 +15,10 @@
  * limitations under the License.
  */
 
-import { test as it, expect } from './pageTest';
+import type { Page } from '@playwright/test';
+import { test as it, expect, rafraf } from './pageTest';
 
-async function giveItAChanceToResolve(page) {
-  for (let i = 0; i < 5; i++)
-    await page.evaluate(() => new Promise(f => requestAnimationFrame(() => requestAnimationFrame(f))));
-}
+const giveItAChanceToResolve = (page: Page) => rafraf(page, 5);
 
 it('should select single option @smoke', async ({ page, server }) => {
   await page.goto(server.PREFIX + '/input/select.html');
@@ -32,6 +30,13 @@ it('should select single option @smoke', async ({ page, server }) => {
 it('should select single option by value', async ({ page, server }) => {
   await page.goto(server.PREFIX + '/input/select.html');
   await page.selectOption('select', { value: 'blue' });
+  expect(await page.evaluate(() => window['result'].onInput)).toEqual(['blue']);
+  expect(await page.evaluate(() => window['result'].onChange)).toEqual(['blue']);
+});
+
+it('should fall back to selecting by label', async ({ page, server }) => {
+  await page.goto(server.PREFIX + '/input/select.html');
+  await page.selectOption('select', 'Blue');
   expect(await page.evaluate(() => window['result'].onInput)).toEqual(['blue']);
   expect(await page.evaluate(() => window['result'].onChange)).toEqual(['blue']);
 });
@@ -232,7 +237,7 @@ it('should wait for option to be present', async ({ page, server }) => {
   await page.goto(server.PREFIX + '/input/select.html');
   const selectPromise  = page.selectOption('select', 'scarlet');
   let didSelect = false;
-  selectPromise.then(() => didSelect = true);
+  void selectPromise.then(() => didSelect = true);
   await giveItAChanceToResolve(page);
   expect(didSelect).toBe(false);
   await page.$eval('select', select => {
@@ -250,7 +255,7 @@ it('should wait for option index to be present', async ({ page, server }) => {
   const len = await page.$eval('select', select => select.options.length);
   const selectPromise  = page.selectOption('select', { index: len });
   let didSelect = false;
-  selectPromise.then(() => didSelect = true);
+  void selectPromise.then(() => didSelect = true);
   await giveItAChanceToResolve(page);
   expect(didSelect).toBe(false);
   await page.$eval('select', select => {
@@ -268,7 +273,7 @@ it('should wait for multiple options to be present', async ({ page, server }) =>
   await page.evaluate(() => window['makeMultiple']());
   const selectPromise  = page.selectOption('select', ['green', 'scarlet']);
   let didSelect = false;
-  selectPromise.then(() => didSelect = true);
+  void selectPromise.then(() => didSelect = true);
   await giveItAChanceToResolve(page);
   expect(didSelect).toBe(false);
   await page.$eval('select', select => {
@@ -279,4 +284,38 @@ it('should wait for multiple options to be present', async ({ page, server }) =>
   });
   const items = await selectPromise;
   expect(items).toStrictEqual(['green', 'scarlet']);
+});
+
+it('input event.composed should be true and cross shadow dom boundary', async ({ page, server }) => {
+  it.info().annotations.push({ type: 'issue', description: 'https://github.com/microsoft/playwright/issues/28726' });
+  await page.goto(server.EMPTY_PAGE);
+  await page.setContent(`<body><script>
+  const div = document.createElement('div');
+  const shadowRoot = div.attachShadow({mode: 'open'});
+  shadowRoot.innerHTML = \`<select>
+    <option value="black">Black</option>
+    <option value="blue">Blue</option>
+  </select>\`;
+  document.body.appendChild(div);
+</script></body>`);
+  await page.locator('body').evaluate(select => {
+    (window as any).firedBodyEvents = [];
+    for (const event of ['input', 'change']) {
+      select.addEventListener(event, e => {
+        (window as any).firedBodyEvents.push(e.type + ':' + e.composed);
+      }, false);
+    }
+  });
+
+  await page.locator('select').evaluate(select => {
+    (window as any).firedEvents = [];
+    for (const event of ['input', 'change']) {
+      select.addEventListener(event, e => {
+        (window as any).firedEvents.push(e.type + ':' + e.composed);
+      }, false);
+    }
+  });
+  await page.selectOption('select', 'blue');
+  expect(await page.evaluate(() => window['firedEvents'])).toEqual(['input:true', 'change:false']);
+  expect(await page.evaluate(() => window['firedBodyEvents'])).toEqual(['input:true']);
 });

@@ -94,7 +94,7 @@ it('should report when a new page is created and closed', async ({ browser, serv
 it('should report initialized pages', async ({ browser, server }) => {
   const context = await browser.newContext();
   const pagePromise = context.waitForEvent('page');
-  context.newPage();
+  void context.newPage();
   const newPage = await pagePromise;
   expect(newPage.url()).toBe('about:blank');
 
@@ -170,7 +170,7 @@ it('should work with Shift-clicking', async ({ browser, server, browserName }) =
   await context.close();
 });
 
-it('should work with Ctrl-clicking', async ({ browser, server, isMac, browserName }) => {
+it('should work with Ctrl-clicking', async ({ browser, server, browserName }) => {
   it.fixme(browserName === 'firefox', 'Reports an opener in this case.');
 
   const context = await browser.newContext();
@@ -179,22 +179,23 @@ it('should work with Ctrl-clicking', async ({ browser, server, isMac, browserNam
   await page.setContent('<a href="/one-style.html">yo</a>');
   const [popup] = await Promise.all([
     context.waitForEvent('page'),
-    page.click('a', { modifiers: [isMac ? 'Meta' : 'Control'] }),
+    page.click('a', { modifiers: ['ControlOrMeta'] }),
   ]);
   expect(await popup.opener()).toBe(null);
   await context.close();
 });
 
-it('should not hang on ctrl-click during provisional load', async ({ context, page, server, isMac, isWindows, browserName }) => {
+it('should not hang on ctrl-click during provisional load', async ({ context, page, server, isWindows, browserName, isLinux }) => {
   it.info().annotations.push({ type: 'issue', description: 'https://github.com/microsoft/playwright/issues/11595' });
   it.skip(browserName === 'chromium', 'Chromium does not dispatch renderer messages while navigation is provisional.');
   it.fixme(browserName === 'webkit' && isWindows, 'Timesout while trying to click');
+  it.fixme(browserName === 'webkit' && isLinux, 'Timesout while trying to click');
   await page.goto(server.EMPTY_PAGE);
   await page.setContent('<a href="/one-style.html">yo</a>');
   server.setRoute('/slow.html', () => {});
   const [popup] = await Promise.all([
     context.waitForEvent('page'),
-    server.waitForRequest('/slow.html').then(() => page.click('a', { modifiers: [isMac ? 'Meta' : 'Control'] })),
+    server.waitForRequest('/slow.html').then(() => page.click('a', { modifiers: ['ControlOrMeta'] })),
     page.evaluate(url => setTimeout(() => location.href = url, 0), server.CROSS_PROCESS_PREFIX + '/slow.html'),
   ]);
   expect(popup).toBeTruthy();

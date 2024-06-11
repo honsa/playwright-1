@@ -4,9 +4,7 @@
 
 "use strict";
 
-const {EventEmitter} = ChromeUtils.import('resource://gre/modules/EventEmitter.jsm');
 const {Helper} = ChromeUtils.import('chrome://juggler/content/Helper.js');
-const {Services} = ChromeUtils.import("resource://gre/modules/Services.jsm");
 const {NetUtil} = ChromeUtils.import('resource://gre/modules/NetUtil.jsm');
 const { ChannelEventSinkFactory } = ChromeUtils.import("chrome://remote/content/cdp/observers/ChannelEventSink.jsm");
 
@@ -32,6 +30,8 @@ const pageNetworkSymbol = Symbol('PageNetwork');
 
 class PageNetwork {
   static forPageTarget(target) {
+    if (!target)
+      return undefined;
     let result = target[pageNetworkSymbol];
     if (!result) {
       result = new PageNetwork(target);
@@ -41,7 +41,7 @@ class PageNetwork {
   }
 
   constructor(target) {
-    EventEmitter.decorate(this);
+    helper.decorateAsEventEmitter(this);
     this._target = target;
     this._extraHTTPHeaders = null;
     this._responseStorage = new ResponseStorage(MAX_RESPONSE_STORAGE_SIZE, MAX_RESPONSE_STORAGE_SIZE / 10);
@@ -106,21 +106,12 @@ class NetworkRequest {
     this.httpChannel = httpChannel;
 
     const loadInfo = this.httpChannel.loadInfo;
-    let browsingContext = loadInfo?.frameBrowsingContext || loadInfo?.browsingContext;
-    // TODO: Unfortunately, requests from web workers don't have frameBrowsingContext or
-    // browsingContext.
-    //
-    // We fail to attribute them to the original frames on the browser side, but we
-    // can use load context top frame to attribute them to the top frame at least.
-    if (!browsingContext) {
-      const loadContext = helper.getLoadContext(this.httpChannel);
-      browsingContext = loadContext?.topFrameElement?.browsingContext;
-    }
+    const browsingContext = loadInfo?.frameBrowsingContext || loadInfo?.workerAssociatedBrowsingContext || loadInfo?.browsingContext;
 
     this._frameId = helper.browsingContextToFrameId(browsingContext);
 
     this.requestId = httpChannel.channelId + '';
-    this.navigationId = httpChannel.isMainDocumentChannel ? this.requestId : undefined;
+    this.navigationId = httpChannel.isMainDocumentChannel && loadInfo ? helper.toProtocolNavigationId(loadInfo.jugglerLoadIdentifier) : undefined;
 
     this._redirectedIndex = 0;
     if (redirectedFrom) {
@@ -146,7 +137,12 @@ class NetworkRequest {
       throw new Error(`Internal Error: invariant is broken for _channelToRequest map`);
     this._networkObserver._channelToRequest.set(this.httpChannel, this);
 
-    this._pageNetwork = redirectedFrom ? redirectedFrom._pageNetwork : networkObserver._findPageNetwork(httpChannel);
+    if (redirectedFrom) {
+      this._pageNetwork = redirectedFrom._pageNetwork;
+    } else if (browsingContext) {
+      const target = this._networkObserver._targetRegistry.targetForBrowserId(browsingContext.browserId);
+      this._pageNetwork = PageNetwork.forPageTarget(target);
+    }
     this._expectingInterception = false;
     this._expectingResumedRequest = undefined;  // { method, headers, postData }
     this._sentOnResponse = false;
@@ -217,8 +213,9 @@ class NetworkRequest {
   _onInternalRedirect(newChannel) {
     // Intercepted requests produce "internal redirects" - this is both for our own
     // interception and service workers.
-    // An internal redirect has the same channelId, inherits notificationCallbacks and
-    // listener, and should be used instead of an old channel.
+    // An internal redirect does not necessarily have the same channelId,
+    // but inherits notificationCallbacks and the listener,
+    // and should be used instead of an old channel.
     this._networkObserver._channelToRequest.delete(this.httpChannel);
     this.httpChannel = newChannel;
     this._networkObserver._channelToRequest.set(this.httpChannel, this);
@@ -234,8 +231,12 @@ class NetworkRequest {
     this._expectingResumedRequest = undefined;
 
     if (headers) {
-      for (const header of requestHeaders(this.httpChannel))
+      for (const header of requestHeaders(this.httpChannel)) {
+        // We cannot remove the "host" header.
+        if (header.name.toLowerCase() === 'host')
+          continue;
         this.httpChannel.setRequestHeader(header.name, '', false /* merge */);
+      }
       for (const header of headers)
         this.httpChannel.setRequestHeader(header.name, header.value, false /* merge */);
     } else if (this._pageNetwork) {
@@ -300,6 +301,9 @@ class NetworkRequest {
     }
     if (!credentials)
       return false;
+    const origin = aChannel.URI.scheme + '://' + aChannel.URI.hostPort;
+    if (credentials.origin && origin.toLowerCase() !== credentials.origin.toLowerCase())
+      return false;
     authInfo.username = credentials.username;
     authInfo.password = credentials.password;
     // This will produce a new request with respective auth header set.
@@ -359,13 +363,6 @@ class NetworkRequest {
     if (!pageNetwork) {
       // Just in case we disabled instrumentation while intercepting, resume and forget.
       this.resume();
-      return;
-    }
-
-    const browserContext = pageNetwork._target.browserContext();
-    if (browserContext.settings.onlineOverride === 'offline') {
-      // Implement offline.
-      this.abort(Cr.NS_ERROR_OFFLINE);
       return;
     }
 
@@ -458,15 +455,15 @@ class NetworkRequest {
     const browserContext = pageNetwork._target.browserContext();
     if (browserContext.requestInterceptionEnabled)
       return true;
-    if (browserContext.settings.onlineOverride === 'offline')
-      return true;
     return false;
   }
 
   _fallThroughInterceptController() {
-    if (!this._previousCallbacks || !(this._previousCallbacks instanceof Ci.nsINetworkInterceptController))
+    try {
+      return this._previousCallbacks?.getInterface(Ci.nsINetworkInterceptController);
+    } catch (e) {
       return undefined;
-    return this._previousCallbacks.getInterface(Ci.nsINetworkInterceptController);
+    }
   }
 
   _sendOnRequest(isIntercepted) {
@@ -556,7 +553,11 @@ class NetworkRequest {
 
   _sendOnRequestFinished() {
     const pageNetwork = this._pageNetwork;
-    if (pageNetwork) {
+    // Undefined |responseEndTime| means there has been no response yet.
+    // This happens when request interception API is used to redirect
+    // the request to a different URL.
+    // In this case, we should not emit "requestFinished" event.
+    if (pageNetwork && this.httpChannel.responseEndTime !== undefined) {
       let protocolVersion = undefined;
       try {
         protocolVersion = this.httpChannel.protocolVersion;
@@ -581,7 +582,7 @@ class NetworkObserver {
   }
 
   constructor(targetRegistry) {
-    EventEmitter.decorate(this);
+    helper.decorateAsEventEmitter(this);
     NetworkObserver._instance = this;
 
     this._targetRegistry = targetRegistry;
@@ -654,16 +655,6 @@ class NetworkObserver {
     }
   }
 
-  _findPageNetwork(httpChannel) {
-    let loadContext = helper.getLoadContext(httpChannel);
-    if (!loadContext)
-      return;
-    const target = this._targetRegistry.targetForBrowser(loadContext.topFrameElement);
-    if (!target)
-      return;
-    return PageNetwork.forPageTarget(target);
-  }
-
   _onRequest(channel, topic) {
     if (!(channel instanceof Ci.nsIHttpChannel))
       return;
@@ -734,6 +725,7 @@ function readRequestPostData(httpChannel) {
   if (!iStream)
     return undefined;
   const isSeekableStream = iStream instanceof Ci.nsISeekableStream;
+  const isTellableStream = iStream instanceof Ci.nsITellableStream;
 
   // For some reason, we cannot rewind back big streams,
   // so instead we should clone them.
@@ -742,7 +734,9 @@ function readRequestPostData(httpChannel) {
     iStream = iStream.clone();
 
   let prevOffset;
-  if (isSeekableStream) {
+  // Surprisingly, stream might implement `nsITellableStream` without
+  // implementing the `tell` method.
+  if (isSeekableStream && isTellableStream && iStream.tell) {
     prevOffset = iStream.tell();
     iStream.seek(Ci.nsISeekableStream.NS_SEEK_SET, 0);
   }

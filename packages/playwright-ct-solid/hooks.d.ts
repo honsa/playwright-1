@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-type JsonPrimitive = string | number | boolean | null;
-type JsonValue = JsonPrimitive | JsonObject | JsonArray;
-type JsonArray = JsonValue[];
-type JsonObject = { [Key in string]?: JsonValue };
-export declare function beforeMount<HooksConfig extends JsonObject>(
-  callback: (params: { hooksConfig: HooksConfig }) => Promise<void>
+import { JSXElement } from 'solid-js';
+
+export declare function beforeMount<HooksConfig>(
+  callback: (params: { hooksConfig?: HooksConfig, App: () => JSXElement }) => Promise<void | JSXElement>
 ): void;
-export declare function afterMount<HooksConfig extends JsonObject>(
-  callback: (params: { hooksConfig: HooksConfig }) => Promise<void>
+export declare function afterMount<HooksConfig>(
+  callback: (params: { hooksConfig?: HooksConfig }) => Promise<void>
 ): void;
