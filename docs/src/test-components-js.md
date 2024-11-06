@@ -113,11 +113,9 @@ component is mounted using this script. It can be either a `.js`, `.ts`, `.jsx` 
 }>
 <TabItem value="react">
 
-```js
+```js title="app.spec.tsx"
 import { test, expect } from '@playwright/experimental-ct-react';
 import App from './App';
-
-test.use({ viewport: { width: 500, height: 500 } });
 
 test('should work', async ({ mount }) => {
   const component = await mount(<App />);
@@ -129,18 +127,25 @@ test('should work', async ({ mount }) => {
 
 <TabItem value="vue">
 
-```js
+```js title="app.spec.ts"
 import { test, expect } from '@playwright/experimental-ct-vue';
 import App from './App.vue';
 
-test.use({ viewport: { width: 500, height: 500 } });
-
 test('should work', async ({ mount }) => {
   const component = await mount(App);
-  await expect(component).toContainText('Vite + Vue');
+  await expect(component).toContainText('Learn Vue');
 });
 ```
 
+```js title="app.spec.tsx"
+import { test, expect } from '@playwright/experimental-ct-vue';
+import App from './App.vue';
+
+test('should work', async ({ mount }) => {
+  const component = await mount(<App />);
+  await expect(component).toContainText('Learn Vue');
+});
+```
 If using TypeScript and Vue make sure to add a `vue.d.ts` file to your project:
 
 ```js
@@ -151,15 +156,13 @@ declare module '*.vue';
 
 <TabItem value="svelte">
 
-```js
+```js title="app.spec.ts"
 import { test, expect } from '@playwright/experimental-ct-svelte';
 import App from './App.svelte';
 
-test.use({ viewport: { width: 500, height: 500 } });
-
 test('should work', async ({ mount }) => {
   const component = await mount(App);
-  await expect(component).toContainText('Vite + Svelte');
+  await expect(component).toContainText('Learn Svelte');
 });
 ```
 
@@ -167,11 +170,9 @@ test('should work', async ({ mount }) => {
 
 <TabItem value="solid">
 
-```js
+```js title="app.spec.tsx"
 import { test, expect } from '@playwright/experimental-ct-solid';
 import App from './App';
-
-test.use({ viewport: { width: 500, height: 500 } });
 
 test('should work', async ({ mount }) => {
   const component = await mount(<App />);
@@ -232,12 +233,14 @@ Let's say you'd like to test following component:
 ```js title="input-media.tsx"
 import React from 'react';
 
-export const InputMedia: React.FC<{
+type InputMediaProps = {
   // Media is a complex browser object we can't send to Node while testing.
-  onChange: (media: Media) => void,
-}> = ({ onChange }) => {
-  return <></> as any;
+  onChange(media: Media): void;
 };
+
+export function InputMedia(props: InputMediaProps) {
+  return <></> as any;
+}
 ```
 
 Create a story file for your component:
@@ -246,18 +249,23 @@ Create a story file for your component:
 import React from 'react';
 import InputMedia from './import-media';
 
-export const InputMediaForTest: React.FC<{
-  onMediaChange: (mediaName: string) => void,
-}> = ({ onMediaChange }) => {
-  // Instead of sending a complex `media` object to the test, send the media name.
-  return <InputMedia onChange={media => onMediaChange(media.name)} />;
+type InputMediaForTestProps = {
+  onMediaChange(mediaName: string): void;
 };
+
+export function InputMediaForTest(props: InputMediaForTestProps) {
+  // Instead of sending a complex `media` object to the test, send the media name.
+  return <InputMedia onChange={media => props.onMediaChange(media.name)} />;
+}
 // Export more stories here.
 ```
 
 Then test the component via testing the story:
 
-```js title="input-media.test.spec.tsx"
+```js title="input-media.spec.tsx"
+import { test, expect } from '@playwright/experimental-ct-react';
+import { InputMediaForTest } from './input-media.story.tsx';
+
 test('changes the image', async ({ mount }) => {
   let mediaSelected: string | null = null;
 
@@ -265,7 +273,6 @@ test('changes the image', async ({ mount }) => {
     <InputMediaForTest
       onMediaChange={mediaName => {
         mediaSelected = mediaName;
-        console.log({ mediaName });
       }}
     />
   );
@@ -310,7 +317,9 @@ Provide props to a component when mounted.
 
 <TabItem value="react">
 
-```js
+```js title="component.spec.tsx"
+import { test } from '@playwright/experimental-ct-react';
+
 test('props', async ({ mount }) => {
   const component = await mount(<Component msg="greetings" />);
 });
@@ -319,7 +328,9 @@ test('props', async ({ mount }) => {
 </TabItem>
 <TabItem value="solid">
 
-```js
+```js title="component.spec.tsx"
+import { test } from '@playwright/experimental-ct-solid';
+
 test('props', async ({ mount }) => {
   const component = await mount(<Component msg="greetings" />);
 });
@@ -328,7 +339,9 @@ test('props', async ({ mount }) => {
 </TabItem>
 <TabItem value="svelte">
 
-```js
+```js title="component.spec.ts"
+import { test } from '@playwright/experimental-ct-svelte';
+
 test('props', async ({ mount }) => {
   const component = await mount(Component, { props: { msg: 'greetings' } });
 });
@@ -337,9 +350,20 @@ test('props', async ({ mount }) => {
 </TabItem>
 <TabItem value="vue">
 
-```js
+```js title="component.spec.ts"
+import { test } from '@playwright/experimental-ct-vue';
+
 test('props', async ({ mount }) => {
   const component = await mount(Component, { props: { msg: 'greetings' } });
+});
+```
+
+```js title="component.spec.tsx"
+// Or alternatively, using the `jsx` style
+import { test } from '@playwright/experimental-ct-vue';
+
+test('props', async ({ mount }) => {
+  const component = await mount(<Component msg="greetings" />);
 });
 ```
 
@@ -363,36 +387,53 @@ Provide callbacks/events to a component when mounted.
 
 <TabItem value="react">
 
-```js
+```js title="component.spec.tsx"
+import { test } from '@playwright/experimental-ct-react';
+
 test('callback', async ({ mount }) => {
-  const component = await mount(<Component callback={() => {}} />);
+  const component = await mount(<Component onClick={() => {}} />);
 });
 ```
 
 </TabItem>
 <TabItem value="solid">
 
-```js
+```js title="component.spec.tsx"
+import { test } from '@playwright/experimental-ct-solid';
+
 test('callback', async ({ mount }) => {
-  const component = await mount(<Component callback={() => {}} />);
+  const component = await mount(<Component onClick={() => {}} />);
 });
 ```
 
 </TabItem>
 <TabItem value="svelte">
 
-```js
+```js title="component.spec.ts"
+import { test } from '@playwright/experimental-ct-svelte';
+
 test('event', async ({ mount }) => {
-  const component = await mount(Component, { on: { callback() {} } });
+  const component = await mount(Component, { on: { click() {} } });
 });
 ```
 
 </TabItem>
 <TabItem value="vue">
 
-```js
+```js title="component.spec.ts"
+import { test } from '@playwright/experimental-ct-vue';
+
 test('event', async ({ mount }) => {
-  const component = await mount(Component, { on: { callback() {} } });
+  const component = await mount(Component, { on: { click() {} } });
+});
+```
+
+```js title="component.spec.tsx"
+// Or alternatively, using the `jsx` style
+import { test } from '@playwright/experimental-ct-vue';
+
+test('event', async ({ mount }) => {
+  const component = await mount(<Component v-on:click={() => {}} />);
 });
 ```
 
@@ -416,7 +457,9 @@ Provide children/slots to a component when mounted.
 
 <TabItem value="react">
 
-```js
+```js title="component.spec.tsx"
+import { test } from '@playwright/experimental-ct-react';
+
 test('children', async ({ mount }) => {
   const component = await mount(<Component>Child</Component>);
 });
@@ -425,7 +468,9 @@ test('children', async ({ mount }) => {
 </TabItem>
 <TabItem value="solid">
 
-```js
+```js title="component.spec.tsx"
+import { test } from '@playwright/experimental-ct-solid';
+
 test('children', async ({ mount }) => {
   const component = await mount(<Component>Child</Component>);
 });
@@ -434,7 +479,9 @@ test('children', async ({ mount }) => {
 </TabItem>
 <TabItem value="svelte">
 
-```js
+```js title="component.spec.ts"
+import { test } from '@playwright/experimental-ct-svelte';
+
 test('slot', async ({ mount }) => {
   const component = await mount(Component, { slots: { default: 'Slot' } });
 });
@@ -443,9 +490,20 @@ test('slot', async ({ mount }) => {
 </TabItem>
 <TabItem value="vue">
 
-```js
+```js title="component.spec.ts"
+import { test } from '@playwright/experimental-ct-vue';
+
 test('slot', async ({ mount }) => {
   const component = await mount(Component, { slots: { default: 'Slot' } });
+});
+```
+
+```js title="component.spec.tsx"
+// Or alternatively, using the `jsx` style
+import { test } from '@playwright/experimental-ct-vue';
+
+test('children', async ({ mount }) => {
+  const component = await mount(<Component>Child</Component>);
 });
 ```
 
@@ -455,7 +513,7 @@ test('slot', async ({ mount }) => {
 
 ### hooks
 
-You can use `beforeMount` and `afterMount` hooks to configure your app. This lets you setup things like your app router, fake server etc. giving you the flexibility you need. You can also pass custom configuration from the `mount` call from a test, which is accessible from the `hooksConfig` fixture. This includes any config that needs to be run before or after mounting the component. An example of configuring a router is provided below:
+You can use `beforeMount` and `afterMount` hooks to configure your app. This lets you set up things like your app router, fake server etc. giving you the flexibility you need. You can also pass custom configuration from the `mount` call from a test, which is accessible from the `hooksConfig` fixture. This includes any config that needs to be run before or after mounting the component. An example of configuring a router is provided below:
 
 <Tabs
   defaultValue="react"
@@ -463,7 +521,6 @@ You can use `beforeMount` and `afterMount` hooks to configure your app. This let
     {label: 'React', value: 'react'},
     {label: 'Solid', value: 'solid'},
     {label: 'Vue3', value: 'vue3'},
-    {label: 'Vue2', value: 'vue2'},
   ]
 }>
   <TabItem value="react">
@@ -559,40 +616,6 @@ You can use `beforeMount` and `afterMount` hooks to configure your app. This let
 
   </TabItem>
 
-  <TabItem value="vue2">
-
-  ```js title="playwright/index.ts"
-  import { beforeMount, afterMount } from '@playwright/experimental-ct-vue2/hooks';
-  import Router from 'vue-router';
-  import { router } from '../src/router';
-
-  export type HooksConfig = {
-    enableRouting?: boolean;
-  }
-
-  beforeMount<HooksConfig>(async ({ app, hooksConfig }) => {
-    if (hooksConfig?.enableRouting) {
-      Vue.use(Router);
-      return { router }
-    }
-  });
-  ```
-
-  ```js title="src/pages/ProductsPage.spec.ts"
-  import { test, expect } from '@playwright/experimental-ct-vue2';
-  import type { HooksConfig } from '../playwright';
-  import ProductsPage from './pages/ProductsPage.vue';
-
-  test('configure routing through hooks config', async ({ page, mount }) => {
-    const component = await mount<HooksConfig>(ProductsPage, {
-      hooksConfig: { enableRouting: true },
-    });
-    await expect(component.getByRole('link')).toHaveAttribute('href', '/products/42');
-  });
-  ```
-
-  </TabItem>
-
 </Tabs>
 
 ### unmount
@@ -611,7 +634,9 @@ Unmount the mounted component from the DOM. This is useful for testing the compo
 
 <TabItem value="react">
 
-```js
+```js title="component.spec.tsx"
+import { test } from '@playwright/experimental-ct-react';
+
 test('unmount', async ({ mount }) => {
   const component = await mount(<Component/>);
   await component.unmount();
@@ -621,7 +646,9 @@ test('unmount', async ({ mount }) => {
 </TabItem>
 <TabItem value="solid">
 
-```js
+```js title="component.spec.tsx"
+import { test } from '@playwright/experimental-ct-solid';
+
 test('unmount', async ({ mount }) => {
   const component = await mount(<Component/>);
   await component.unmount();
@@ -631,7 +658,9 @@ test('unmount', async ({ mount }) => {
 </TabItem>
 <TabItem value="svelte">
 
-```js
+```js title="component.spec.ts"
+import { test } from '@playwright/experimental-ct-svelte';
+
 test('unmount', async ({ mount }) => {
   const component = await mount(Component);
   await component.unmount();
@@ -641,13 +670,24 @@ test('unmount', async ({ mount }) => {
 </TabItem>
 <TabItem value="vue">
 
-```js
+```js title="component.spec.ts"
+import { test } from '@playwright/experimental-ct-vue';
+
 test('unmount', async ({ mount }) => {
   const component = await mount(Component);
   await component.unmount();
 });
 ```
 
+```js title="component.spec.tsx"
+// Or alternatively, using the `jsx` style
+import { test } from '@playwright/experimental-ct-vue';
+
+test('unmount', async ({ mount }) => {
+  const component = await mount(<Component/>);
+  await component.unmount();
+});
+```
 </TabItem>
 
 </Tabs>
@@ -668,11 +708,13 @@ Update props, slots/children, and/or events/callbacks of a mounted component. Th
 
 <TabItem value="react">
 
-```js
+```js title="component.spec.tsx"
+import { test } from '@playwright/experimental-ct-react';
+
 test('update', async ({ mount }) => {
   const component = await mount(<Component/>);
   await component.update(
-      <Component msg="greetings" callback={() => {}}>Child</Component>
+      <Component msg="greetings" onClick={() => {}}>Child</Component>
   );
 });
 ```
@@ -680,11 +722,13 @@ test('update', async ({ mount }) => {
 </TabItem>
 <TabItem value="solid">
 
-```js
+```js title="component.spec.tsx"
+import { test } from '@playwright/experimental-ct-solid';
+
 test('update', async ({ mount }) => {
   const component = await mount(<Component/>);
   await component.update(
-      <Component msg="greetings" callback={() => {}}>Child</Component>
+      <Component msg="greetings" onClick={() => {}}>Child</Component>
   );
 });
 ```
@@ -692,12 +736,14 @@ test('update', async ({ mount }) => {
 </TabItem>
 <TabItem value="svelte">
 
-```js
+```js title="component.spec.ts"
+import { test } from '@playwright/experimental-ct-svelte';
+
 test('update', async ({ mount }) => {
-  const component = await mount(<Component/>);
+  const component = await mount(Component);
   await component.update({
     props: { msg: 'greetings' },
-    on: { callback: () => {} },
+    on: { click() {} },
     slots: { default: 'Child' }
   });
 });
@@ -706,20 +752,71 @@ test('update', async ({ mount }) => {
 </TabItem>
 <TabItem value="vue">
 
-```js
+```js title="component.spec.ts"
+import { test } from '@playwright/experimental-ct-vue';
+
 test('update', async ({ mount }) => {
-  const component = await mount(<Component/>);
+  const component = await mount(Component);
   await component.update({
     props: { msg: 'greetings' },
-    on: { callback: () => {} },
+    on: { click() {} },
     slots: { default: 'Child' }
   });
+});
+```
+
+```js title="component.spec.tsx"
+// Or alternatively, using the `jsx` style
+import { test } from '@playwright/experimental-ct-vue';
+
+test('update', async ({ mount }) => {
+  const component = await mount(<Component/>);
+  await component.update(
+      <Component msg="greetings" v-on:click={() => {}}>Child</Component>
+  );
 });
 ```
 
 </TabItem>
 
 </Tabs>
+
+### Handling network requests
+
+Playwright provides an **experimental** `router` fixture to intercept and handle network requests. There are two ways to use the `router` fixture:
+* Call `router.route(url, handler)` that behaves similarly to [`method: Page.route`]. See the [network mocking guide](./mock.md) for more details.
+* Call `router.use(handlers)` and pass [MSW library](https://mswjs.io/) request handlers to it.
+
+Here is an example of reusing your existing MSW handlers in the test.
+
+```ts
+import { handlers } from '@src/mocks/handlers';
+
+test.beforeEach(async ({ router }) => {
+  // install common handlers before each test
+  await router.use(...handlers);
+});
+
+test('example test', async ({ mount }) => {
+  // test as usual, your handlers are active
+  // ...
+});
+```
+
+You can also introduce a one-off handler for a specific test.
+
+```ts
+import { http, HttpResponse } from 'msw';
+
+test('example test', async ({ mount, router }) => {
+  await router.use(http.get('/data', async ({ request }) => {
+    return HttpResponse.json({ value: 'mocked' });
+  }));
+
+  // test as usual, your handler is active
+  // ...
+});
+```
 
 ## Frequently asked questions
 
@@ -928,3 +1025,7 @@ test('override initialState ', async ({ mount }) => {
   await expect(component).toContainText('override initialState');
 });
 ```
+
+### How do I access the component's methods or its instance?
+
+Accessing a component's internal methods or its instance within test code is neither recommended nor supported. Instead, focus on observing and interacting with the component from a user's perspective, typically by clicking or verifying if something is visible on the page. Tests become less fragile and more valuable when they avoid interacting with internal implementation details, such as the component instance or its methods. Keep in mind that if a test fails when run from a user’s perspective, it likely means the automated test has uncovered a genuine bug in your code.

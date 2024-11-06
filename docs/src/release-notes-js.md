@@ -6,6 +6,308 @@ toc_max_heading_level: 2
 
 import LiteYouTube from '@site/src/components/LiteYouTube';
 
+## Version 1.48
+
+<LiteYouTube
+  id="VGlkSBkMVCQ"
+  title="Playwright 1.48"
+/>
+
+### WebSocket routing
+
+New methods [`method: Page.routeWebSocket`] and [`method: BrowserContext.routeWebSocket`] allow to intercept, modify and mock WebSocket connections initiated in the page. Below is a simple example that mocks WebSocket communication by responding to a `"request"` with a `"response"`.
+
+```js
+await page.routeWebSocket('/ws', ws => {
+  ws.onMessage(message => {
+    if (message === 'request')
+      ws.send('response');
+  });
+});
+```
+
+See [WebSocketRoute] for more details.
+
+### UI updates
+
+- New "copy" buttons for annotations and test location in the HTML report.
+- Route method calls like [`method: Route.fulfill`] are not shown in the report and trace viewer anymore. You can see which network requests were routed in the network tab instead.
+- New "Copy as cURL" and "Copy as fetch" buttons for requests in the network tab.
+
+### Miscellaneous
+
+- Option [`option: APIRequestContext.fetch.form`] and similar ones now accept [FormData](https://developer.mozilla.org/en-US/docs/Web/API/FormData).
+- New method [`method: Page.requestGC`] may help detect memory leaks.
+- New option [`option: Test.step.location`] to pass custom step location.
+- Requests made by [APIRequestContext] now record detailed timing and security information in the HAR.
+
+### Browser Versions
+
+- Chromium 130.0.6723.19
+- Mozilla Firefox 130.0
+- WebKit 18.0
+
+This version was also tested against the following stable channels:
+
+- Google Chrome 129
+- Microsoft Edge 129
+
+
+## Version 1.47
+
+### Network Tab improvements
+
+The Network tab in the UI mode and trace viewer has several nice improvements:
+
+- filtering by asset type and URL
+- better display of query string parameters
+- preview of font assets
+
+![Network tab now has filters](https://github.com/user-attachments/assets/4bd1b67d-90bd-438b-a227-00b9e86872e2)
+
+
+### `--tsconfig` CLI option
+
+By default, Playwright will look up the closest tsconfig for each imported file using a heuristic. You can now specify a single tsconfig file in the command line, and Playwright will use it for all imported files, not only test files:
+
+```sh
+# Pass a specific tsconfig
+npx playwright test --tsconfig tsconfig.test.json
+```
+
+### [APIRequestContext] now accepts [`URLSearchParams`](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams) and `string` as query parameters
+
+You can now pass [`URLSearchParams`](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams) and `string` as query parameters to [APIRequestContext]:
+
+```ts
+test('query params', async ({ request }) => {
+  const searchParams = new URLSearchParams();
+  searchParams.set('userId', 1);
+  const response = await request.get(
+      'https://jsonplaceholder.typicode.com/posts',
+      {
+        params: searchParams // or as a string: 'userId=1'
+      }
+  );
+  // ...
+});
+```
+
+### Miscellaneous
+
+- The `mcr.microsoft.com/playwright:v1.47.0` now serves a Playwright image based on Ubuntu 24.04 Noble.
+  To use the 22.04 jammy-based image, please use `mcr.microsoft.com/playwright:v1.47.0-jammy` instead.
+- New options [`option: Page.removeAllListeners.behavior`], [`option: Browser.removeAllListeners.behavior`] and [`option: BrowserContext.removeAllListeners.behavior`] to wait for ongoing listeners to complete.
+- TLS client certificates can now be passed from memory by passing [`option: Browser.newContext.clientCertificates.cert`] and [`option: Browser.newContext.clientCertificates.key`] as buffers instead of file paths.
+- Attachments with a `text/html` content type can now be opened in a new tab in the HTML report. This is useful for including third-party reports or other HTML content in the Playwright test report and distributing it to your team.
+- [`option: Locator.selectOption.noWaitAfter`] option in [`method: Locator.selectOption`] was deprecated.
+- We've seen reports of WebGL in Webkit misbehaving on GitHub Actions `macos-13`. We recommend upgrading GitHub Actions to `macos-14`.
+
+### Browser Versions
+
+- Chromium 129.0.6668.29
+- Mozilla Firefox 130.0
+- WebKit 18.0
+
+This version was also tested against the following stable channels:
+
+- Google Chrome 128
+- Microsoft Edge 128
+
+## Version 1.46
+
+<LiteYouTube
+  id="tQo7w-QQBsI"
+  title="Playwright 1.46"
+/>
+
+
+### TLS Client Certificates
+
+Playwright now allows you to supply client-side certificates, so that server can verify them, as specified by TLS Client Authentication.
+
+The following snippet sets up a client certificate for `https://example.com`:
+
+```ts
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  // ...
+  use: {
+    clientCertificates: [{
+      origin: 'https://example.com',
+      certPath: './cert.pem',
+      keyPath: './key.pem',
+      passphrase: 'mysecretpassword',
+    }],
+  },
+  // ...
+});
+```
+
+You can also provide client certificates to a particular [test project](./api/class-testproject#test-project-use) or as a parameter of [`method: Browser.newContext`] and [`method: APIRequest.newContext`].
+
+### `--only-changed` cli option
+
+New CLI option `--only-changed` will only run test files that have been changed since the last git commit or from a specific git "ref". This will also run all test files that import any changed files.
+
+```sh
+# Only run test files with uncommitted changes
+npx playwright test --only-changed
+
+# Only run test files changed relative to the "main" branch
+npx playwright test --only-changed=main
+```
+
+### Component Testing: New `router` fixture
+
+This release introduces an experimental `router` fixture to intercept and handle network requests in component testing.
+There are two ways to use the router fixture:
+
+- Call `router.route(url, handler)` that behaves similarly to [`method: Page.route`].
+- Call `router.use(handlers)` and pass [MSW library](https://mswjs.io) request handlers to it.
+
+Here is an example of reusing your existing MSW handlers in the test.
+
+```ts
+import { handlers } from '@src/mocks/handlers';
+
+test.beforeEach(async ({ router }) => {
+  // install common handlers before each test
+  await router.use(...handlers);
+});
+
+test('example test', async ({ mount }) => {
+  // test as usual, your handlers are active
+  // ...
+});
+```
+
+This fixture is only available in [component tests](./test-components#handling-network-requests).
+
+### UI Mode / Trace Viewer Updates
+
+- Test annotations are now shown in UI mode.
+- Content of text attachments is now rendered inline in the attachments pane.
+- New setting to show/hide routing actions like [`method: Route.continue`].
+- Request method and status are shown in the network details tab.
+- New button to copy source file location to clipboard.
+- Metadata pane now displays the `baseURL`.
+
+### Miscellaneous
+
+- New `maxRetries` option in [`method: APIRequestContext.fetch`] which retries on the `ECONNRESET` network error.
+- New option to [box a fixture](./test-fixtures#box-fixtures) to minimize the fixture exposure in test reports and error messages.
+- New option to provide a [custom fixture title](./test-fixtures#custom-fixture-title) to be used in test reports and error messages.
+
+### Browser Versions
+
+- Chromium 128.0.6613.18
+- Mozilla Firefox 128.0
+- WebKit 18.0
+
+This version was also tested against the following stable channels:
+
+- Google Chrome 127
+- Microsoft Edge 127
+
+## Version 1.45
+
+<LiteYouTube
+  id="54_aC-rVKHg"
+  title="Playwright 1.45"
+/>
+
+### Clock
+
+Utilizing the new [Clock] API allows to manipulate and control time within tests to verify time-related behavior. This API covers many common scenarios, including:
+* testing with predefined time;
+* keeping consistent time and timers;
+* monitoring inactivity;
+* ticking through time manually.
+
+```js
+// Initialize clock and let the page load naturally.
+await page.clock.install({ time: new Date('2024-02-02T08:00:00') });
+await page.goto('http://localhost:3333');
+
+// Pretend that the user closed the laptop lid and opened it again at 10am,
+// Pause the time once reached that point.
+await page.clock.pauseAt(new Date('2024-02-02T10:00:00'));
+
+// Assert the page state.
+await expect(page.getByTestId('current-time')).toHaveText('2/2/2024, 10:00:00 AM');
+
+// Close the laptop lid again and open it at 10:30am.
+await page.clock.fastForward('30:00');
+await expect(page.getByTestId('current-time')).toHaveText('2/2/2024, 10:30:00 AM');
+```
+
+See [the clock guide](./clock.md) for more details.
+
+### Test runner
+
+- New CLI option `--fail-on-flaky-tests` that sets exit code to `1` upon any flaky tests. Note that by default, the test runner exits with code `0` when all failed tests recovered upon a retry. With this option, the test run will fail in such case.
+
+- New environment variable `PLAYWRIGHT_FORCE_TTY` controls whether built-in `list`, `line` and `dot` reporters assume a live terminal. For example, this could be useful to disable tty behavior when your CI environment does not handle ANSI control sequences well. Alternatively, you can enable tty behavior even when to live terminal is present, if you plan to post-process the output and handle control sequences.
+
+  ```sh
+  # Avoid TTY features that output ANSI control sequences
+  PLAYWRIGHT_FORCE_TTY=0 npx playwright test
+
+  # Enable TTY features, assuming a terminal width 80
+  PLAYWRIGHT_FORCE_TTY=80 npx playwright test
+  ```
+
+- New options [`property: TestConfig.respectGitIgnore`] and [`property: TestProject.respectGitIgnore`] control whether files matching `.gitignore` patterns are excluded when searching for tests.
+
+- New property `timeout` is now available for custom expect matchers. This property takes into account `playwright.config.ts` and `expect.configure()`.
+  ```ts
+  import { expect as baseExpect } from '@playwright/test';
+
+  export const expect = baseExpect.extend({
+    async toHaveAmount(locator: Locator, expected: number, options?: { timeout?: number }) {
+      // When no timeout option is specified, use the config timeout.
+      const timeout = options?.timeout ?? this.timeout;
+      // ... implement the assertion ...
+    },
+  });
+  ```
+
+### Miscellaneous
+
+- Method [`method: Locator.setInputFiles`] now supports uploading a directory for `<input type=file webkitdirectory>` elements.
+  ```ts
+  await page.getByLabel('Upload directory').setInputFiles(path.join(__dirname, 'mydir'));
+  ```
+
+- Multiple methods like [`method: Locator.click`] or [`method: Locator.press`] now support a `ControlOrMeta` modifier key. This key maps to `Meta` on macOS and maps to `Control` on Windows and Linux.
+  ```ts
+  // Press the common keyboard shortcut Control+S or Meta+S to trigger a "Save" operation.
+  await page.keyboard.press('ControlOrMeta+S');
+  ```
+
+- New property `httpCredentials.send` in [`method: APIRequest.newContext`] that allows to either always send the `Authorization` header or only send it in response to `401 Unauthorized`.
+
+- New option `reason` in [`method: APIRequestContext.dispose`] that will be included in the error message of ongoing operations interrupted by the context disposal.
+
+- New option `host` in [`method: BrowserType.launchServer`] allows to accept websocket connections on a specific address instead of unspecified `0.0.0.0`.
+
+- Playwright now supports Chromium, Firefox and WebKit on Ubuntu 24.04.
+
+- v1.45 is the last release to receive WebKit update for macOS 12 Monterey. Please update macOS to keep using the latest WebKit.
+
+### Browser Versions
+
+* Chromium 127.0.6533.5
+* Mozilla Firefox 127.0
+* WebKit 17.4
+
+This version was also tested against the following stable channels:
+
+* Google Chrome 126
+* Microsoft Edge 126
+
 ## Version 1.44
 
 <LiteYouTube
@@ -273,7 +575,7 @@ This version was also tested against the following stable channels:
 
 - New method [`method: Page.unrouteAll`] removes all routes registered by [`method: Page.route`] and [`method: Page.routeFromHAR`]. Optionally allows to wait for ongoing routes to finish, or ignore any errors from them.
 - New method [`method: BrowserContext.unrouteAll`] removes all routes registered by [`method: BrowserContext.route`] and [`method: BrowserContext.routeFromHAR`]. Optionally allows to wait for ongoing routes to finish, or ignore any errors from them.
-- New option [`option: style`] in [`method: Page.screenshot`] and [`method: Locator.screenshot`] to add custom CSS to the page before taking a screenshot.
+- New options [`option: Page.screenshot.style`] in [`method: Page.screenshot`] and [`option: Locator.screenshot.style`] in [`method: Locator.screenshot`] to add custom CSS to the page before taking a screenshot.
 - New option `stylePath` for methods [`method: PageAssertions.toHaveScreenshot#1`] and [`method: LocatorAssertions.toHaveScreenshot#1`] to apply a custom stylesheet while making the screenshot.
 - New `fileName` option for [Blob reporter](./test-reporters#blob-reporter), to specify the name of the report to be created.
 
@@ -322,8 +624,8 @@ test('test', async ({ page }) => {
 
 ### New APIs
 
-- Option [`option: reason`] in [`method: Page.close`], [`method: BrowserContext.close`] and [`method: Browser.close`]. Close reason is reported for all operations interrupted by the closure.
-- Option [`option: firefoxUserPrefs`] in [`method: BrowserType.launchPersistentContext`].
+- Options [`option: Page.close.reason`] in [`method: Page.close`], [`option: BrowserContext.close.reason`] in [`method: BrowserContext.close`] and [`option: Browser.close.reason`] in [`method: Browser.close`]. Close reason is reported for all operations interrupted by the closure.
+- Option [`option: BrowserType.launchPersistentContext.firefoxUserPrefs`] in [`method: BrowserType.launchPersistentContext`].
 
 ### Other Changes
 
@@ -792,7 +1094,7 @@ This version was also tested against the following stable channels:
       await page.getByRole('button', { name: 'Dismiss' }).click();
     await newEmail.click();
     ```
-* Use new options [`option: hasNot`] and [`option: hasNotText`] in [`method: Locator.filter`]
+* Use new options [`option: Locator.filter.hasNot`] and [`option: Locator.filter.hasNotText`] in [`method: Locator.filter`]
   to find elements that **do not match** certain conditions.
 
     ```js
@@ -809,10 +1111,10 @@ This version was also tested against the following stable channels:
 ### New APIs
 
 - [`method: Locator.or`]
-- New option [`option: hasNot`] in [`method: Locator.filter`]
-- New option [`option: hasNotText`] in [`method: Locator.filter`]
+- New option [`option: Locator.filter.hasNot`] in [`method: Locator.filter`]
+- New option [`option: Locator.filter.hasNotText`] in [`method: Locator.filter`]
 - [`method: LocatorAssertions.toBeAttached`]
-- New option [`option: timeout`] in [`method: Route.fetch`]
+- New option [`option: Route.fetch.timeout`] in [`method: Route.fetch`]
 - [`method: Reporter.onExit`]
 
 ### ⚠️ Breaking change
@@ -852,10 +1154,10 @@ npx playwright test --ui
 
 ### New APIs
 
-- New options [`option: updateMode`] and [`option: updateContent`] in [`method: Page.routeFromHAR`] and [`method: BrowserContext.routeFromHAR`].
+- New options [`option: Page.routeFromHAR.updateMode`] and [`option: Page.routeFromHAR.updateContent`] in [`method: Page.routeFromHAR`] and [`method: BrowserContext.routeFromHAR`].
 - Chaining existing locator objects, see [locator docs](./locators.md#matching-inside-a-locator) for details.
 - New property [`property: TestInfo.testId`].
-- New option [`option: name`] in method [`method: Tracing.startChunk`].
+- New option [`option: Tracing.startChunk.name`] in method [`method: Tracing.startChunk`].
 
 
 ### ⚠️ Breaking change in component tests
@@ -1744,7 +2046,7 @@ This version was also tested against the following stable channels:
 
 - We now ship a designated Python docker image `mcr.microsoft.com/playwright/python`. Please switch over to it if you use
   Python. This is the last release that includes Python inside our javascript `mcr.microsoft.com/playwright` docker image.
-- v1.20 is the last release to receive WebKit update for macOS 10.15 Catalina. Please update MacOS to keep using latest & greatest WebKit!
+- v1.20 is the last release to receive WebKit update for macOS 10.15 Catalina. Please update macOS to keep using latest & greatest WebKit!
 
 ### Browser Versions
 
@@ -2554,7 +2856,7 @@ This version of Playwright was also tested against the following stable channels
 
 #### New APIs
 
-- [`browserType.launch()`](./api/class-browsertype#browsertypelaunchoptions) now accepts the new `'channel'` option. Read more in [our documentation](./browsers).
+- [`method: BrowserType.launch`] now accepts the new `'channel'` option. Read more in [our documentation](./browsers).
 
 
 ## Version 1.9

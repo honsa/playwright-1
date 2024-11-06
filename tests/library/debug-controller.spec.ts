@@ -188,9 +188,9 @@ test('test', async ({ page }) => {
   await page.getByRole('button', { name: 'Submit' }).click();
 });`
   });
-  const length = events.length;
   // No events after mode disabled
   await backend.setRecorderMode({ mode: 'none' });
+  const length = events.length;
   await page.getByRole('button').click();
   expect(events).toHaveLength(length);
 });
@@ -252,4 +252,30 @@ test('should reset routes before reuse', async ({ server, connectedBrowserFactor
   await page2.goto(server.PREFIX + '/consolelog.html');
   await expect(page2).toHaveTitle('console.log test');
   await browser2.close();
+});
+
+test('should highlight inside iframe', async ({ backend, connectedBrowser }, testInfo) => {
+  testInfo.annotations.push({ type: 'issue', description: 'https://github.com/microsoft/playwright/issues/33146' });
+
+  const context = await connectedBrowser._newContextForReuse();
+  const page = await context.newPage();
+  await backend.navigate({ url: `data:text/html,<div>bar</div><iframe srcdoc="<div>bar</div>"/>` });
+
+
+  await page.frameLocator('iframe').getByText('bar').highlight();
+
+  const highlight = page.frameLocator('iframe').locator('x-pw-highlight');
+  await expect(highlight).not.toHaveCount(0);
+  await backend.hideHighlight();
+  await expect(highlight).toHaveCount(0);
+
+  await backend.highlight({ selector: `frameLocator('iframe').getByText('bar')` });
+  await expect(highlight).not.toHaveCount(0);
+
+  await backend.highlight({ selector: `frameLocator('iframe').frameLocator('iframe').getByText('bar')` });
+  await expect(highlight).toHaveCount(0);
+
+  await backend.highlight({ selector: `getByText('bar')` });
+  await expect(highlight).toHaveCount(1);
+  await expect(page.locator('x-pw-highlight')).toHaveCount(1);
 });

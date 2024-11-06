@@ -27,7 +27,7 @@ export type SnapshotData = {
   }[],
   viewport: { width: number, height: number },
   url: string,
-  timestamp: number,
+  wallTime: number,
   collectionTime: number,
 };
 
@@ -139,11 +139,18 @@ export function frameSnapshotStreamer(snapshotStreamer: string, removeNoScript: 
     }
 
     private _refreshListeners() {
-      (document as any).addEventListener('__playwright_target__', (event: CustomEvent) => {
+      (document as any).addEventListener('__playwright_mark_target__', (event: CustomEvent) => {
         if (!event.detail)
           return;
         const callId = event.detail as string;
         (event.composedPath()[0] as any).__playwright_target__ = callId;
+      });
+      (document as any).addEventListener('__playwright_unmark_target__', (event: CustomEvent) => {
+        if (!event.detail)
+          return;
+        const callId = event.detail as string;
+        if ((event.composedPath()[0] as any).__playwright_target__ === callId)
+          delete (event.composedPath()[0] as any).__playwright_target__;
       });
     }
 
@@ -572,7 +579,7 @@ export function frameSnapshotStreamer(snapshotStreamer: string, removeNoScript: 
           height: window.innerHeight,
         },
         url: location.href,
-        timestamp,
+        wallTime: Date.now(),
         collectionTime: 0,
       };
 
@@ -589,7 +596,7 @@ export function frameSnapshotStreamer(snapshotStreamer: string, removeNoScript: 
         result.resourceOverrides.push({ url, content, contentType: 'text/css' },);
       }
 
-      result.collectionTime = performance.now() - result.timestamp;
+      result.collectionTime = performance.now() - timestamp;
       return result;
     }
   }

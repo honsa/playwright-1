@@ -16,9 +16,8 @@
 
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-// @ts-ignore
 import { bundle } from './bundle';
-import * as path from 'path';
+import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -42,11 +41,11 @@ export default defineConfig({
     emptyOutDir: false,
     rollupOptions: {
       input: {
-        sw: path.resolve(__dirname, 'src/sw.ts'),
+        sw: path.resolve(__dirname, 'src/sw-main.ts'),
       },
       output: {
-        entryFileNames: info => '[name].bundle.js',
-        assetFileNames: () => '[name].[hash][extname]',
+        entryFileNames: info => 'sw.bundle.js',
+        assetFileNames: () => 'sw.[hash][extname]',
         manualChunks: undefined,
       },
     },

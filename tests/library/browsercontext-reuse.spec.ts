@@ -203,10 +203,10 @@ test('should ignore binding from beforeunload', async ({ reusedContext }) => {
   expect(called).toBe(false);
 });
 
-test('should reset mouse position', async ({ reusedContext, browserName, platform }) => {
+test('should reset mouse position', {
+  annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright/issues/22432' },
+}, async ({ reusedContext, browserName, platform }) => {
   // Note: this test only reproduces the issue locally when run with --repeat-each=20.
-  test.info().annotations.push({ type: 'issue', description: 'https://github.com/microsoft/playwright/issues/22432' });
-  test.fixme(browserName === 'chromium' && platform !== 'darwin', 'chromium keeps hover on linux/win');
 
   const pageContent = `
     <style>
@@ -214,6 +214,7 @@ test('should reset mouse position', async ({ reusedContext, browserName, platfor
       div:hover { background: red; }
       html, body { margin: 0; padding: 0; }
     </style>
+    <div id=filler>one</div>
     <div id=one>one</div>
     <div id=two>two</div>
   `;
@@ -224,7 +225,7 @@ test('should reset mouse position', async ({ reusedContext, browserName, platfor
   await expect(page.locator('#one')).toHaveCSS('background-color', 'rgb(0, 0, 255)');
   await expect(page.locator('#two')).toHaveCSS('background-color', 'rgb(0, 0, 255)');
 
-  await page.mouse.move(10, 45);
+  await page.mouse.move(10, 75);
   await expect(page.locator('#one')).toHaveCSS('background-color', 'rgb(0, 0, 255)');
   await expect(page.locator('#two')).toHaveCSS('background-color', 'rgb(255, 0, 0)');
 
@@ -250,6 +251,19 @@ test('should reset tracing', async ({ reusedContext, trace }, testInfo) => {
 
   const error = await context.tracing.stopChunk({ path: testInfo.outputPath('trace.zip') }).catch(e => e);
   expect(error.message).toContain('Must start tracing before stopping');
+});
+
+test('should work with clock emulation', async ({ reusedContext, trace }, testInfo) => {
+  let context = await reusedContext();
+
+  let page = await context.newPage();
+  await page.clock.setFixedTime(new Date('2020-01-01T00:00:00.000Z'));
+  expect(await page.evaluate('new Date().toISOString()')).toBe('2020-01-01T00:00:00.000Z');
+
+  context = await reusedContext();
+  page = context.pages()[0];
+  await page.clock.setFixedTime(new Date('2020-01-01T00:00:00Z'));
+  expect(await page.evaluate('new Date().toISOString()')).toBe('2020-01-01T00:00:00.000Z');
 });
 
 test('should continue issuing events after closing the reused page', async ({ reusedContext, server }) => {

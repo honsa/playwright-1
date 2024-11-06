@@ -71,8 +71,7 @@ import { test, expect } from '@playwright/test';
 test('basic test', {
   annotation: {
     type: 'issue',
-    description: 'feature tags API',
-    url: 'https://github.com/microsoft/playwright/issues/23180'
+    description: 'https://github.com/microsoft/playwright/issues/23180',
   },
 }, async ({ page }) => {
   await page.goto('https://playwright.dev/');
@@ -98,8 +97,7 @@ Test title.
   - `tag` ?<[string]|[Array]<[string]>>
   - `annotation` ?<[Object]|[Array]<[Object]>>
     - `type` <[string]> Annotation type, for example `'issue'`.
-    - `description` ?<[string]> Optional annotation description.
-    - `url` ?<[string]> Optional for example an issue url.
+    - `description` ?<[string]> Optional annotation description, for example an issue url.
 
 Additional test details.
 
@@ -442,7 +440,6 @@ Group title.
   - `annotation` ?<[Object]|[Array]<[Object]>>
     - `type` <[string]>
     - `description` ?<[string]>
-    - `url` ?<[string]>
 
 Additional details for all tests in the group.
 
@@ -571,7 +568,6 @@ Group title.
   - `annotation` ?<[Object]|[Array]<[Object]>>
     - `type` <[string]>
     - `description` ?<[string]>
-    - `url` ?<[string]>
 
 See [`method: Test.describe`] for details description.
 
@@ -627,7 +623,6 @@ Group title.
   - `annotation` ?<[Object]|[Array]<[Object]>>
     - `type` <[string]>
     - `description` ?<[string]>
-    - `url` ?<[string]>
 
 See [`method: Test.describe`] for details description.
 
@@ -681,7 +676,6 @@ Group title.
   - `annotation` ?<[Object]|[Array]<[Object]>>
     - `type` <[string]>
     - `description` ?<[string]>
-    - `url` ?<[string]>
 
 See [`method: Test.describe`] for details description.
 
@@ -733,7 +727,6 @@ Group title.
   - `annotation` ?<[Object]|[Array]<[Object]>>
     - `type` <[string]>
     - `description` ?<[string]>
-    - `url` ?<[string]>
 
 See [`method: Test.describe`] for details description.
 
@@ -789,7 +782,6 @@ Group title.
   - `annotation` ?<[Object]|[Array]<[Object]>>
     - `type` <[string]>
     - `description` ?<[string]>
-    - `url` ?<[string]>
 
 See [`method: Test.describe`] for details description.
 
@@ -847,7 +839,6 @@ Group title.
   - `annotation` ?<[Object]|[Array]<[Object]>>
     - `type` <[string]>
     - `description` ?<[string]>
-    - `url` ?<[string]>
 
 See [`method: Test.describe`] for details description.
 
@@ -900,7 +891,6 @@ Group title.
   - `annotation` ?<[Object]|[Array]<[Object]>>
     - `type` <[string]>
     - `description` ?<[string]>
-    - `url` ?<[string]>
 
 See [`method: Test.describe`] for details description.
 
@@ -1119,7 +1109,6 @@ Test title.
   - `annotation` ?<[Object]|[Array]<[Object]>>
     - `type` <[string]>
     - `description` ?<[string]>
-    - `url` ?<[string]>
 
 See [`method: Test.(call)`] for test details description.
 
@@ -1146,6 +1135,57 @@ A function that returns whether to mark as "should fail", based on test fixtures
 - `description` ?<[string]>
 
 Optional description that will be reflected in a test report.
+
+
+
+## method: Test.fail.only
+* since: v1.49
+
+You can use `test.fail.only` to focus on a specific test that is expected to fail. This is particularly useful when debugging a failing test or working on a specific issue.
+
+To declare a focused "failing" test:
+* `test.fail.only(title, body)`
+* `test.fail.only(title, details, body)`
+
+**Usage**
+
+You can declare a focused failing test, so that Playwright runs only this test and ensures it actually fails.
+
+```js
+import { test, expect } from '@playwright/test';
+
+test.fail.only('focused failing test', async ({ page }) => {
+  // This test is expected to fail
+});
+test('not in the focused group', async ({ page }) => {
+  // This test will not run
+});
+```
+
+### param: Test.fail.only.title
+* since: v1.49
+
+- `title` ?<[string]>
+
+Test title.
+
+### param: Test.fail.only.details
+* since: v1.49
+
+- `details` ?<[Object]>
+  - `tag` ?<[string]|[Array]<[string]>>
+  - `annotation` ?<[Object]|[Array]<[Object]>>
+    - `type` <[string]>
+    - `description` ?<[string]>
+
+See [`method: Test.describe`] for test details description.
+
+### param: Test.fail.only.body
+* since: v1.49
+
+- `body` ?<[function]\([Fixtures], [TestInfo]\)>
+
+Test body that takes one or two arguments: an object with fixtures and optional [TestInfo].
 
 
 
@@ -1225,7 +1265,6 @@ Test title.
   - `annotation` ?<[Object]|[Array]<[Object]>>
     - `type` <[string]>
     - `description` ?<[string]>
-    - `url` ?<[string]>
 
 See [`method: Test.(call)`] for test details description.
 
@@ -1303,7 +1342,6 @@ Test title.
   - `annotation` ?<[Object]|[Array]<[Object]>>
     - `type` <[string]>
     - `description` ?<[string]>
-    - `url` ?<[string]>
 
 See [`method: Test.(call)`] for test details description.
 
@@ -1332,7 +1370,7 @@ Timeout for the currently running test is available through [`property: TestInfo
   });
   ```
 
-* Changing timeout from a slow `beforeEach` or `afterEach` hook. Note that this affects the test timeout that is shared with `beforeEach`/`afterEach` hooks.
+* Changing timeout from a slow `beforeEach` hook. Note that this affects the test timeout that is shared with `beforeEach` hooks.
 
   ```js
   test.beforeEach(async ({ page }, testInfo) => {
@@ -1449,7 +1487,6 @@ Test title.
   - `annotation` ?<[Object]|[Array]<[Object]>>
     - `type` <[string]>
     - `description` ?<[string]>
-    - `url` ?<[string]>
 
 See [`method: Test.(call)`] for test details description.
 
@@ -1723,6 +1760,12 @@ Step body.
 - `box` <boolean>
 
 Whether to box the step in the report. Defaults to `false`. When the step is boxed, errors thrown from the step internals point to the step call site. See below for more details.
+
+### option: Test.step.location
+* since: v1.48
+- `location` <[Location]>
+
+Specifies a custom location for the step to be shown in test reports and trace viewer. By default, location of the [`method: Test.step`] call is shown.
 
 ## method: Test.use
 * since: v1.10

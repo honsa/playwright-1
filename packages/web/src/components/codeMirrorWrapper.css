@@ -33,7 +33,8 @@
   color: var(--vscode-debugTokenExpression-number);
 }
 
-.CodeMirror span.cm-keyword {
+.CodeMirror span.cm-keyword,
+.CodeMirror span.cm-builtin {
   color: var(--vscode-debugTokenExpression-name);
 }
 
@@ -173,4 +174,10 @@ body.dark-mode .CodeMirror span.cm-type {
   white-space: pre-wrap;
   margin: 3px 10px;
   padding: 5px;
+}
+
+.CodeMirror span.cm-link, span.cm-linkified {
+  color: var(--vscode-textLink-foreground);
+  text-decoration: underline;
+  cursor: pointer;
 }

@@ -26,7 +26,7 @@ import * as dom from '../dom';
 import * as frames from '../frames';
 import { helper } from '../helper';
 import * as network from '../network';
-import type { PageBinding, PageDelegate } from '../page';
+import { type InitScript, PageBinding, type PageDelegate } from '../page';
 import { Page, Worker } from '../page';
 import type { Progress } from '../progress';
 import type * as types from '../types';
@@ -182,15 +182,6 @@ export class CRPage implements PageDelegate {
     return this._sessionForFrame(frame)._navigate(frame, url, referrer);
   }
 
-  async exposeBinding(binding: PageBinding) {
-    await this._forAllFrameSessions(frame => frame._initBinding(binding));
-    await Promise.all(this._page.frames().map(frame => frame.evaluateExpression(binding.source).catch(e => {})));
-  }
-
-  async removeExposedBindings() {
-    await this._forAllFrameSessions(frame => frame._removeExposedBindings());
-  }
-
   async updateExtraHTTPHeaders(): Promise<void> {
     const headers = network.mergeHeaders([
       this._browserContext._options.extraHTTPHeaders,
@@ -256,11 +247,15 @@ export class CRPage implements PageDelegate {
     return this._go(+1);
   }
 
-  async addInitScript(source: string, world: types.World = 'main'): Promise<void> {
-    await this._forAllFrameSessions(frame => frame._evaluateOnNewDocument(source, world));
+  async requestGC(): Promise<void> {
+    await this._mainFrameSession._client.send('HeapProfiler.collectGarbage');
   }
 
-  async removeInitScripts() {
+  async addInitScript(initScript: InitScript, world: types.World = 'main'): Promise<void> {
+    await this._forAllFrameSessions(frame => frame._evaluateOnNewDocument(initScript, world));
+  }
+
+  async removeNonInternalInitScripts() {
     await this._forAllFrameSessions(frame => frame._removeEvaluatesOnNewDocument());
   }
 
@@ -369,6 +364,8 @@ export class CRPage implements PageDelegate {
   }
 
   async resetForReuse(): Promise<void> {
+    // See https://github.com/microsoft/playwright/issues/22432.
+    await this.rawMouse.move(-1, -1, 'none', new Set(), new Set(), true);
   }
 
   async pdf(options: channels.PagePdfParams): Promise<Buffer> {
@@ -420,7 +417,6 @@ class FrameSession {
   private _screencastId: string | null = null;
   private _screencastClients = new Set<any>();
   private _evaluateOnNewDocumentIdentifiers: string[] = [];
-  private _exposedBindingNames: string[] = [];
   private _metricsOverride: Protocol.Emulation.setDeviceMetricsOverrideParameters | undefined;
   private _workerSessions = new Map<string, CRSession>();
 
@@ -511,6 +507,18 @@ class FrameSession {
           this._addRendererListeners();
         }
 
+        const localFrames = this._isMainFrame() ? this._page.frames() : [this._page._frameManager.frame(this._targetId)!];
+        for (const frame of localFrames) {
+          // Note: frames might be removed before we send these.
+          this._client._sendMayFail('Page.createIsolatedWorld', {
+            frameId: frame._id,
+            grantUniveralAccess: true,
+            worldName: UTILITY_WORLD_NAME,
+          });
+          for (const initScript of this._crPage._page.allInitScripts())
+            frame.evaluateExpression(initScript.source).catch(e => {});
+        }
+
         const isInitialEmptyPage = this._isMainFrame() && this._page.mainFrame().url() === ':';
         if (isInitialEmptyPage) {
           // Ignore lifecycle events, worlds and bindings for the initial empty page. It is never the final page
@@ -520,20 +528,6 @@ class FrameSession {
             this._eventListeners.push(eventsHelper.addEventListener(this._client, 'Page.lifecycleEvent', event => this._onLifecycleEvent(event)));
           });
         } else {
-          const localFrames = this._isMainFrame() ? this._page.frames() : [this._page._frameManager.frame(this._targetId)!];
-          for (const frame of localFrames) {
-            // Note: frames might be removed before we send these.
-            this._client._sendMayFail('Page.createIsolatedWorld', {
-              frameId: frame._id,
-              grantUniveralAccess: true,
-              worldName: UTILITY_WORLD_NAME,
-            });
-            for (const binding of this._crPage._browserContext._pageBindings.values())
-              frame.evaluateExpression(binding.source).catch(e => {});
-            for (const source of this._crPage._browserContext.initScripts)
-              frame.evaluateExpression(source).catch(e => {});
-          }
-
           this._firstNonInitialNavigationCommittedFulfill();
           this._eventListeners.push(eventsHelper.addEventListener(this._client, 'Page.lifecycleEvent', event => this._onLifecycleEvent(event)));
         }
@@ -541,6 +535,7 @@ class FrameSession {
       this._client.send('Log.enable', {}),
       lifecycleEventsEnabled = this._client.send('Page.setLifecycleEventsEnabled', { enabled: true }),
       this._client.send('Runtime.enable', {}),
+      this._client.send('Runtime.addBinding', { name: PageBinding.kPlaywrightBinding }),
       this._client.send('Page.addScriptToEvaluateOnNewDocument', {
         source: '',
         worldName: UTILITY_WORLD_NAME,
@@ -554,7 +549,7 @@ class FrameSession {
       const options = this._crPage._browserContext._options;
       if (options.bypassCSP)
         promises.push(this._client.send('Page.setBypassCSP', { enabled: true }));
-      if (options.ignoreHTTPSErrors)
+      if (options.ignoreHTTPSErrors || options.internalIgnoreHTTPSErrors)
         promises.push(this._client.send('Security.setIgnoreCertificateErrors', { ignore: true }));
       if (this._isMainFrame())
         promises.push(this._updateViewport());
@@ -573,12 +568,8 @@ class FrameSession {
       promises.push(this._updateGeolocation(true));
       promises.push(this._updateEmulateMedia());
       promises.push(this._updateFileChooserInterception(true));
-      for (const binding of this._crPage._page.allBindings())
-        promises.push(this._initBinding(binding));
-      for (const source of this._crPage._browserContext.initScripts)
-        promises.push(this._evaluateOnNewDocument(source, 'main'));
-      for (const source of this._crPage._page.initScripts)
-        promises.push(this._evaluateOnNewDocument(source, 'main'));
+      for (const initScript of this._crPage._page.allInitScripts())
+        promises.push(this._evaluateOnNewDocument(initScript, 'main'));
       if (screencastOptions)
         promises.push(this._startVideoRecording(screencastOptions));
     }
@@ -834,25 +825,6 @@ class FrameSession {
     this._page._addConsoleMessage(event.type, values, toConsoleMessageLocation(event.stackTrace));
   }
 
-  async _initBinding(binding: PageBinding) {
-    const [, response] = await Promise.all([
-      this._client.send('Runtime.addBinding', { name: binding.name }),
-      this._client.send('Page.addScriptToEvaluateOnNewDocument', { source: binding.source })
-    ]);
-    this._exposedBindingNames.push(binding.name);
-    if (!binding.name.startsWith('__pw'))
-      this._evaluateOnNewDocumentIdentifiers.push(response.identifier);
-  }
-
-  async _removeExposedBindings() {
-    const toRetain: string[] = [];
-    const toRemove: string[] = [];
-    for (const name of this._exposedBindingNames)
-      (name.startsWith('__pw_') ? toRetain : toRemove).push(name);
-    this._exposedBindingNames = toRetain;
-    await Promise.all(toRemove.map(name => this._client.send('Runtime.removeBinding', { name })));
-  }
-
   async _onBindingCalled(event: Protocol.Runtime.bindingCalledPayload) {
     const pageOrError = await this._crPage.pageOrError();
     if (!(pageOrError instanceof Error)) {
@@ -931,7 +903,7 @@ class FrameSession {
     const buffer = Buffer.from(payload.data, 'base64');
     this._page.emit(Page.Events.ScreencastFrame, {
       buffer,
-      timestamp: payload.metadata.timestamp,
+      frameSwapWallTime: payload.metadata.timestamp ? payload.metadata.timestamp * 1000 : undefined,
       width: payload.metadata.deviceWidth,
       height: payload.metadata.deviceHeight,
     });
@@ -1099,10 +1071,11 @@ class FrameSession {
     await this._client.send('Page.setInterceptFileChooserDialog', { enabled }).catch(() => {}); // target can be closed.
   }
 
-  async _evaluateOnNewDocument(source: string, world: types.World): Promise<void> {
+  async _evaluateOnNewDocument(initScript: InitScript, world: types.World): Promise<void> {
     const worldName = world === 'utility' ? UTILITY_WORLD_NAME : undefined;
-    const { identifier } = await this._client.send('Page.addScriptToEvaluateOnNewDocument', { source, worldName });
-    this._evaluateOnNewDocumentIdentifiers.push(identifier);
+    const { identifier } = await this._client.send('Page.addScriptToEvaluateOnNewDocument', { source: initScript.source, worldName });
+    if (!initScript.internal)
+      this._evaluateOnNewDocumentIdentifiers.push(identifier);
   }
 
   async _removeEvaluatesOnNewDocument(): Promise<void> {
@@ -1245,7 +1218,7 @@ async function emulateTimezone(session: CRSession, timezoneId: string) {
 const contextDelegateSymbol = Symbol('delegate');
 
 // Chromium reference: https://source.chromium.org/chromium/chromium/src/+/main:components/embedder_support/user_agent_utils.cc;l=434;drc=70a6711e08e9f9e0d8e4c48e9ba5cab62eb010c2
-function calculateUserAgentMetadata(options: channels.BrowserNewContextParams) {
+function calculateUserAgentMetadata(options: types.BrowserContextOptions) {
   const ua = options.userAgent;
   if (!ua)
     return undefined;

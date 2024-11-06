@@ -26,7 +26,6 @@ export type ClockMethods = {
 
 export type ClockConfig = {
   now?: number | Date;
-  loopLimit?: number;
 };
 
 export type InstallConfig = ClockConfig & {
@@ -46,33 +45,46 @@ type Timer = {
   func: TimerHandler;
   args: any[];
   delay: number;
-  callAt: number;
-  createdAt: number;
+  callAt: Ticks;
+  createdAt: Ticks;
   id: number;
   error?: Error;
 };
 
 interface Embedder {
-  postTask(task: () => void): void;
-  postTaskPeriodically(task: () => void, delay: number): () => void;
+  dateNow(): number;
+  performanceNow(): EmbedderTicks;
+  setTimeout(task: () => void, timeout?: number): () => void;
+  setInterval(task: () => void, delay: number): () => void;
 }
 
+type Ticks = number & { readonly __brand: 'Ticks' };
+type EmbedderTicks = number & { readonly __brand: 'EmbedderTicks' };
+type WallTime = number & { readonly __brand: 'WallTime' };
+
+type Time = {
+  time: WallTime;
+  ticks: Ticks;
+  isFixedTime: boolean;
+  origin: WallTime;
+};
+
+type LogEntryType = 'fastForward' |'install' | 'pauseAt' | 'resume' | 'runFor' | 'setFixedTime' | 'setSystemTime';
+
 export class ClockController {
-  readonly timeOrigin: number;
-  private _now: { time: number, ticks: number, timeFrozen: boolean };
-  private _loopLimit: number;
+  readonly _now: Time;
   private _duringTick = false;
   private _timers = new Map<number, Timer>();
   private _uniqueTimerId = idCounterStart;
   private _embedder: Embedder;
   readonly disposables: (() => void)[] = [];
+  private _log: { type: LogEntryType, time: number, param?: number }[] = [];
+  private _realTime: { startTicks: EmbedderTicks, lastSyncTicks: EmbedderTicks } | undefined;
+  private _currentRealTimeTimer: { callAt: Ticks, dispose: () => void } | undefined;
 
-  constructor(embedder: Embedder, startDate: Date | number | undefined, loopLimit: number = 1000) {
-    const start = Math.floor(getEpoch(startDate));
-    this.timeOrigin = start;
-    this._now = { time: start, ticks: 0, timeFrozen: false };
+  constructor(embedder: Embedder) {
+    this._now = { time: asWallTime(0), isFixedTime: false, ticks: 0 as Ticks, origin: asWallTime(-1) };
     this._embedder = embedder;
-    this._loopLimit = loopLimit;
   }
 
   uninstall() {
@@ -81,110 +93,158 @@ export class ClockController {
   }
 
   now(): number {
+    this._replayLogOnce();
     return this._now.time;
   }
 
-  setTime(now: Date | number, options: { freeze?: boolean } = {}) {
-    this._now.time = getEpoch(now);
-    this._now.timeFrozen = !!options.freeze;
+  install(time: number) {
+    this._replayLogOnce();
+    this._innerSetTime(asWallTime(time));
+  }
+
+  setSystemTime(time: number) {
+    this._replayLogOnce();
+    this._innerSetTime(asWallTime(time));
+  }
+
+  setFixedTime(time: number) {
+    this._replayLogOnce();
+    this._innerSetFixedTime(asWallTime(time));
   }
 
   performanceNow(): DOMHighResTimeStamp {
+    this._replayLogOnce();
     return this._now.ticks;
   }
 
-  private _advanceNow(toTicks: number) {
-    if (!this._now.timeFrozen)
-      this._now.time += toTicks - this._now.ticks;
-    this._now.ticks = toTicks;
+  private _innerSetTime(time: WallTime) {
+    this._now.time  = time;
+    this._now.isFixedTime = false;
+    if (this._now.origin < 0)
+      this._now.origin = this._now.time;
   }
 
-  private async _doTick(msFloat: number): Promise<number> {
-    if (msFloat < 0)
-      throw new TypeError('Negative ticks are not supported');
+  private _innerSetFixedTime(time: WallTime) {
+    this._innerSetTime(time);
+    this._now.isFixedTime = true;
+  }
 
-    const ms = Math.floor(msFloat);
-    const tickTo = this._now.ticks + ms;
-    let tickFrom = this._now.ticks;
-    let previous = this._now.ticks;
+  private _advanceNow(to: Ticks) {
+    if (!this._now.isFixedTime)
+      this._now.time = asWallTime(this._now.time + to - this._now.ticks);
+    this._now.ticks = to;
+  }
+
+  async log(type: LogEntryType, time: number, param?: number) {
+    this._log.push({ type, time, param });
+  }
+
+  async runFor(ticks: number) {
+    this._replayLogOnce();
+    if (ticks < 0)
+      throw new TypeError('Negative ticks are not supported');
+    await this._runTo(shiftTicks(this._now.ticks, ticks));
+  }
+
+  private async _runTo(to: Ticks) {
+    to = Math.ceil(to) as Ticks;
+
+    if (this._now.ticks > to)
+      return;
+
     let firstException: Error | undefined;
-    let timer = this._firstTimerInRange(tickFrom, tickTo);
-    while (timer && tickFrom <= tickTo) {
-      tickFrom = timer.callAt;
-      const error = await this._callTimer(timer).catch(e => e);
-      firstException = firstException || error;
-      timer = this._firstTimerInRange(previous, tickTo);
-      previous = tickFrom;
+    while (true) {
+      const result = await this._callFirstTimer(to);
+      if (!result.timerFound)
+        break;
+      firstException = firstException || result.error;
     }
 
-    this._advanceNow(tickTo);
+    this._advanceNow(to);
     if (firstException)
       throw firstException;
-
-    return this._now.ticks;
   }
 
-  async recordTick(tickValue: string | number) {
-    const msFloat = parseTime(tickValue);
-    this._advanceNow(this._now.ticks + msFloat);
+  async pauseAt(time: number): Promise<number> {
+    this._replayLogOnce();
+    this._innerPause();
+    const toConsume = time - this._now.time;
+    await this._innerFastForwardTo(shiftTicks(this._now.ticks, toConsume));
+    return toConsume;
   }
 
-  async tick(tickValue: string | number): Promise<number> {
-    return await this._doTick(parseTime(tickValue));
+  private _innerPause() {
+    this._realTime = undefined;
+    this._updateRealTimeTimer();
   }
 
-  async next(): Promise<number> {
-    const timer = this._firstTimer();
-    if (!timer)
-      return this._now.ticks;
-    await this._callTimer(timer);
-    return this._now.ticks;
+  resume() {
+    this._replayLogOnce();
+    this._innerResume();
   }
 
-  async runToFrame(): Promise<number> {
-    return this.tick(this.getTimeToNextFrame());
+  private _innerResume() {
+    const now = this._embedder.performanceNow();
+    this._realTime = { startTicks: now, lastSyncTicks: now };
+    this._updateRealTimeTimer();
   }
 
-  async runAll(): Promise<number> {
-    for (let i = 0; i < this._loopLimit; i++) {
-      const numTimers = this._timers.size;
-      if (numTimers === 0)
-        return this._now.ticks;
-
-      await this.next();
+  private _updateRealTimeTimer() {
+    if (!this._realTime) {
+      this._currentRealTimeTimer?.dispose();
+      this._currentRealTimeTimer = undefined;
+      return;
     }
 
-    const excessJob = this._firstTimer();
-    if (!excessJob)
-      return this._now.ticks;
-    throw this._getInfiniteLoopError(excessJob);
+    const firstTimer = this._firstTimer();
+
+    // Either run the next timer or move time in 100ms chunks.
+    const callAt = Math.min(firstTimer ? firstTimer.callAt : this._now.ticks + maxTimeout, this._now.ticks + 100) as Ticks;
+    if (this._currentRealTimeTimer && this._currentRealTimeTimer.callAt < callAt)
+      return;
+
+    if (this._currentRealTimeTimer) {
+      this._currentRealTimeTimer.dispose();
+      this._currentRealTimeTimer = undefined;
+    }
+
+    this._currentRealTimeTimer = {
+      callAt,
+      dispose: this._embedder.setTimeout(() => {
+        const now = this._embedder.performanceNow();
+        this._currentRealTimeTimer = undefined;
+        const sinceLastSync = now - this._realTime!.lastSyncTicks;
+        this._realTime!.lastSyncTicks = now;
+        // eslint-disable-next-line no-console
+        void this._runTo(shiftTicks(this._now.ticks, sinceLastSync)).catch(e => console.error(e)).then(() => this._updateRealTimeTimer());
+      }, callAt - this._now.ticks),
+    };
   }
 
-  async runToLast(): Promise<number> {
-    const timer = this._lastTimer();
-    if (!timer)
-      return this._now.ticks;
-    return await this.tick(timer.callAt - this._now.ticks);
+  async fastForward(ticks: number) {
+    this._replayLogOnce();
+    await this._innerFastForwardTo(shiftTicks(this._now.ticks, ticks | 0));
   }
 
-  reset() {
-    this._timers.clear();
-    this._now = { time: this.timeOrigin, ticks: 0, timeFrozen: false };
-  }
 
-  async jump(tickValue: string | number): Promise<number> {
-    const msFloat = parseTime(tickValue);
-    const ms = Math.floor(msFloat);
-
+  private async _innerFastForwardTo(to: Ticks) {
+    if (to < this._now.ticks)
+      throw new Error('Cannot fast-forward to the past');
     for (const timer of this._timers.values()) {
-      if (this._now.ticks + ms > timer.callAt)
-        timer.callAt = this._now.ticks + ms;
+      if (to > timer.callAt)
+        timer.callAt = to;
     }
-    return await this.tick(ms);
+    await this._runTo(to);
   }
 
   addTimer(options: { func: TimerHandler, type: TimerType, delay?: number | string, args?: any[] }): number {
-    if (options.func === undefined)
+    this._replayLogOnce();
+
+    if (options.type === TimerType.AnimationFrame && !options.func)
+      throw new Error('Callback must be provided to requestAnimationFrame calls');
+    if (options.type === TimerType.IdleCallback && !options.func)
+      throw new Error('Callback must be provided to requestIdleCallback calls');
+    if ([TimerType.Timeout, TimerType.Interval].includes(options.type) && !options.func && options.delay === undefined)
       throw new Error('Callback must be provided to timer calls');
 
     let delay = options.delay ? +options.delay : 0;
@@ -198,62 +258,66 @@ export class ClockController {
       func: options.func,
       args: options.args || [],
       delay,
-      callAt: this._now.ticks + (delay || (this._duringTick ? 1 : 0)),
+      callAt: shiftTicks(this._now.ticks, (delay || (this._duringTick ? 1 : 0))),
       createdAt: this._now.ticks,
       id: this._uniqueTimerId++,
       error: new Error(),
     };
     this._timers.set(timer.id, timer);
+    if (this._realTime)
+      this._updateRealTimeTimer();
     return timer.id;
-  }
-
-  private _firstTimerInRange(from: number, to: number): Timer | null {
-    let firstTimer: Timer | null = null;
-    for (const timer of this._timers.values()) {
-      const isInRange = inRange(from, to, timer);
-      if (isInRange && (!firstTimer || compareTimers(firstTimer, timer) === 1))
-        firstTimer = timer;
-    }
-    return firstTimer;
   }
 
   countTimers() {
     return this._timers.size;
   }
 
-  private _firstTimer(): Timer | null {
+  private _firstTimer(beforeTick?: number): Timer | null {
     let firstTimer: Timer | null = null;
 
     for (const timer of this._timers.values()) {
-      if (!firstTimer || compareTimers(firstTimer, timer) === 1)
+      const isInRange = beforeTick === undefined || timer.callAt <= beforeTick;
+      if (isInRange && (!firstTimer || compareTimers(firstTimer, timer) === 1))
         firstTimer = timer;
     }
     return firstTimer;
   }
 
-  private _lastTimer(): Timer | null {
-    let lastTimer: Timer | null = null;
+  private _takeFirstTimer(beforeTick?: number): Timer | null {
+    const timer = this._firstTimer(beforeTick);
+    if (!timer)
+      return null;
 
-    for (const timer of this._timers.values()) {
-      if (!lastTimer || compareTimers(lastTimer, timer) === -1)
-        lastTimer = timer;
-    }
-    return lastTimer;
-  }
-
-  private async _callTimer(timer: Timer) {
     this._advanceNow(timer.callAt);
 
     if (timer.type === TimerType.Interval)
-      this._timers.get(timer.id)!.callAt += timer.delay;
+      timer.callAt = shiftTicks(timer.callAt, timer.delay);
     else
       this._timers.delete(timer.id);
+    return timer;
+  }
+
+  private async _callFirstTimer(beforeTick: number): Promise<{ timerFound: boolean, error?: Error }> {
+    const timer = this._takeFirstTimer(beforeTick);
+    if (!timer)
+      return { timerFound: false };
 
     this._duringTick = true;
     try {
       if (typeof timer.func !== 'function') {
-        (() => { eval(timer.func); })();
-        return;
+        let error: Error | undefined;
+        try {
+          // Using global this is not correct here,
+          // but it is already broken since the eval scope is different from the one
+          // on the original call site.
+          // eslint-disable-next-line no-restricted-globals
+          (() => { globalThis.eval(timer.func); })();
+        } catch (e) {
+          error = e;
+        }
+        await new Promise<void>(f => this._embedder.setTimeout(f));
+        return { timerFound: true, error };
       }
 
       let args = timer.args;
@@ -262,60 +326,17 @@ export class ClockController {
       else if (timer.type === TimerType.IdleCallback)
         args = [{ didTimeout: false, timeRemaining: () => 0 }];
 
-      timer.func.apply(null, args);
-      await new Promise<void>(f => this._embedder.postTask(f));
+      let error: Error | undefined;
+      try {
+        timer.func.apply(null, args);
+      } catch (e) {
+        error = e;
+      }
+      await new Promise<void>(f => this._embedder.setTimeout(f));
+      return { timerFound: true, error };
     } finally {
       this._duringTick = false;
     }
-  }
-
-  private _getInfiniteLoopError(job: Timer) {
-    const infiniteLoopError = new Error(
-        `Aborting after running ${this._loopLimit} timers, assuming an infinite loop!`,
-    );
-
-    if (!job.error)
-      return infiniteLoopError;
-
-    // pattern never matched in Node
-    const computedTargetPattern = /target\.*[<|(|[].*?[>|\]|)]\s*/;
-    const clockMethodPattern = new RegExp(
-        String(Object.keys(this).join('|')),
-    );
-
-    let matchedLineIndex = -1;
-    job.error.stack!.split('\n').some((line, i) => {
-      // If we've matched a computed target line (e.g. setTimeout) then we
-      // don't need to look any further. Return true to stop iterating.
-      const matchedComputedTarget = line.match(computedTargetPattern);
-      /* istanbul ignore if */
-      if (matchedComputedTarget) {
-        matchedLineIndex = i;
-        return true;
-      }
-
-      // If we've matched a clock method line, then there may still be
-      // others further down the trace. Return false to keep iterating.
-      const matchedClockMethod = line.match(clockMethodPattern);
-      if (matchedClockMethod) {
-        matchedLineIndex = i;
-        return false;
-      }
-
-      // If we haven't matched anything on this line, but we matched
-      // previously and set the matched line index, then we can stop.
-      // If we haven't matched previously, then we should keep iterating.
-      return matchedLineIndex >= 0;
-    });
-
-    const funcName = typeof job.func === 'function' ? job.func.name : 'anonymous';
-    const stack = `${infiniteLoopError}\n${job.type || 'Microtask'} - ${funcName}\n${job.error.stack!
-        .split('\n')
-        .slice(matchedLineIndex + 1)
-        .join('\n')}`;
-
-    infiniteLoopError.stack = stack;
-    return infiniteLoopError;
   }
 
   getTimeToNextFrame() {
@@ -323,6 +344,8 @@ export class ClockController {
   }
 
   clearTimer(timerId: number, type: TimerType) {
+    this._replayLogOnce();
+
     if (!timerId) {
       // null appears to be allowed in most browsers, and appears to be
       // relied upon by some libraries, like Bootstrap carousel
@@ -356,64 +379,48 @@ export class ClockController {
     }
   }
 
-  advanceAutomatically(advanceTimeDelta: number = 20): () => void {
-    return this._embedder.postTaskPeriodically(
-        () => this._doTick(advanceTimeDelta!),
-        advanceTimeDelta,
-    );
+  private _replayLogOnce() {
+    if (!this._log.length)
+      return;
+
+    let lastLogTime = -1;
+    let isPaused = false;
+
+    for (const { type, time, param } of this._log) {
+      if (!isPaused && lastLogTime !== -1)
+        this._advanceNow(shiftTicks(this._now.ticks, time - lastLogTime));
+      lastLogTime = time;
+
+      if (type === 'install') {
+        this._innerSetTime(asWallTime(param!));
+      } else if (type === 'fastForward' || type === 'runFor') {
+        this._advanceNow(shiftTicks(this._now.ticks, param!));
+      } else if (type === 'pauseAt') {
+        isPaused = true;
+        this._innerPause();
+        this._innerSetTime(asWallTime(param!));
+      } else if (type === 'resume') {
+        this._innerResume();
+        isPaused = false;
+      } else if (type === 'setFixedTime') {
+        this._innerSetFixedTime(asWallTime(param!));
+      } else if (type === 'setSystemTime') {
+        this._innerSetTime(asWallTime(param!));
+      }
+    }
+
+    if (!isPaused && lastLogTime > 0)
+      this._advanceNow(shiftTicks(this._now.ticks, this._embedder.dateNow() - lastLogTime));
+
+    this._log.length = 0;
   }
-}
-
-function getEpoch(epoch: Date | number | undefined): number {
-  if (!epoch)
-    return 0;
-  if (typeof epoch !== 'number')
-    return epoch.getTime();
-  return epoch;
-}
-
-function inRange(from: number, to: number, timer: Timer): boolean {
-  return timer && timer.callAt >= from && timer.callAt <= to;
-}
-
-/**
- * Parse strings like '01:10:00' (meaning 1 hour, 10 minutes, 0 seconds) into
- * number of milliseconds. This is used to support human-readable strings passed
- * to clock.tick()
- */
-function parseTime(value: number | string): number {
-  if (typeof value === 'number')
-    return value;
-  if (!value)
-    return 0;
-  const str = value;
-
-  const strings = str.split(':');
-  const l = strings.length;
-  let i = l;
-  let ms = 0;
-  let parsed;
-
-  if (l > 3 || !/^(\d\d:){0,2}\d\d?$/.test(str)) {
-    throw new Error(
-        `Clock only understands numbers, 'mm:ss' and 'hh:mm:ss'`,
-    );
-  }
-
-  while (i--) {
-    parsed = parseInt(strings[i], 10);
-    if (parsed >= 60)
-      throw new Error(`Invalid time ${str}`);
-    ms += parsed * Math.pow(60, l - i - 1);
-  }
-
-  return ms * 1000;
 }
 
 function mirrorDateProperties(target: any, source: typeof Date): DateConstructor & Date {
-  let prop;
-  for (prop of Object.keys(source) as (keyof DateConstructor)[])
-    target[prop] = source[prop];
+  for (const prop in source) {
+    if (source.hasOwnProperty(prop))
+      target[prop] = (source as any)[prop];
+  }
   target.toString = () => source.toString();
   target.prototype = source.prototype;
   target.parse = source.parse;
@@ -485,7 +492,7 @@ function createIntl(clock: ClockController, NativeIntl: typeof Intl): typeof Int
     * All properties of Intl are non-enumerable, so we need
     * to do a bit of work to get them out.
     */
-  for (const key of Object.keys(NativeIntl) as (keyof typeof Intl)[])
+  for (const key of Object.getOwnPropertyNames(NativeIntl) as (keyof typeof Intl)[])
     ClockIntl[key] = NativeIntl[key];
 
   ClockIntl.DateTimeFormat = function(...args: any[]) {
@@ -644,8 +651,8 @@ function getClearHandler(type: TimerType) {
 function fakePerformance(clock: ClockController, performance: Performance): Performance {
   const result: any = {
     now: () => clock.performanceNow(),
-    timeOrigin: clock.timeOrigin,
   };
+  result.__defineGetter__('timeOrigin', () => clock._now.origin || 0);
   // eslint-disable-next-line no-proto
   for (const key of Object.keys((performance as any).__proto__)) {
     if (key === 'now' || key === 'timeOrigin')
@@ -658,19 +665,22 @@ function fakePerformance(clock: ClockController, performance: Performance): Perf
   return result;
 }
 
-export function createClock(globalObject: WindowOrWorkerGlobalScope, config: ClockConfig = {}): { clock: ClockController, api: ClockMethods, originals: ClockMethods } {
+export function createClock(globalObject: WindowOrWorkerGlobalScope): { clock: ClockController, api: ClockMethods, originals: ClockMethods } {
   const originals = platformOriginals(globalObject);
-  const embedder = {
-    postTask: (task: () => void) => {
-      originals.bound.setTimeout(task, 0);
+  const embedder: Embedder = {
+    dateNow: () => originals.raw.Date.now(),
+    performanceNow: () => Math.ceil(originals.raw.performance!.now()) as EmbedderTicks,
+    setTimeout: (task: () => void, timeout?: number) => {
+      const timerId = originals.bound.setTimeout(task, timeout);
+      return () => originals.bound.clearTimeout(timerId);
     },
-    postTaskPeriodically: (task: () => void, delay: number) => {
-      const intervalId = globalObject.setInterval(task, delay);
+    setInterval: (task: () => void, delay: number) => {
+      const intervalId = originals.bound.setInterval(task, delay);
       return () => originals.bound.clearInterval(intervalId);
     },
   };
 
-  const clock = new ClockController(embedder, config.now, config.loopLimit);
+  const clock = new ClockController(embedder);
   const api = createApi(clock, originals.bound);
   return { clock, api, originals: originals.raw };
 }
@@ -682,7 +692,7 @@ export function install(globalObject: WindowOrWorkerGlobalScope, config: Install
     throw new TypeError(`Can't install fake timers twice on the same global object.`);
   }
 
-  const { clock, api, originals } = createClock(globalObject, config);
+  const { clock, api, originals } = createClock(globalObject);
   const toFake = config.toFake?.length ? config.toFake : Object.keys(originals) as (keyof ClockMethods)[];
 
   for (const method of toFake) {
@@ -692,6 +702,14 @@ export function install(globalObject: WindowOrWorkerGlobalScope, config: Install
       (globalObject as any).Intl = api[method]!;
     } else if (method === 'performance') {
       (globalObject as any).performance = api[method]!;
+      const kEventTimeStamp = Symbol('playwrightEventTimeStamp');
+      Object.defineProperty(Event.prototype, 'timeStamp', {
+        get() {
+          if (!this[kEventTimeStamp])
+            this[kEventTimeStamp] = api.performance?.now();
+          return this[kEventTimeStamp];
+        }
+      });
     } else {
       (globalObject as any)[method] = (...args: any[]) => {
         return (api[method] as any).apply(api, args);
@@ -706,11 +724,19 @@ export function install(globalObject: WindowOrWorkerGlobalScope, config: Install
 }
 
 export function inject(globalObject: WindowOrWorkerGlobalScope) {
+  const builtin = platformOriginals(globalObject).bound;
+  const { clock: controller } = install(globalObject);
+  controller.resume();
   return {
-    install: (config: InstallConfig) => {
-      const { clock } = install(globalObject, config);
-      return clock;
-    },
-    builtin: platformOriginals(globalObject).bound,
+    controller,
+    builtin,
   };
+}
+
+function asWallTime(n: number): WallTime {
+  return n as WallTime;
+}
+
+function shiftTicks(ticks: Ticks, ms: number): Ticks {
+  return ticks + ms as Ticks;
 }

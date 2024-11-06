@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from './eventEmitter';
 import type * as channels from '@protocol/channels';
 import { maybeFindValidator, ValidationError, type ValidatorContext } from '../protocol/validator';
 import { debugLogger } from '../utils/debugLogger';
@@ -40,6 +40,7 @@ export abstract class ChannelOwner<T extends channels.Channel = channels.Channel
   _logger: Logger | undefined;
   readonly _instrumentation: ClientInstrumentation;
   private _eventToSubscriptionMapping: Map<string, string> = new Map();
+  private _isInternalType = false;
   _wasCollected: boolean = false;
 
   constructor(parent: ChannelOwner | Connection, type: string, guid: string, initializer: channels.InitializerTraits<T>) {
@@ -59,6 +60,10 @@ export abstract class ChannelOwner<T extends channels.Channel = channels.Channel
 
     this._channel = this._createChannel(new EventEmitter());
     this._initializer = initializer;
+  }
+
+  protected markAsInternalType() {
+    this._isInternalType = true;
   }
 
   _setEventToSubscriptionMapping(mapping: Map<string, string>) {
@@ -163,7 +168,7 @@ export abstract class ChannelOwner<T extends channels.Channel = channels.Channel
     return channel;
   }
 
-  async _wrapApiCall<R>(func: (apiZone: ApiZone) => Promise<R>, isInternal = false): Promise<R> {
+  async _wrapApiCall<R>(func: (apiZone: ApiZone) => Promise<R>, isInternal?: boolean): Promise<R> {
     const logger = this._logger;
     const apiZone = zones.zoneData<ApiZone>('apiZone');
     if (apiZone)
@@ -173,7 +178,8 @@ export abstract class ChannelOwner<T extends channels.Channel = channels.Channel
     let apiName: string | undefined = stackTrace.apiName;
     const frames: channels.StackFrame[] = stackTrace.frames;
 
-    isInternal = isInternal || this._type === 'LocalUtils';
+    if (isInternal === undefined)
+      isInternal = this._isInternalType;
     if (isInternal)
       apiName = undefined;
 

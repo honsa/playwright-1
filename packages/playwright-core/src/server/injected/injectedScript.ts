@@ -33,7 +33,8 @@ import { getChecked, getAriaDisabled, getAriaRole, getElementAccessibleName, get
 import { kLayoutSelectorNames, type LayoutSelectorName, layoutSelectorScore } from './layoutSelectorUtils';
 import { asLocator } from '../../utils/isomorphic/locatorGenerators';
 import type { Language } from '../../utils/isomorphic/locatorGenerators';
-import { normalizeWhiteSpace, trimStringWithEllipsis } from '../../utils/isomorphic/stringUtils';
+import { cacheNormalizedWhitespaces, normalizeWhiteSpace, trimStringWithEllipsis } from '../../utils/isomorphic/stringUtils';
+import { matchesAriaTree, renderedAriaTree } from './ariaSnapshot';
 
 export type FrameExpectParams = Omit<channels.FrameExpectParams, 'expectedValue'> & { expectedValue?: any };
 
@@ -63,10 +64,25 @@ export class InjectedScript {
   readonly isUnderTest: boolean;
   private _sdkLanguage: Language;
   private _testIdAttributeNameForStrictErrorAndConsoleCodegen: string = 'data-testid';
+  private _markedElements?: { callId: string, elements: Set<Element> };
   // eslint-disable-next-line no-restricted-globals
   readonly window: Window & typeof globalThis;
   readonly document: Document;
-  readonly utils = { isInsideScope, elementText, asLocator, normalizeWhiteSpace };
+
+  // Recorder must use any external dependencies through InjectedScript.
+  // Otherwise it will end up with a copy of all modules it uses, and any
+  // module-level globals will be duplicated, which leads to subtle bugs.
+  readonly utils = {
+    asLocator,
+    cacheNormalizedWhitespaces,
+    elementText,
+    getAriaRole,
+    getElementAccessibleDescription,
+    getElementAccessibleName,
+    isElementVisible,
+    isInsideScope,
+    normalizeWhiteSpace,
+  };
 
   // eslint-disable-next-line no-restricted-globals
   constructor(window: Window & typeof globalThis, isUnderTest: boolean, sdkLanguage: Language, testIdAttributeNameForStrictErrorAndConsoleCodegen: string, stableRafCount: number, browserName: string, customEngines: { name: string, engine: SelectorEngine }[]) {
@@ -127,13 +143,19 @@ export class InjectedScript {
   builtinSetTimeout(callback: Function, timeout: number) {
     if (this.window.__pwClock?.builtin)
       return this.window.__pwClock.builtin.setTimeout(callback, timeout);
-    return setTimeout(callback, timeout);
+    return this.window.setTimeout(callback, timeout);
+  }
+
+  builtinClearTimeout(timeout: number | undefined) {
+    if (this.window.__pwClock?.builtin)
+      return this.window.__pwClock.builtin.clearTimeout(timeout);
+    return this.window.clearTimeout(timeout);
   }
 
   builtinRequestAnimationFrame(callback: FrameRequestCallback) {
     if (this.window.__pwClock?.builtin)
       return this.window.__pwClock.builtin.requestAnimationFrame(callback);
-    return requestAnimationFrame(callback);
+    return this.window.requestAnimationFrame(callback);
   }
 
   eval(expression: string): any {
@@ -188,6 +210,12 @@ export class InjectedScript {
     }
     result.sort((a, b) => a.score - b.score);
     return new Set<Element>(result.map(r => r.element));
+  }
+
+  ariaSnapshot(node: Node, options?: { mode?: 'raw' | 'regex' }): string {
+    if (node.nodeType !== Node.ELEMENT_NODE)
+      throw this.createStacklessError('Can only capture aria snapshot of Element nodes.');
+    return renderedAriaTree(node as Element, options);
   }
 
   querySelectorAll(selector: ParsedSelector, root: Node): Element[] {
@@ -426,10 +454,6 @@ export class InjectedScript {
     return new constrFunction(this, params);
   }
 
-  isVisible(element: Element): boolean {
-    return isElementVisible(element);
-  }
-
   async viewportRatio(element: Element): Promise<number> {
     return await new Promise(resolve => {
       const observer = new IntersectionObserver(entries => {
@@ -478,7 +502,7 @@ export class InjectedScript {
         element = element.closest('button, [role=button], [role=checkbox], [role=radio]') || element;
     }
     if (behavior === 'follow-label') {
-      if (!element.matches('input, textarea, button, select, [role=button], [role=checkbox], [role=radio]') &&
+      if (!element.matches('a, input, textarea, button, select, [role=link], [role=button], [role=checkbox], [role=radio]') &&
         !(element as any).isContentEditable) {
         // Go up to the label that might be connected to the input/textarea.
         element = element.closest('label') || element;
@@ -567,9 +591,9 @@ export class InjectedScript {
     }
 
     if (state === 'visible')
-      return this.isVisible(element);
+      return isElementVisible(element);
     if (state === 'hidden')
-      return !this.isVisible(element);
+      return !isElementVisible(element);
 
     const disabled = getAriaDisabled(element);
     if (state === 'disabled')
@@ -1065,14 +1089,33 @@ export class InjectedScript {
   }
 
   markTargetElements(markedElements: Set<Element>, callId: string) {
-    const customEvent = new CustomEvent('__playwright_target__', {
+    if (this._markedElements?.callId !== callId)
+      this._markedElements = undefined;
+    const previous = this._markedElements?.elements || new Set();
+
+    const unmarkEvent = new CustomEvent('__playwright_unmark_target__', {
       bubbles: true,
       cancelable: true,
       detail: callId,
       composed: true,
     });
-    for (const element of markedElements)
-      element.dispatchEvent(customEvent);
+    for (const element of previous) {
+      if (!markedElements.has(element))
+        element.dispatchEvent(unmarkEvent);
+    }
+
+    const markEvent = new CustomEvent('__playwright_mark_target__', {
+      bubbles: true,
+      cancelable: true,
+      detail: callId,
+      composed: true,
+    });
+    for (const element of markedElements) {
+      if (!previous.has(element))
+        element.dispatchEvent(markEvent);
+    }
+
+    this._markedElements = { callId, elements: markedElements };
   }
 
   private _setupGlobalListenersRemovalDetection() {
@@ -1220,6 +1263,11 @@ export class InjectedScript {
     }
 
     {
+      if (expression === 'to.match.aria')
+        return matchesAriaTree(element, options.expectedValue);
+    }
+
+    {
       // Single text value.
       let received: string | undefined;
       if (expression === 'to.have.attribute.value') {
@@ -1295,18 +1343,6 @@ export class InjectedScript {
       return { received, matches: mIndex === matchers.length };
     }
     throw this.createStacklessError('Unknown expect matcher: ' + expression);
-  }
-
-  getElementAccessibleName(element: Element, includeHidden?: boolean): string {
-    return getElementAccessibleName(element, !!includeHidden);
-  }
-
-  getElementAccessibleDescription(element: Element, includeHidden?: boolean): string {
-    return getElementAccessibleDescription(element, !!includeHidden);
-  }
-
-  getAriaRole(element: Element) {
-    return getAriaRole(element);
   }
 }
 
@@ -1528,6 +1564,7 @@ declare global {
     __pwClock?: {
       builtin: {
         setTimeout: Window['setTimeout'],
+        clearTimeout: Window['clearTimeout'],
         requestAnimationFrame: Window['requestAnimationFrame'],
       }
     }

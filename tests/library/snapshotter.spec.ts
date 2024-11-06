@@ -215,20 +215,6 @@ it.describe('snapshots', () => {
     }
   });
 
-  it('should capture snapshot target', async ({ page, toImpl, snapshotter }) => {
-    await page.setContent('<button>Hello</button><button>World</button>');
-    {
-      const handle = await page.$('text=Hello');
-      const snapshot = await snapshotter.captureSnapshot(toImpl(page), 'call@1', 'snapshot@call@1', toImpl(handle));
-      expect(distillSnapshot(snapshot, false /* distillTarget */)).toBe('<BUTTON __playwright_target__=\"call@1\">Hello</BUTTON><BUTTON>World</BUTTON>');
-    }
-    {
-      const handle = await page.$('text=World');
-      const snapshot = await snapshotter.captureSnapshot(toImpl(page), 'call@2', 'snapshot@call@2', toImpl(handle));
-      expect(distillSnapshot(snapshot, false /* distillTarget */)).toBe('<BUTTON __playwright_target__=\"call@1\">Hello</BUTTON><BUTTON __playwright_target__=\"call@2\">World</BUTTON>');
-    }
-  });
-
   it('should collect on attribute change', async ({ page, toImpl, snapshotter }) => {
     await page.setContent('<button>Hello</button>');
     {
@@ -249,12 +235,10 @@ it.describe('snapshots', () => {
   });
 
   it('empty adopted style sheets should not prevent node refs', async ({ page, toImpl, snapshotter, browserName }) => {
-    it.skip(browserName !== 'chromium', 'Constructed stylesheets are only in Chromium.');
-
     await page.setContent('<button>Hello</button>');
     await page.evaluate(() => {
       const sheet = new CSSStyleSheet();
-      (document as any).adoptedStyleSheets = [sheet];
+      document.adoptedStyleSheets = [sheet];
 
       const sheet2 = new CSSStyleSheet();
       for (const element of [document.createElement('div'), document.createElement('span')]) {
@@ -262,7 +246,7 @@ it.describe('snapshots', () => {
           mode: 'open'
         });
         root.append('foo');
-        (root as any).adoptedStyleSheets = [sheet2];
+        root.adoptedStyleSheets = [sheet2];
         document.body.appendChild(element);
       }
     });

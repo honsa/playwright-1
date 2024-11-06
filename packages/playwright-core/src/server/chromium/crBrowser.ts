@@ -21,7 +21,7 @@ import { Browser } from '../browser';
 import { assertBrowserContextIsNotOwned, BrowserContext, verifyGeolocation } from '../browserContext';
 import { assert, createGuid } from '../../utils';
 import * as network from '../network';
-import type { PageBinding, PageDelegate, Worker } from '../page';
+import type { InitScript, PageDelegate, Worker } from '../page';
 import { Page } from '../page';
 import { Frame } from '../frames';
 import type { Dialog } from '../dialog';
@@ -100,18 +100,19 @@ export class CRBrowser extends Browser {
     this._session.on('Browser.downloadProgress', this._onDownloadProgress.bind(this));
   }
 
-  async doCreateNewContext(options: channels.BrowserNewContextParams): Promise<BrowserContext> {
+  async doCreateNewContext(options: types.BrowserContextOptions): Promise<BrowserContext> {
+    const proxy = options.proxyOverride || options.proxy;
     let proxyBypassList = undefined;
-    if (options.proxy) {
+    if (proxy) {
       if (process.env.PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK)
-        proxyBypassList = options.proxy.bypass;
+        proxyBypassList = proxy.bypass;
       else
-        proxyBypassList = '<-loopback>' + (options.proxy.bypass ? `,${options.proxy.bypass}` : '');
+        proxyBypassList = '<-loopback>' + (proxy.bypass ? `,${proxy.bypass}` : '');
     }
 
     const { browserContextId } = await this._session.send('Target.createBrowserContext', {
       disposeOnDetach: true,
-      proxyServer: options.proxy ? options.proxy.server : undefined,
+      proxyServer: proxy ? proxy.server : undefined,
       proxyBypassList,
     });
     const context = new CRBrowserContext(this, browserContextId, options);
@@ -340,7 +341,7 @@ export class CRBrowserContext extends BrowserContext {
 
   declare readonly _browser: CRBrowser;
 
-  constructor(browser: CRBrowser, browserContextId: string | undefined, options: channels.BrowserNewContextParams) {
+  constructor(browser: CRBrowser, browserContextId: string | undefined, options: types.BrowserContextOptions) {
     super(browser, options, browserContextId);
     this._authenticateProxyViaCredentials();
   }
@@ -348,7 +349,7 @@ export class CRBrowserContext extends BrowserContext {
   override async _initialize() {
     assert(!Array.from(this._browser._crPages.values()).some(page => page._browserContext === this));
     const promises: Promise<any>[] = [super._initialize()];
-    if (this._browser.options.name !== 'electron' && this._browser.options.name !== 'clank' && this._options.acceptDownloads !== 'internal-browser-default') {
+    if (this._browser.options.name !== 'clank' && this._options.acceptDownloads !== 'internal-browser-default') {
       promises.push(this._browser._session.send('Browser.setDownloadBehavior', {
         behavior: this._options.acceptDownloads === 'accept' ? 'allowAndName' : 'deny',
         browserContextId: this._browserContextId,
@@ -433,6 +434,7 @@ export class CRBrowserContext extends BrowserContext {
       ['payment-handler', 'paymentHandler'],
       // chrome-specific permissions we have.
       ['midi-sysex', 'midiSysex'],
+      ['storage-access', 'storageAccess'],
     ]);
     const filtered = permissions.map(permission => {
       const protocolPermission = webPermissionToProtocol.get(permission);
@@ -485,24 +487,14 @@ export class CRBrowserContext extends BrowserContext {
       await (sw as CRServiceWorker).updateHttpCredentials();
   }
 
-  async doAddInitScript(source: string) {
+  async doAddInitScript(initScript: InitScript) {
     for (const page of this.pages())
-      await (page._delegate as CRPage).addInitScript(source);
+      await (page._delegate as CRPage).addInitScript(initScript);
   }
 
-  async doRemoveInitScripts() {
+  async doRemoveNonInternalInitScripts() {
     for (const page of this.pages())
-      await (page._delegate as CRPage).removeInitScripts();
-  }
-
-  async doExposeBinding(binding: PageBinding) {
-    for (const page of this.pages())
-      await (page._delegate as CRPage).exposeBinding(binding);
-  }
-
-  async doRemoveExposedBindings() {
-    for (const page of this.pages())
-      await (page._delegate as CRPage).removeExposedBindings();
+      await (page._delegate as CRPage).removeNonInternalInitScripts();
   }
 
   async doUpdateRequestInterception(): Promise<void> {

@@ -206,6 +206,36 @@ it.describe('screencast', () => {
     expectRedFrames(videoFile, size);
   });
 
+  it('should continue recording main page after popup closes', async ({ browser, browserName }, testInfo) => {
+    it.info().annotations.push({ type: 'issue', description: 'https://github.com/microsoft/playwright/issues/30837' });
+    // Firefox does not have a mobile variant and has a large minimum size (500 on windows and 450 elsewhere).
+    const size = browserName === 'firefox' ? { width: 500, height: 400 } : { width: 320, height: 240 };
+    const context = await browser.newContext({
+      recordVideo: {
+        dir: testInfo.outputPath(''),
+        size
+      },
+      viewport: size,
+    });
+    const page = await context.newPage();
+    await page.setContent('<a target=_blank href="about:blank">clickme</a>');
+    const [popup] = await Promise.all([
+      page.waitForEvent('popup'),
+      await page.click('a'),
+    ]);
+    await popup.close();
+
+    await page.evaluate(() => {
+      document.body.textContent = ''; // remove link
+      document.body.style.backgroundColor = 'red';
+    });
+    await waitForRafs(page, 100);
+    await context.close();
+
+    const videoFile = await page.video().path();
+    expectRedFrames(videoFile, size);
+  });
+
   it('should expose video path', async ({ browser }, testInfo) => {
     const videosPath = testInfo.outputPath('');
     const size = { width: 320, height: 240 };
@@ -443,9 +473,9 @@ it.describe('screencast', () => {
     expect(videoFiles.length).toBe(2);
   });
 
-  it('should scale frames down to the requested size ', async ({ browser, browserName, server, headless, trace }, testInfo) => {
-    const isChromiumHeadlessNew = browserName === 'chromium' && !!headless && !!process.env.PLAYWRIGHT_CHROMIUM_USE_HEADLESS_NEW;
-    it.fixme(!headless || isChromiumHeadlessNew, 'Fails on headed');
+  it('should scale frames down to the requested size ', async ({ browser, browserName, server, headless, channel }, testInfo) => {
+    it.fixme(!headless, 'Fails on headed');
+    it.fixme(browserName === 'chromium' && channel !== 'chromium-headless-shell', 'Fails on Chromiums');
 
     const context = await browser.newContext({
       recordVideo: {
@@ -692,9 +722,9 @@ it.describe('screencast', () => {
     expect(files.length).toBe(1);
   });
 
-  it('should capture full viewport', async ({ browserType, browserName, headless, isWindows }, testInfo) => {
+  it('should capture full viewport', async ({ browserType, browserName, isWindows, channel }, testInfo) => {
     it.info().annotations.push({ type: 'issue', description: 'https://github.com/microsoft/playwright/issues/22411' });
-    it.fixme(browserName === 'chromium' && (!headless || !!process.env.PLAYWRIGHT_CHROMIUM_USE_HEADLESS_NEW), 'The square is not on the video');
+    it.fixme(browserName === 'chromium' && channel !== 'chromium-headless-shell', 'The square is not on the video');
     it.fixme(browserName === 'firefox' && isWindows, 'https://github.com/microsoft/playwright/issues/14405');
     const size = { width: 600, height: 400 };
     const browser = await browserType.launch();
@@ -727,9 +757,9 @@ it.describe('screencast', () => {
     expectAll(pixels, almostRed);
   });
 
-  it('should capture full viewport on hidpi', async ({ browserType, browserName, headless, isWindows, isLinux }, testInfo) => {
+  it('should capture full viewport on hidpi', async ({ browserType, browserName, headless, isWindows, isLinux, channel }, testInfo) => {
     it.info().annotations.push({ type: 'issue', description: 'https://github.com/microsoft/playwright/issues/22411' });
-    it.fixme(browserName === 'chromium' && (!headless || !!process.env.PLAYWRIGHT_CHROMIUM_USE_HEADLESS_NEW), 'The square is not on the video');
+    it.fixme(browserName === 'chromium' && channel !== 'chromium-headless-shell', 'The square is not on the video');
     it.fixme(browserName === 'firefox' && isWindows, 'https://github.com/microsoft/playwright/issues/14405');
     it.fixme(browserName === 'webkit' && isLinux && !headless, 'https://github.com/microsoft/playwright/issues/22617');
     const size = { width: 600, height: 400 };
@@ -764,9 +794,10 @@ it.describe('screencast', () => {
     expectAll(pixels, almostRed);
   });
 
-  it('should work with video+trace', async ({ browser, trace, headless }, testInfo) => {
+  it('should work with video+trace', async ({ browser, trace, headless, browserName, channel }, testInfo) => {
     it.skip(trace === 'on');
-    it.fixme(!headless || !!process.env.PLAYWRIGHT_CHROMIUM_USE_HEADLESS_NEW, 'different trace screencast image size on all browsers');
+    it.fixme(!headless, 'different trace screencast image size on all browsers');
+    it.fixme(browserName === 'chromium' && channel !== 'chromium-headless-shell', 'different trace screencast image size on Chromium');
 
     const size = { width: 500, height: 400 };
     const traceFile = testInfo.outputPath('trace.zip');

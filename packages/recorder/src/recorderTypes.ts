@@ -26,7 +26,13 @@ export type Mode =
   | 'recording-inspecting'
   | 'standby'
   | 'assertingVisibility'
-  | 'assertingValue';
+  | 'assertingValue'
+  | 'assertingSnapshot';
+
+export type ElementInfo = {
+  selector: string;
+  ariaSnapshot: string;
+};
 
 export type EventData = {
   event:
@@ -96,8 +102,8 @@ declare global {
     playwrightSetSources: (sources: Source[]) => void;
     playwrightSetOverlayVisible: (visible: boolean) => void;
     playwrightUpdateLogs: (callLogs: CallLog[]) => void;
-    playwrightSetFileIfNeeded: (file: string) => void;
-    playwrightSetSelector: (selector: string, focus?: boolean) => void;
+    playwrightSetRunningFile: (file: string | undefined) => void;
+    playwrightElementPicked: (elementInfo: ElementInfo, userGesture?: boolean) => void;
     playwrightSourcesEchoForTest: Source[];
     dispatch(data: any): Promise<void>;
   }

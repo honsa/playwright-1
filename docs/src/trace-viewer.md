@@ -7,20 +7,20 @@ import LiteYouTube from '@site/src/components/LiteYouTube';
 
 ## Introduction
 
-Playwright Trace Viewer is a GUI tool that helps you explore recorded Playwright traces after the script has ran. Traces are a great way for debugging your tests when they fail on CI. You can open traces [locally](#opening-the-trace) or in your browser on [trace.playwright.dev](https://trace.playwright.dev).
+Playwright Trace Viewer is a GUI tool that helps you explore recorded Playwright traces after the script has run. Traces are a great way for debugging your tests when they fail on CI. You can open traces [locally](#opening-the-trace) or in your browser on [trace.playwright.dev](https://trace.playwright.dev).
 
 ######
 * langs: js
 
 <LiteYouTube
-    id="lfxjs--9ZQs"
+    id="yP6AnTxC34s"
     title="Viewing Playwright Traces"
 />
 
 ## Trace Viewer features
 ### Actions
 
-In the Actions tab you can see what locator was used for every action and how long each one took to run. Hover over each action of your test and visually see the change in the DOM snapshot. Go back and forward in time and click an action to inspect and debug. Use the Before and After tabs to visually see what happened before and after the action. 
+In the Actions tab you can see what locator was used for every action and how long each one took to run. Hover over each action of your test and visually see the change in the DOM snapshot. Go back and forward in time and click an action to inspect and debug. Use the Before and After tabs to visually see what happened before and after the action.
 
 ![actions tab in trace viewer](https://github.com/microsoft/playwright/assets/13063165/948b65cd-f0fd-4c7f-8e53-2c632b5a07f1)
 
@@ -31,7 +31,7 @@ In the Actions tab you can see what locator was used for every action and how lo
 
 ### Screenshots
 
-When tracing with the [`option: screenshots`] option turned on, each trace records a screencast and renders it as a film strip. You can hover over the film strip to see a magnified image of for each action and state which helps you easily find the action you want to inspect. 
+When tracing with the [`option: Tracing.start.screenshots`] option turned on (default), each trace records a screencast and renders it as a film strip. You can hover over the film strip to see a magnified image of for each action and state which helps you easily find the action you want to inspect.
 
 Double click on an action to see the time range for that action. You can use the slider in the timeline to increase the actions selected and these will be shown in the Actions tab and all console logs and network logs will be filtered to only show the logs for the actions selected.
 
@@ -40,15 +40,13 @@ Double click on an action to see the time range for that action. You can use the
 
 ### Snapshots
 
-When tracing with the [`option: snapshots`] option turned on (default), Playwright captures a set of complete DOM snapshots for each action. Depending on the type of the action, it will capture:
+When tracing with the [`option: Tracing.start.snapshots`] option turned on (default), Playwright captures a set of complete DOM snapshots for each action. Depending on the type of the action, it will capture:
 
 | Type | Description |
 |------|-------------|
 |Before|A snapshot at the time action is called.|
 |Action|A snapshot at the moment of the performed input. This type of snapshot is especially useful when exploring where exactly Playwright clicked.|
 |After|A snapshot after the action.|
-
-<br/>
 
 Here is what the typical Action snapshot looks like:
 
@@ -58,7 +56,7 @@ Notice how it highlights both, the DOM Node as well as the exact click position.
 
 ### Source
 
-As you hover over each action of your test the line of code for that action is highlighted in the source panel.
+When you click on an action in the sidebar, the line of code for that action is highlighted in the source panel.
 
 ![showing source code tab in trace viewer](https://github.com/microsoft/playwright/assets/13063165/daa8845d-c250-4923-aa7a-5d040da9adc5)
 
@@ -86,12 +84,20 @@ See console logs from the browser as well as from your test. Different icons are
 
 ![showing log of tests in trace viewer](https://github.com/microsoft/playwright/assets/13063165/4107c08d-1eaf-421c-bdd4-9dd2aa641d4a)
 
+Double click on an action from your test in the actions sidebar. This will filter the console to only show the logs that were made during that action. Click the *Show all* button to see all console logs again.
+
+Use the timeline to filter actions, by clicking a start point and dragging to an ending point. The console tab will also be filtered to only show the logs that were made during the actions selected.
+
 
 ### Network
 
 The Network tab shows you all the network requests that were made during your test. You can sort by different types of requests, status code, method, request, content type, duration and size. Click on a request to see more information about it such as the request headers, response headers, request body and response body.
 
 ![network requests tab in trace viewer](https://github.com/microsoft/playwright/assets/13063165/0a3d1671-8ccd-4f7a-a844-35f5eb37f236)
+
+Double click on an action from your test in the actions sidebar. This will filter the network requests to only show the requests that were made during that action. Click the *Show all* button to see all network requests again.
+
+Use the timeline to filter actions, by clicking a start point and dragging to an ending point. The network tab will also be filtered to only show the network requests that were made during the actions selected.
 
 ### Metadata
 
@@ -244,10 +250,10 @@ Traces can be recorded using the [`property: BrowserContext.tracing`] API as fol
 
 <Tabs
   groupId="test-runners"
-  defaultValue="nunit"
+  defaultValue="mstest"
   values={[
+    {label: 'MSTest', value: 'mstest'},
     {label: 'NUnit', value: 'nunit'},
-    {label: 'MSTest', value: 'mstest'}
   ]
 }>
 <TabItem value="nunit">
@@ -355,10 +361,10 @@ Setup your tests to record a trace only when the test fails:
 
 <Tabs
   groupId="test-runners"
-  defaultValue="nunit"
+  defaultValue="mstest"
   values={[
+    {label: 'MSTest', value: 'mstest'},
     {label: 'NUnit', value: 'nunit'},
-    {label: 'MSTest', value: 'mstest'}
   ]
 }>
 <TabItem value="nunit">
@@ -385,7 +391,7 @@ public class ExampleTest : PageTest
     [TearDown]
     public async Task TearDown()
     {
-        var failed = TestContext.CurrentContext.Result.Outcome == NUnit.Framework.Interfaces.ResultState.Error 
+        var failed = TestContext.CurrentContext.Result.Outcome == NUnit.Framework.Interfaces.ResultState.Error
             || TestContext.CurrentContext.Result.Outcome == NUnit.Framework.Interfaces.ResultState.Failure;
 
         await Context.Tracing.StopAsync(new()
@@ -394,7 +400,7 @@ public class ExampleTest : PageTest
                 TestContext.CurrentContext.WorkDirectory,
                 "playwright-traces",
                 $"{TestContext.CurrentContext.Test.ClassName}.{TestContext.CurrentContext.Test.Name}.zip"
-            ) : null, 
+            ) : null,
         });
     }
 
@@ -485,7 +491,7 @@ pwsh bin/Debug/netX/playwright.ps1 show-trace trace.zip
 
 ## Viewing remote traces
 
-You can open remote traces using it's URL. They could be generated on a CI run which makes it easy to view the remote trace without having to manually download the file.
+You can open remote traces using its URL. They could be generated on a CI run which makes it easy to view the remote trace without having to manually download the file.
 
 ```bash js
 npx playwright show-trace https://example.com/trace.zip

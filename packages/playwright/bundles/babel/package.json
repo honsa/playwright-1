@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "esbuild": "esbuild ./src/babelBundleImpl.ts --bundle --outdir=../../lib/transform --format=cjs --platform=node --target=ES2019",
+    "esbuild": "esbuild ./src/babelBundleImpl.ts --bundle --outdir=../../lib/transform --format=cjs --platform=node --target=ES2019 --external:playwright",
     "build": "npm run esbuild -- --minify",
     "watch": "npm run esbuild -- --watch --sourcemap",
     "generate-license": "node ../../../../utils/generate_third_party_notice.js"
@@ -22,7 +22,6 @@
     "@babel/plugin-syntax-optional-catch-binding": "^7.8.3",
     "@babel/plugin-transform-class-properties": "^7.24.1",
     "@babel/plugin-transform-class-static-block": "^7.24.4",
-    "@babel/plugin-transform-dynamic-import": "^7.24.1",
     "@babel/plugin-transform-export-namespace-from": "^7.24.1",
     "@babel/plugin-transform-logical-assignment-operators": "^7.24.1",
     "@babel/plugin-transform-modules-commonjs": "^7.24.1",

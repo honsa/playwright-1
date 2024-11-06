@@ -41,12 +41,12 @@ export default defineConfig({
 - type: ?<[Object]>
   - `timeout` ?<[int]> Default timeout for async expect matchers in milliseconds, defaults to 5000ms.
   - `toHaveScreenshot` ?<[Object]> Configuration for the [`method: PageAssertions.toHaveScreenshot#1`] method.
-    - `animations` ?<[ScreenshotAnimations]<"allow"|"disabled">> See [`option: animations`] in [`method: Page.screenshot`]. Defaults to `"disabled"`.
-    - `caret` ?<[ScreenshotCaret]<"hide"|"initial">> See [`option: caret`] in [`method: Page.screenshot`]. Defaults to `"hide"`.
+    - `animations` ?<[ScreenshotAnimations]<"allow"|"disabled">> See [`option: Page.screenshot.animations`] in [`method: Page.screenshot`]. Defaults to `"disabled"`.
+    - `caret` ?<[ScreenshotCaret]<"hide"|"initial">> See [`option: Page.screenshot.caret`] in [`method: Page.screenshot`]. Defaults to `"hide"`.
     - `maxDiffPixels` ?<[int]> An acceptable amount of pixels that could be different, unset by default.
     - `maxDiffPixelRatio` ?<[float]> An acceptable ratio of pixels that are different to the total amount of pixels, between `0` and `1` , unset by default.
-    - `scale` ?<[ScreenshotScale]<"css"|"device">> See [`option: scale`] in [`method: Page.screenshot`]. Defaults to `"css"`.
-    - `stylePath` ?<[string]|[Array]<[string]>> See [`option: style`] in [`method: Page.screenshot`].
+    - `scale` ?<[ScreenshotScale]<"css"|"device">> See [`option: Page.screenshot.scale`] in [`method: Page.screenshot`]. Defaults to `"css"`.
+    - `stylePath` ?<[string]|[Array]<[string]>> See [`option: Page.screenshot.style`] in [`method: Page.screenshot`].
     - `threshold` ?<[float]> An acceptable perceived color difference between the same pixel in compared images, ranging from `0` (strict) and `1` (lax). `"pixelmatch"` comparator computes color difference in [YIQ color space](https://en.wikipedia.org/wiki/YIQ) and defaults `threshold` value to `0.2`.
   - `toMatchSnapshot` ?<[Object]> Configuration for the [`method: SnapshotAssertions.toMatchSnapshot#1`] method.
     - `maxDiffPixels` ?<[int]> An acceptable amount of pixels that could be different, unset by default.
@@ -110,9 +110,9 @@ export default defineConfig({
 
 ## property: TestConfig.globalSetup
 * since: v1.10
-- type: ?<[string]>
+- type: ?<[string]|[Array]<[string]>>
 
-Path to the global setup file. This file will be required and run before all the tests. It must export a single function that takes a [FullConfig] argument.
+Path to the global setup file. This file will be required and run before all the tests. It must export a single function that takes a [FullConfig] argument. Pass an array of paths to specify multiple global setup files.
 
 Learn more about [global setup and teardown](../test-global-setup-teardown.md).
 
@@ -128,9 +128,9 @@ export default defineConfig({
 
 ## property: TestConfig.globalTeardown
 * since: v1.10
-- type: ?<[string]>
+- type: ?<[string]|[Array]<[string]>>
 
-Path to the global teardown file. This file will be required and run after all the tests. It must export a single function. See also [`property: TestConfig.globalSetup`].
+Path to the global teardown file. This file will be required and run after all the tests. It must export a single function. See also [`property: TestConfig.globalSetup`]. Pass an array of paths to specify multiple global teardown files.
 
 Learn more about [global setup and teardown](../test-global-setup-teardown.md).
 
@@ -482,27 +482,6 @@ export default defineConfig({
 ```
 
 
-## property: TestConfig.shardingSeed
-
-* since: v1.45
-- type: ?<[string]>
-
-Shuffle the order of test groups with a seed. By default tests are run in the order they are discovered, which is mostly alphabetical. This could lead to an uneven distribution of slow and fast tests. Shuffling the order of tests in a deterministic way can help to distribute the load more evenly.
-
-The sharding seed is a string that is used to initialize a random number generator.
-
-Learn more about [parallelism and sharding](../test-parallel.md) with Playwright Test.
-
-**Usage**
-
-```js title="playwright.config.ts"
-import { defineConfig } from '@playwright/test';
-
-export default defineConfig({
-  shardingSeed: 'string value'
-});
-```
-
 ## property: TestConfig.testDir
 * since: v1.10
 - type: ?<[string]>
@@ -570,6 +549,22 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   timeout: 5 * 60 * 1000,
+});
+```
+
+## property: TestConfig.tsconfig
+* since: v1.49
+- type: ?<[string]>
+
+Path to a single `tsconfig` applicable to all imported files. By default, `tsconfig` for each imported file is looked up separately. Note that `tsconfig` property has no effect while the configuration file or any of its dependencies are loaded. Ignored when `--tsconfig` command line option is specified.
+
+**Usage**
+
+```js title="playwright.config.ts"
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  tsconfig: './tsconfig.test.json',
 });
 ```
 
